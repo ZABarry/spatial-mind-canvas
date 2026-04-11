@@ -1,0 +1,80 @@
+import { xrStore } from '../scene/xrStore'
+import { useRootStore } from '../store/rootStore'
+import { StructureMenu } from './StructureMenu'
+
+export function MainToolbar() {
+  const goHome = useRootStore((s) => s.goHome)
+  const mode = useRootStore((s) => s.interactionMode)
+  const dispatch = useRootStore((s) => s.dispatch)
+  const newBlank = useRootStore((s) => s.newBlankProject)
+  const exportProject = useRootStore((s) => s.exportProject)
+  const clearMap = useRootStore((s) => s.clearCurrentMap)
+  const duplicate = useRootStore((s) => s.duplicateCurrentProject)
+  const project = useRootStore((s) => s.project)
+
+  return (
+    <div className="toolbar panel">
+      <button type="button" onClick={() => goHome()}>
+        Library
+      </button>
+      <button type="button" onClick={() => void newBlank()}>
+        New map
+      </button>
+      <button type="button" onClick={() => void duplicate()}>
+        Duplicate map
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          useRootStore.setState({
+            confirmDialog: {
+              title: 'Clear this map',
+              message:
+                'Remove all nodes, edges, and bookmarks from the current map? The project stays; only content is cleared.',
+              onConfirm: () => clearMap(),
+            },
+          })
+        }
+      >
+        Clear map
+      </button>
+      <button type="button" onClick={() => exportProject()}>
+        Export JSON
+      </button>
+      <button type="button" className="primary" onClick={() => void xrStore.enterVR()}>
+        Enter VR
+      </button>
+      <button
+        type="button"
+        onClick={() => dispatch({ type: 'setInteractionMode', mode: mode === 'travel' ? 'worldManip' : 'travel' })}
+      >
+        {mode === 'travel' ? 'World mode' : 'Travel mode'}
+      </button>
+      <button type="button" onClick={() => dispatch({ type: 'undo' })}>
+        Undo
+      </button>
+      <button type="button" onClick={() => dispatch({ type: 'redo' })}>
+        Redo
+      </button>
+      <button type="button" onClick={() => dispatch({ type: 'setSearchOpen', open: true })}>
+        Search
+      </button>
+      <button type="button" onClick={() => dispatch({ type: 'focusSelection' })}>
+        Focus
+      </button>
+      <button type="button" onClick={() => dispatch({ type: 'resetWorld' })}>
+        Reset view
+      </button>
+      <button
+        type="button"
+        onClick={() => useRootStore.setState({ settingsOpen: true })}
+      >
+        Settings
+      </button>
+      <StructureMenu />
+      <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>
+        {project?.name ?? ''}
+      </span>
+    </div>
+  )
+}

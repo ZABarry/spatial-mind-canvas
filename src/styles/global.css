@@ -1,0 +1,208 @@
+:root {
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #1c2330;
+  background: #eef1f6;
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scene-wrap {
+  flex: 1;
+  position: relative;
+  min-height: 420px;
+}
+
+.scene-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 12px 40px rgba(20, 35, 60, 0.08);
+}
+
+.toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  z-index: 10;
+  max-width: 96vw;
+  align-items: center;
+}
+
+.toolbar button {
+  border: none;
+  background: #f5f7fb;
+  color: #2a3140;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toolbar button:hover {
+  background: #e8eef8;
+}
+
+.toolbar .primary {
+  background: #3d5a80;
+  color: #fff;
+}
+
+.toolbar .primary:hover {
+  background: #2f4763;
+}
+
+.search-palette {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 92vw);
+  padding: 12px;
+  z-index: 20;
+}
+
+.search-palette input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d8e0ec;
+}
+
+.project-home {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.project-home h1 {
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e4eaf3;
+  cursor: pointer;
+}
+
+.project-row:hover {
+  border-color: #c9d6ea;
+}
+
+.inspector {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: min(360px, 94vw);
+  max-height: min(80vh, 640px);
+  overflow: auto;
+  padding: 16px;
+  z-index: 15;
+}
+
+.inspector h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.inspector textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #d8e0ec;
+  resize: vertical;
+}
+
+.onboarding {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  max-width: 320px;
+  padding: 14px 16px;
+  z-index: 12;
+  font-size: 13px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 35, 48, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #fff;
+  padding: 22px 24px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90vw;
+}
+
+.modal h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
