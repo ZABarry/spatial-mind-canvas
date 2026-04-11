@@ -2,9 +2,10 @@ import { useRootStore } from '../store/rootStore'
 
 export function ConfirmModal() {
   const dialog = useRootStore((s) => s.confirmDialog)
+  const xrSession = useRootStore((s) => s.xrSessionActive)
   const setDialog = (v: typeof dialog) => useRootStore.setState({ confirmDialog: v })
 
-  if (!dialog) return null
+  if (!dialog || xrSession) return null
 
   return (
     <div

@@ -28,10 +28,10 @@ export function ProjectHome() {
           className="panel"
           style={{ padding: '10px 16px', cursor: 'pointer', display: 'inline-block' }}
         >
-          Import JSON
+          Import JSON / ZIP
           <input
             type="file"
-            accept="application/json,.json"
+            accept="application/json,.json,application/zip,.zip"
             style={{ display: 'none' }}
             onChange={(e) => {
               const f = e.target.files?.[0]

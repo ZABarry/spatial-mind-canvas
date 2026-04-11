@@ -13,6 +13,9 @@ import {
   type ProjectRepository,
 } from '../persistence/projectRepository'
 import { ProjectSchema } from '../persistence/schemas'
+import { buildProjectZip, estimateZipUncompressedSize, parseProjectZip } from '../persistence/zipBundle'
+import { checkSpaceForBytes, warnIfStorageAlmostFull } from '../media/quota'
+import { buildImageThumbnailJpeg } from '../media/imageThumbnail'
 import { createLocalMediaStore } from '../media/localMediaStore'
 import type { MediaStore } from '../media/types'
 import { getMeta, META_LAST_PROJECT, setMeta } from '../persistence/db'
@@ -56,6 +59,8 @@ export interface RootState {
   onboardingStep: number
   settingsOpen: boolean
   confirmDialog: { title: string; message: string; onConfirm: () => void } | null
+  /** Set from WebXR session inside canvas — hides flat HTML modals while immersive. */
+  xrSessionActive: boolean
   historyPast: HistoryEntry[]
   historyFuture: HistoryEntry[]
   /** XR + app */
@@ -71,6 +76,7 @@ export interface RootState {
   deleteProject: (id: string) => Promise<void>
   clearCurrentMap: () => void
   exportProject: () => void
+  exportProjectZip: () => Promise<void>
   importProject: (file: File) => Promise<void>
   saveNow: () => Promise<void>
 }
@@ -115,6 +121,10 @@ export const useRootStore = create<RootState>((set, get) => {
     }))
   }
 
+  /**
+   * All graph and UI mutations flow through here. For mutually exclusive modes, see
+   * `getInteractionPhase` in `../input/interactionPhase.ts` (idle, drawingEdge, nodeDetail, etc.).
+   */
   function dispatch(a: AppAction) {
     const st = get()
     if (!st.project && a.type !== 'noop') {
@@ -318,6 +328,18 @@ export const useRootStore = create<RootState>((set, get) => {
         })
         break
       }
+      case 'setWorldPosition': {
+        const p = get().project
+        if (!p) break
+        set({
+          project: {
+            ...p,
+            worldTransform: { ...p.worldTransform, position: a.position },
+            updatedAt: Date.now(),
+          },
+        })
+        break
+      }
       case 'translateWorld': {
         commit('worldT', (p) => {
           p.worldTransform.position = vec3Add(p.worldTransform.position, a.delta)
@@ -381,6 +403,34 @@ export const useRootStore = create<RootState>((set, get) => {
             createdAt: Date.now(),
           }
           p.bookmarks = [...p.bookmarks, b]
+        })
+        break
+      }
+      case 'removeBookmark': {
+        commit('removeBookmark', (p) => {
+          p.bookmarks = p.bookmarks.filter((x) => x.id !== a.id)
+        })
+        break
+      }
+      case 'recallBookmark': {
+        const p = get().project
+        if (!p) break
+        const b = p.bookmarks.find((x) => x.id === a.id)
+        if (!b) break
+        set({
+          project: {
+            ...p,
+            worldTransform: { ...b.worldTransform },
+            updatedAt: Date.now(),
+          },
+          selection: b.focusedNodeId
+            ? {
+                nodeIds: [b.focusedNodeId],
+                edgeIds: [],
+                primaryNodeId: b.focusedNodeId,
+              }
+            : get().selection,
+          detailNodeId: null,
         })
         break
       }
@@ -519,22 +569,38 @@ export const useRootStore = create<RootState>((set, get) => {
         if (!mediaStore || !proj) break
         void (async () => {
           const buf = await a.file.arrayBuffer()
+          const space = await checkSpaceForBytes(buf.byteLength)
+          if (!space.ok) {
+            window.alert(space.message)
+            return
+          }
           const blobId = nanoid()
           await mediaStore.put(blobId, buf, { mime: a.file.type || 'application/octet-stream', name: a.file.name })
+          const kind: MediaAttachment['kind'] = a.file.type.startsWith('image/')
+            ? 'image'
+            : a.file.type === 'application/pdf'
+              ? 'pdf'
+              : a.file.type.startsWith('text/')
+                ? 'text'
+                : 'generic'
+          let thumbnailBlobId: string | undefined
+          if (kind === 'image') {
+            const thumb = await buildImageThumbnailJpeg(buf, a.file.type || 'image/jpeg')
+            if (thumb) {
+              const tid = nanoid()
+              await mediaStore.put(tid, thumb, { mime: 'image/jpeg', name: `${a.file.name}.thumb.jpg` })
+              thumbnailBlobId = tid
+            }
+          }
           const att: MediaAttachment = {
             id: nanoid(),
-            kind: a.file.type.startsWith('image/')
-              ? 'image'
-              : a.file.type === 'application/pdf'
-                ? 'pdf'
-                : a.file.type.startsWith('text/')
-                  ? 'text'
-                  : 'generic',
+            kind,
             filename: a.file.name,
             mimeType: a.file.type || 'application/octet-stream',
             byteSize: buf.byteLength,
             blobId,
             createdAt: Date.now(),
+            thumbnailBlobId,
           }
           commit('media', (p) => {
             p.mediaManifest = { ...p.mediaManifest, [att.id]: att }
@@ -585,6 +651,7 @@ export const useRootStore = create<RootState>((set, get) => {
     onboardingStep: 0,
     settingsOpen: false,
     confirmDialog: null,
+    xrSessionActive: false,
     historyPast: [],
     historyFuture: [],
     repo: null,
@@ -706,13 +773,34 @@ export const useRootStore = create<RootState>((set, get) => {
     },
     clearCurrentMap: () => {
       const cur = get().project
+      const repo = get().repo
       if (!cur) return
-      commit('clear', (p) => {
-        p.graph = emptyGraph()
-        p.bookmarks = []
-        p.worldTransform = defaultWorldTransform()
+      const cleared: Project = {
+        ...cur,
+        graph: emptyGraph(),
+        bookmarks: [],
+        worldTransform: defaultWorldTransform(),
+        mediaManifest: {},
+        updatedAt: Date.now(),
+      }
+      rebuildSearchIndex(cleared)
+      set({
+        project: cleared,
+        selection: { nodeIds: [], edgeIds: [] },
+        detailNodeId: null,
+        focusSet: null,
+        focusDim: false,
+        connectionDraft: null,
+        placementPreview: null,
+        searchOpen: false,
+        searchQuery: '',
+        searchHighlight: new Set(),
+        historyPast: [],
+        historyFuture: [],
+        confirmDialog: null,
+        hover: {},
       })
-      set({ selection: { nodeIds: [], edgeIds: [] }, detailNodeId: null, focusSet: null })
+      if (repo) void repo.save(cleared)
     },
     exportProject: () => {
       const p = get().project
@@ -725,10 +813,60 @@ export const useRootStore = create<RootState>((set, get) => {
       a.click()
       URL.revokeObjectURL(url)
     },
+    exportProjectZip: async () => {
+      const p = get().project
+      const media = get().media
+      if (!p || !media) return
+      const bytes = await buildProjectZip(p, media)
+      const blob = new Blob([new Uint8Array(bytes)], { type: 'application/zip' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${p.name.replace(/[^\w-]+/g, '_')}.smc.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    },
     importProject: async (file) => {
       const repo = get().repo
-      if (!repo) return
-      const text = await file.text()
+      const media = get().media
+      if (!repo || !media) return
+      const buf = await file.arrayBuffer()
+      const u8 = new Uint8Array(buf)
+      const looksZip = file.name.endsWith('.zip') || (u8[0] === 0x50 && u8[1] === 0x4b)
+      if (looksZip) {
+        const approx = estimateZipUncompressedSize(u8)
+        const space = await checkSpaceForBytes(approx)
+        if (!space.ok) {
+          window.alert(space.message)
+          return
+        }
+        const parsed = await parseProjectZip(u8, media)
+        if (!parsed.ok) {
+          window.alert(parsed.error)
+          return
+        }
+        const data = parsed.project
+        data.id = nanoid()
+        const t = Date.now()
+        data.createdAt = t
+        data.updatedAt = t
+        data.lastOpenedAt = t
+        const valid = ProjectSchema.safeParse(data)
+        if (!valid.success) {
+          window.alert('Imported ZIP project failed schema validation')
+          return
+        }
+        await repo.save(valid.data as Project)
+        rebuildSearchIndex(valid.data as Project)
+        await setMeta(META_LAST_PROJECT, (valid.data as Project).id)
+        set({
+          project: valid.data as Project,
+          view: 'scene',
+          projectIndex: await buildIndex(repo),
+        })
+        return
+      }
+      const text = new TextDecoder().decode(buf)
       const parsed = ProjectSchema.safeParse(JSON.parse(text))
       if (!parsed.success) return
       const data = parsed.data as Project
@@ -783,6 +921,7 @@ useRootStore.subscribe((s, p) => {
     const repo = useRootStore.getState().repo
     const proj = useRootStore.getState().project
     if (repo && proj) {
+      void warnIfStorageAlmostFull()
       const copy = cloneProject(proj)
       copy.updatedAt = Date.now()
       void repo.save(copy)

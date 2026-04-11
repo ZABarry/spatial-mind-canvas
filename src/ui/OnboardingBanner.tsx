@@ -2,10 +2,12 @@ import { useRootStore } from '../store/rootStore'
 import { setMeta } from '../persistence/db'
 
 const steps = [
-  'Double-click the ground to place a node. Press N for a node at the origin.',
-  'Shift-drag from a node to connect; release on another node or empty space.',
-  'Drag nodes to rearrange. Use the toolbar for VR, travel mode, search, and undo.',
-  'Library keeps all maps local. Clear map removes only the current canvas.',
+  'Double-click the ground to place a node, or press N for a node near the origin.',
+  'Shift-drag from a node to connect; release on another node or on empty ground for a new linked node.',
+  'Drag nodes to move. Press Enter to open the inspector; add notes and files there.',
+  'Toolbar: Enter VR when on HTTPS. Toggle World mode (move the graph) vs Travel mode (walk the space). Alt+arrows nudges the world on desktop.',
+  'Search with Ctrl+K or / ; Focus (F) dims unrelated nodes. Undo/redo from the toolbar.',
+  'Ctrl+Shift+N creates a new blank map. Clear map clears only this canvas (confirmed). Library lists all local projects.',
 ]
 
 export function OnboardingBanner() {

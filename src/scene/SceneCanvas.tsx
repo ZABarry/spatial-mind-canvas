@@ -9,6 +9,10 @@ import { WorldRoot } from './graph/WorldRoot'
 import { xrStore } from './xrStore'
 import { useRootStore } from '../store/rootStore'
 import { useXRControllerLocomotion } from '@react-three/xr'
+import { XrSessionBridge } from './xr/XrSessionBridge'
+import { XrConfirmHud } from './xr/XrConfirmHud'
+import { XrRaycastSelect } from './xr/XrRaycastSelect'
+import { XrWorldGrab } from './xr/XrWorldGrab'
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
@@ -56,9 +60,13 @@ export function SceneCanvas() {
       dpr={[1, 2]}
     >
       <XR store={xrStore}>
+        <XrSessionBridge />
         <WhiteVoid />
         <CalmParticles />
         <TravelLocomotion />
+        <XrRaycastSelect />
+        <XrWorldGrab />
+        <XrConfirmHud />
         <WorldRoot />
         <NotInXR>
           <OrbitIfFlat />

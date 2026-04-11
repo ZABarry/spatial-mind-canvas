@@ -10,6 +10,7 @@ import { OnboardingBanner } from '../ui/OnboardingBanner'
 import { SettingsPanel } from '../ui/SettingsPanel'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { AudioAmbience } from '../ui/AudioAmbience'
+import { HelpControls } from '../ui/HelpControls'
 
 export function App() {
   const ready = useRootStore((s) => s.ready)
@@ -45,6 +46,7 @@ export function App() {
             <NodeInspector />
             <OnboardingBanner />
             <SettingsPanel />
+            <HelpControls />
           </div>
         </>
       )}

@@ -3,6 +3,71 @@ import * as THREE from 'three'
 export type Vec3 = readonly [number, number, number]
 export type Vec4 = readonly [number, number, number, number]
 
+/** Matches `WorldTransform` in graph types — kept here to avoid circular imports. */
+export type WorldTransformLike = {
+  position: Vec3
+  quaternion: Vec4
+  scale: number
+}
+
+const _m = new THREE.Matrix4()
+const _inv = new THREE.Matrix4()
+const _vec = new THREE.Vector3()
+const _pos = new THREE.Vector3()
+const _quat = new THREE.Quaternion()
+const _scale = new THREE.Vector3()
+const _normal = new THREE.Vector3()
+
+/** Graph-local point → world (same space as `e.point` from R3F events). */
+export function graphPointToWorld(wt: WorldTransformLike, p: Vec3): Vec3 {
+  _pos.set(wt.position[0], wt.position[1], wt.position[2])
+  _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
+  const s = wt.scale
+  _scale.set(s, s, s)
+  _m.compose(_pos, _quat, _scale)
+  _vec.set(p[0], p[1], p[2]).applyMatrix4(_m)
+  return [_vec.x, _vec.y, _vec.z]
+}
+
+/** World-space point → graph-local (under world root). */
+export function worldPointToGraphLocal(wt: WorldTransformLike, w: Vec3): Vec3 {
+  _pos.set(wt.position[0], wt.position[1], wt.position[2])
+  _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
+  const s = wt.scale
+  _scale.set(s, s, s)
+  _m.compose(_pos, _quat, _scale)
+  _inv.copy(_m).invert()
+  _vec.set(w[0], w[1], w[2]).applyMatrix4(_inv)
+  return [_vec.x, _vec.y, _vec.z]
+}
+
+/** Unit +Y in graph space, expressed as a world-space normal (for drag / hit planes). */
+export function graphUpNormalWorld(wt: WorldTransformLike): THREE.Vector3 {
+  _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
+  return _normal.set(0, 1, 0).applyQuaternion(_quat).normalize()
+}
+
+/** Graph-local axis unit (0=x, 1=y, 2=z) rotated to parent/scene space — direction only, not scaled. */
+export function graphAxisDirectionParent(wt: WorldTransformLike, axis: 0 | 1 | 2): THREE.Vector3 {
+  _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
+  const ax = axis === 0 ? 1 : 0
+  const ay = axis === 1 ? 1 : 0
+  const az = axis === 2 ? 1 : 0
+  return _vec.set(ax, ay, az).applyQuaternion(_quat).normalize()
+}
+
+/**
+ * Small displacement in graph-local coordinates → delta for `worldTransform.position` (parent space),
+ * respecting rotation and uniform scale of the world root.
+ */
+export function graphLocalDeltaToParentPositionDelta(wt: WorldTransformLike, localDelta: Vec3): Vec3 {
+  const s = wt.scale
+  _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
+  _vec.set(localDelta[0] * s, localDelta[1] * s, localDelta[2] * s)
+  _vec.applyQuaternion(_quat)
+  return [_vec.x, _vec.y, _vec.z]
+}
+
 export const v3 = (x = 0, y = 0, z = 0): Vec3 => [x, y, z]
 
 export const qIdentity = (): Vec4 => [0, 0, 0, 1]

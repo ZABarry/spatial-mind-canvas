@@ -70,6 +70,7 @@ Use a **HTTPS** preview or production URL.
 - [ ] Create nodes (workflow depends on XR pointer events hitting meshes).
 - [ ] Shift+connection gesture may differ from desktop; verify grab/ray from `@react-three/xr` defaults.
 - [ ] Toggle **Travel mode** vs **World mode** in the toolbar; move with thumbsticks in travel mode.
+- [ ] In **World mode**, squeeze **grip** on a controller: move the graph with one hand; squeeze **both** grips and move hands closer/farther to scale the graph.
 - [ ] **Library** from immersive mode: use browser exit VR first, then **Library** (HTML overlay).
 - [ ] Comfort: open **Settings** and toggle smooth locomotion / vignette (vignette is minimal in v1).
 - [ ] Performance: keep node count reasonable; watch frame time in Quest Browser remote debugging if needed.
@@ -103,8 +104,9 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 ## Data & export
 
 - Projects and metadata live in IndexedDB (`spatial-mind-canvas` database).
-- **Export JSON** downloads the current project (`.smc.json`). Re-import via **Import JSON** on the home screen.
-- Media files are stored as binary blobs in IndexedDB and referenced from the project manifest; full portable ZIP bundling can extend the same interfaces later.
+- **Primary portable backup:** **Export ZIP** (toolbar) — `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. **Import JSON / ZIP** on the home screen accepts `.zip` or `.json`.
+- **Export JSON** (toolbar) downloads a single `.smc.json` (no embedded media blobs); useful for quick text backup or debugging.
+- Media files are stored as binary blobs in IndexedDB and referenced from the project manifest; ZIP export includes those blobs for a full round-trip.
 
 ## Architecture (short)
 

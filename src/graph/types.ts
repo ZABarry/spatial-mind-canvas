@@ -52,7 +52,7 @@ export interface EdgeEntity {
   targetId: string
   label: string
   style: EdgeStyle
-  /** World-space control points for spline edges (excluding endpoints) */
+  /** Graph-local control points for spline edges (excluding endpoints); same frame as node positions */
   controlPoints?: Vec3[]
   thickness: number
   directed: boolean
@@ -89,6 +89,12 @@ export interface UserSettings {
   smoothTurnSpeed: number
   moveSpeed: number
   focusHopDepth: number
+  /** Max labels to show by distance when `showAllLabels` is false (default applied in UI). */
+  labelBudget?: number
+  /** Debug / power-user: draw every node label (expensive on Quest). */
+  showAllLabels?: boolean
+  /** Show X/Y/Z handles at world origin and on nodes; drag a handle to move along that axis only. */
+  worldAxisControls?: boolean
 }
 
 export interface Project {

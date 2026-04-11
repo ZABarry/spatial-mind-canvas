@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useRootStore } from '../../store/rootStore'
+import { worldPointToGraphLocal } from '../../utils/math'
 
 /**
  * Large invisible plane for double-click create and clearing selection on empty ground.
@@ -11,13 +12,16 @@ export function InteractionPlane() {
 
   const onPointerUp = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
-      const d = useRootStore.getState().connectionDraft
-      if (!d) return
+      const st = useRootStore.getState()
+      const d = st.connectionDraft
+      const proj = st.project
+      if (!d || !proj) return
       e.stopPropagation()
       const p = e.point
+      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z])
       dispatch({
         type: 'finishConnection',
-        dropPosition: [p.x, p.y, p.z],
+        dropPosition: local,
       })
     },
     [dispatch],
@@ -26,10 +30,13 @@ export function InteractionPlane() {
   const onDoubleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation()
+      const proj = useRootStore.getState().project
+      if (!proj) return
       const p = e.point
+      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z])
       dispatch({
         type: 'createNodeAt',
-        position: [p.x, p.y, p.z],
+        position: local,
       })
     },
     [dispatch],

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { emptyGraph } from './defaults'
-import { addNode, addEdge, createNodeDefaults } from './mutations'
+import { addNode, addEdge, createNodeDefaults, removeNode } from './mutations'
 import { neighborIdsByEdges } from './selectors'
 import { v3 } from '../utils/math'
 
@@ -15,6 +15,19 @@ describe('graph mutations', () => {
     g = e.graph
     expect(Object.keys(g.nodes)).toHaveLength(2)
     expect(Object.keys(g.edges)).toHaveLength(1)
+  })
+})
+
+describe('graph snapshot undo pattern', () => {
+  it('structuredClone can restore graph before destructive edit', () => {
+    let g = emptyGraph()
+    const a = addNode(g, createNodeDefaults(v3(0, 0, 0)))
+    g = a.graph
+    const snapshot = structuredClone(g)
+    g = removeNode(g, a.node.id)
+    expect(Object.keys(g.nodes)).toHaveLength(0)
+    expect(Object.keys(snapshot.nodes)).toHaveLength(1)
+    expect(snapshot.nodes[a.node.id]?.id).toBe(a.node.id)
   })
 })
 

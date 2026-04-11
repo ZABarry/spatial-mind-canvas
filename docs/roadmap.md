@@ -33,6 +33,23 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 
 **Suggested layout (reference):** `src/app`, `src/scene`, `src/graph`, `src/input`, `src/store`, `src/persistence`, `src/media`, `src/ui`, tests and utils — see repo for actual structure (`rootStore`, `SceneCanvas`, etc.).
 
+### Shipped in codebase (snapshot)
+
+| Area | Where |
+|------|--------|
+| App state, undo stack, autosave | [`src/store/rootStore.ts`](../src/store/rootStore.ts) |
+| Semantic actions | [`src/input/actions.ts`](../src/input/actions.ts) |
+| Interaction phases helper | [`src/input/interactionPhase.ts`](../src/input/interactionPhase.ts) |
+| Graph domain, layout tools | [`src/graph/`](../src/graph/) |
+| IndexedDB + Zod + **ZIP** bundle | [`src/persistence/`](../src/persistence/), [`zipBundle.ts`](../src/persistence/zipBundle.ts) |
+| Media store + quota on attach | [`src/media/`](../src/media/) |
+| Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |
+| XR: session bridge, confirm HUD, ray select, locomotion | [`src/scene/xr/`](../src/scene/xr/), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx) |
+| Label budget / settings | [`NodeMeshes.tsx`](../src/scene/graph/NodeMeshes.tsx), [`SettingsPanel.tsx`](../src/ui/SettingsPanel.tsx) |
+| Bookmarks UI | [`BookmarksMenu.tsx`](../src/ui/BookmarksMenu.tsx), toolbar |
+| PDF / image in inspector | [`MediaAttachmentRow.tsx`](../src/ui/MediaAttachmentRow.tsx), [`PdfCanvas.tsx`](../src/ui/PdfCanvas.tsx) |
+| Quest performance notes | [`performance.md`](performance.md) |
+
 ---
 
 ## Engineering guardrails (pre-code / ongoing)
@@ -41,7 +58,7 @@ These amendments apply on top of the base plan:
 
 1. **Graph-local geometry** — Node positions, edge spline control points, structure-tool previews, and bookmarks should live in the graph’s coordinate system under the world root. Avoid storing splines only in world space after the user has rotated/scaled the universe.
 2. **Interaction state machine** — Mutually exclusive high-level states (e.g. idle, hovering, placingNode, draggingNode, drawingEdge, grabbingWorld, nodeDetail, travel, modalConfirm) so desktop, controllers, and hand tracking do not conflict.
-3. **Export UX** — Prefer a **single downloadable `.zip`** with `manifest.json` for portable backup; JSON-only export can remain as a stepping stone (current README describes JSON `.smc.json`).
+3. **Export UX** — Prefer a **single downloadable `.zip`** with `manifest.json` for portable backup; JSON-only export remains a fallback (see README **Data & export**).
 4. **Quota-aware media** — Use Storage API `estimate()` where appropriate; warn before large imports; surface quota failures clearly.
 5. **Multi-select** — Shift+click (and later lasso/box) so optional structure tools have a natural selection model on desktop.
 6. **Label policy on Quest** — Prefer selected / nearby / focus; distance fade or cull; hard budget; “show all labels” non-default or debug-only.
@@ -77,26 +94,26 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 
 ### Product & UX
 
-- [ ] Enforce freeform defaults; no surprise snapping, auto-layout, or reposition after place unless user invokes a tool.
-- [ ] Destructive actions (clear map, delete project, bulk delete) confirmed on **desktop and in VR** with equivalent clarity.
-- [ ] Onboarding covers: create node, connect, move world, open node, world vs travel, search/focus, new map, clear map.
-- [ ] Bookmarks: save/recall viewpoints or graph states (if not complete).
-- [ ] Optional structure tools: align, distribute, radial, branch, flatten, stack, tidy neighborhood, normalize spacing, center cluster — only on selection; preview where practical; undoable.
+- [x] Enforce freeform defaults; no surprise snapping, auto-layout, or reposition after place unless user invokes a tool.
+- [x] Destructive actions (clear map, delete project, bulk delete) confirmed on **desktop and in VR** with equivalent clarity (`ConfirmModal` + [`XrConfirmHud`](../src/scene/xr/XrConfirmHud.tsx)).
+- [x] Onboarding covers: create node, connect, move world, open node, world vs travel, search/focus, new map, clear map (see [`OnboardingBanner`](../src/ui/OnboardingBanner.tsx)).
+- [x] Bookmarks: save/recall viewpoints or graph states (toolbar + [`BookmarksMenu`](../src/ui/BookmarksMenu.tsx)).
+- [ ] Optional structure tools: align, distribute, radial, branch, flatten, stack, tidy neighborhood, normalize spacing, center cluster — only on selection; **preview before commit** still optional; undoable via normal history.
 
 ### Engineering guardrails (from above)
 
-- [ ] Audit graph-local vs world-space for nodes, edge control points, previews, bookmarks.
-- [ ] Central interaction state machine (documented in code).
-- [ ] IndexedDB quota checks and user-visible failures on large saves/imports.
-- [ ] Label budget + distance rules on Quest.
-- [ ] Clear-map clears graph **and** history + transient UI state.
-- [ ] ZIP export/import with manifest (primary portable format).
-- [ ] Written performance budgets (numbers) in repo or this doc.
-- [ ] PDF.js integrated as display-only into custom panels.
+- [x] Audit graph-local vs world-space for nodes, edge control points (stored graph-local; see [`math.ts`](../src/utils/math.ts)).
+- [x] Central interaction state machine (documented in [`interactionPhase.ts`](../src/input/interactionPhase.ts) + `dispatch` JSDoc).
+- [ ] IndexedDB quota checks and user-visible failures on **large saves/imports** (attach covered; extend to ZIP import / autosave warn — see post-MVP plan).
+- [x] Label budget + distance rules on Quest ([`NodeMeshes`](../src/scene/graph/NodeMeshes.tsx) + settings).
+- [x] Clear-map clears graph **and** history + transient UI state ([`clearCurrentMap`](../src/store/rootStore.ts)).
+- [x] ZIP export/import with manifest (primary portable format) ([`zipBundle.ts`](../src/persistence/zipBundle.ts)).
+- [x] Written performance budgets — [`performance.md`](performance.md).
+- [x] PDF.js integrated as display-only into custom panels ([`PdfCanvas`](../src/ui/PdfCanvas.tsx)).
 
 ### Testing & release
 
-- [ ] Unit tests for graph/domain/history (extend Vitest coverage over time).
+- [ ] Unit tests for graph/domain/history (extended over time; see `graph.test.ts`, `math.test.ts`).
 - [ ] Desktop smoke path (manual or automated where practical).
 - [ ] Manual XR QA: follow [README Quest checklist](../README.md#quest-testing-manual-qa); expand to full matrix (controllers + hands + desktop parity).
 

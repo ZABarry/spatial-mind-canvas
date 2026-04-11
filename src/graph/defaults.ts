@@ -5,6 +5,7 @@ import { qIdentity, v3 } from '../utils/math'
 
 export function defaultUserSettings(): UserSettings {
   return {
+    worldAxisControls: false,
     locomotionSmooth: false,
     snapTurnDegrees: 45,
     comfortVignette: false,

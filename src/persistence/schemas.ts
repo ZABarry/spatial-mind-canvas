@@ -18,6 +18,9 @@ export const UserSettingsSchema = z.object({
   smoothTurnSpeed: z.number(),
   moveSpeed: z.number(),
   focusHopDepth: z.number(),
+  labelBudget: z.number().optional(),
+  showAllLabels: z.boolean().optional(),
+  worldAxisControls: z.boolean().optional(),
 })
 
 export const MediaAttachmentSchema = z.object({

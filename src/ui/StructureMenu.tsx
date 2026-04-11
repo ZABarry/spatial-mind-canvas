@@ -17,7 +17,9 @@ export function StructureMenu() {
   const dispatch = useRootStore((s) => s.dispatch)
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-      <span style={{ fontSize: 12, color: '#6b7280' }}>Layout</span>
+      <span style={{ fontSize: 12, color: '#6b7280' }} title="Applies to selected nodes. Use Undo to revert. Ghost preview is not implemented yet.">
+        Layout
+      </span>
       {tools.map((t) => (
         <button
           key={t.id}

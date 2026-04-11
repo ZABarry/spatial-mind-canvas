@@ -24,6 +24,8 @@ export type AppAction =
   | { type: 'updateNodeProps'; nodeId: string; patch: Record<string, unknown> }
   | { type: 'toggleCollapse'; nodeId: string }
   | { type: 'setWorldTransform'; position: Vec3; quaternion: Vec4; scale: number }
+  /** Live world translation (no undo frame); use for drag like `moveNode`. */
+  | { type: 'setWorldPosition'; position: Vec3 }
   | { type: 'translateWorld'; delta: Vec3 }
   | { type: 'rotateWorld'; axis: Vec3; radians: number }
   | { type: 'scaleWorld'; factor: number }
@@ -31,6 +33,8 @@ export type AppAction =
   | { type: 'focusSelection' }
   | { type: 'setFocusDim'; dim: boolean }
   | { type: 'addBookmark'; label: string }
+  | { type: 'removeBookmark'; id: string }
+  | { type: 'recallBookmark'; id: string }
   | { type: 'search'; query: string }
   | { type: 'jumpToNode'; nodeId: string }
   | { type: 'structureTool'; tool: StructureToolName; options?: Record<string, number> }

@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown'
 import { useRootStore } from '../store/rootStore'
+import { MediaAttachmentRow } from './MediaAttachmentRow'
 
 export function NodeInspector() {
   const id = useRootStore((s) => s.detailNodeId)
@@ -88,14 +89,10 @@ export function NodeInspector() {
         </label>
       </div>
       {node.mediaIds.length > 0 && (
-        <ul style={{ fontSize: 13, marginTop: 12 }}>
+        <ul style={{ fontSize: 13, marginTop: 12, paddingLeft: 0 }}>
           {node.mediaIds.map((mid) => {
             const m = project.mediaManifest[mid]
-            return (
-              <li key={mid}>
-                {m?.filename ?? mid} ({m?.kind ?? '?'})
-              </li>
-            )
+            return m ? <MediaAttachmentRow key={mid} att={m} /> : null
           })}
         </ul>
       )}
