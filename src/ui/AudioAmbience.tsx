@@ -17,10 +17,12 @@ export function AudioAmbience() {
     gain.gain.value = 0.012
     osc.connect(gain)
     gain.connect(ctx.destination)
+    let oscStarted = false
     const start = () => {
       void ctx.resume()
       try {
         osc.start()
+        oscStarted = true
       } catch {
         /* already started */
       }
@@ -32,7 +34,13 @@ export function AudioAmbience() {
     window.addEventListener('pointerdown', onFirst, { once: true })
     return () => {
       window.removeEventListener('pointerdown', onFirst)
-      osc.stop()
+      if (oscStarted) {
+        try {
+          osc.stop()
+        } catch {
+          /* already stopped */
+        }
+      }
       void ctx.close()
     }
   }, [enabled])
