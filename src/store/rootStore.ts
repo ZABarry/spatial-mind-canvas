@@ -67,6 +67,12 @@ export interface RootState {
   xrHelpOpen: boolean
   /** Set from WebXR session inside canvas — hides flat HTML modals while immersive. */
   xrSessionActive: boolean
+  /** Bumped when `centerViewOnSelection` runs; canvas reads orbit target and applies `translateWorld`. */
+  centerViewTick: number
+  /** Bumped on `resetWorld`; canvas restores desktop orbit camera to its initial pose. */
+  resetViewTick: number
+  /** True while a node is pointer-dragged (desktop); orbit controls disable rotation. */
+  nodeDragActive: boolean
   historyPast: HistoryEntry[]
   historyFuture: HistoryEntry[]
   /** XR + app */
@@ -105,6 +111,23 @@ function rebuildSearchIndex(project: Project) {
     items.push({ id: `media:${m.id}`, text: m.filename })
   }
   fuse = new Fuse(items, { keys: ['text'], threshold: 0.35 })
+}
+
+/** Search index only tracks node text/tags and media filenames — skip hot paths (e.g. VR edge drawing). */
+function shouldRebuildSearchIndex(a: AppAction): boolean {
+  switch (a.type) {
+    case 'createNodeAt':
+    case 'deleteNode':
+    case 'deleteSelection':
+    case 'updateNodeProps':
+    case 'attachMedia':
+    case 'undo':
+    case 'redo':
+    case 'finishConnection':
+      return true
+    default:
+      return false
+  }
 }
 
 export const useRootStore = create<RootState>((set, get) => {
@@ -186,7 +209,7 @@ export const useRootStore = create<RootState>((set, get) => {
         break
       case 'createNodeAt': {
         commit('createNode', (p) => {
-          const base = createNodeDefaults(a.position, a.shape ?? 'sphere')
+          const base = createNodeDefaults(a.position, a.shape)
           const { graph, node } = addNode(p.graph, {
             ...base,
             parentId: a.parentId,
@@ -290,7 +313,7 @@ export const useRootStore = create<RootState>((set, get) => {
           })
         } else if (a.dropPosition) {
           commit('connect+node', (p) => {
-            const base = createNodeDefaults(a.dropPosition!, 'sphere')
+            const base = createNodeDefaults(a.dropPosition!)
             const { graph, node } = addNode(p.graph, base)
             p.graph = graph
             const e = addEdge(p.graph, {
@@ -386,6 +409,7 @@ export const useRootStore = create<RootState>((set, get) => {
         commit('resetW', (p) => {
           p.worldTransform = defaultWorldTransform()
         })
+        set({ resetViewTick: get().resetViewTick + 1 })
         break
       case 'setFocusDim':
         set({ focusDim: a.dim })
@@ -398,6 +422,14 @@ export const useRootStore = create<RootState>((set, get) => {
         const depth = p.settings.focusHopDepth
         const setIds = neighborIdsByEdges(p.graph, [primary], depth)
         set({ focusSet: setIds, focusDim: true })
+        break
+      }
+      case 'centerViewOnSelection': {
+        const p = get().project
+        if (!p) break
+        const primary = get().selection.primaryNodeId ?? get().selection.nodeIds[0]
+        if (!primary || !p.graph.nodes[primary]) break
+        set({ centerViewTick: get().centerViewTick + 1 })
         break
       }
       case 'addBookmark': {
@@ -625,6 +657,9 @@ export const useRootStore = create<RootState>((set, get) => {
           searchQuery: a.open ? s.searchQuery : '',
         }))
         break
+      case 'setNodeDragActive':
+        set({ nodeDragActive: a.active })
+        break
       case 'patchSettings':
         commit('settings', (p) => {
           p.settings = { ...p.settings, ...a.patch }
@@ -635,7 +670,7 @@ export const useRootStore = create<RootState>((set, get) => {
     }
 
     const proj = get().project
-    if (proj) rebuildSearchIndex(proj)
+    if (proj && shouldRebuildSearchIndex(a)) rebuildSearchIndex(proj)
   }
 
   return {
@@ -661,6 +696,9 @@ export const useRootStore = create<RootState>((set, get) => {
     textPromptDialog: null,
     xrHelpOpen: false,
     xrSessionActive: false,
+    centerViewTick: 0,
+    resetViewTick: 0,
+    nodeDragActive: false,
     historyPast: [],
     historyFuture: [],
     repo: null,

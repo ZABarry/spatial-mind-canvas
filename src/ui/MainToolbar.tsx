@@ -11,6 +11,7 @@ export function MainToolbar() {
   const mode = useRootStore((s) => s.interactionMode)
   const project = useRootStore((s) => s.project)
   const worldAxisControls = project?.settings.worldAxisControls === true
+  const floorGridOn = project?.settings.floorGrid !== false
 
   if (xrSession) return null
 
@@ -55,10 +56,17 @@ export function MainToolbar() {
         </button>
         <button
           type="button"
-          className={worldAxisControls ? 'primary' : undefined}
+          className={worldAxisControls ? 'toggle-on' : undefined}
           onClick={() => tb.toggleWorldAxisControls()}
         >
           {worldAxisControls ? 'World axis controls on' : 'World axis controls off'}
+        </button>
+        <button
+          type="button"
+          className={floorGridOn ? 'toggle-on' : undefined}
+          onClick={() => tb.toggleFloorGrid()}
+        >
+          {floorGridOn ? 'Floor grid on' : 'Floor grid off'}
         </button>
         <button type="button" onClick={() => tb.focusSelection()}>
           Focus selection

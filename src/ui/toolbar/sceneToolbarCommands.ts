@@ -34,7 +34,46 @@ export function exportZip() {
 }
 
 export function enterVr() {
-  void xrStore.enterVR()
+  const preferPt = useRootStore.getState().project?.settings.preferXrPassthrough === true
+  void (async () => {
+    if (preferPt && (await navigator.xr?.isSessionSupported('immersive-ar'))) {
+      await xrStore.enterAR()
+      return
+    }
+    await xrStore.enterVR()
+  })()
+}
+
+/** Toggle between opaque VR and mixed (camera) reality; independent of travel vs world manipulation mode. */
+export function toggleCameraPassthrough() {
+  const session = xrStore.getState().session
+  if (session == null) return
+
+  const nextMode: XRSessionMode =
+    session.environmentBlendMode === 'opaque' ? 'immersive-ar' : 'immersive-vr'
+
+  void (async () => {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const t = window.setTimeout(() => reject(new Error('XR session end timed out')), 12_000)
+        const onEnd = () => {
+          clearTimeout(t)
+          resolve()
+        }
+        session.addEventListener('end', onEnd, { once: true })
+        session.end()
+      })
+      if (nextMode === 'immersive-ar') {
+        const arOk = (await navigator.xr?.isSessionSupported('immersive-ar')) ?? false
+        if (!arOk) return
+        await xrStore.enterAR()
+        return
+      }
+      await xrStore.enterVR()
+    } catch (e) {
+      console.error(e)
+    }
+  })()
 }
 
 export function toggleTravelWorldMode() {
@@ -47,6 +86,12 @@ export function toggleWorldAxisControls() {
   const st = useRootStore.getState()
   const on = st.project?.settings.worldAxisControls === true
   st.dispatch({ type: 'patchSettings', patch: { worldAxisControls: !on } })
+}
+
+export function toggleFloorGrid() {
+  const st = useRootStore.getState()
+  const on = st.project?.settings.floorGrid !== false
+  st.dispatch({ type: 'patchSettings', patch: { floorGrid: !on } })
 }
 
 export function focusSelection() {

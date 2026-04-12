@@ -98,7 +98,11 @@ export function HelpControls() {
                     <strong>Node detail</strong> — Double-click a node, or select one and press <Kbd>Enter</Kbd>.
                   </li>
                   <li>
-                    <strong>Focus</strong> — <Kbd>F</Kbd>
+                    <strong>Focus</strong> — <Kbd>F</Kbd> (dim to neighborhood)
+                  </li>
+                  <li>
+                    <strong>Center view on selection</strong> — <Kbd>Home</Kbd> or <Kbd>.</Kbd> (primary
+                    node moves to the orbit pivot)
                   </li>
                   <li>
                     <strong>Delete</strong> — <Kbd>Delete</Kbd> or <Kbd>Backspace</Kbd>
@@ -133,6 +137,8 @@ export function HelpControls() {
                   <li>
                     <strong>Travel vs world</strong> — <strong>Travel mode</strong> enables thumbstick movement and
                     turning. <strong>World mode</strong> turns off locomotion so you stay put for fine adjustments.
+                    This is separate from <strong>camera passthrough</strong> (mixed reality), which you toggle from the
+                    wrist menu or when entering XR (Settings).
                   </li>
                   <li>
                     <strong>Locomotion options</strong> — In Settings: smooth or snap turning, move speed, comfort
@@ -148,8 +154,8 @@ export function HelpControls() {
                     <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
                     toggle the floating panel with the <strong>secondary face button</strong> (often Y); with{' '}
                     <strong>hand tracking</strong>, turn your palm toward you to show it. Raycast buttons for Library,
-                    Settings, export, undo/redo, travel/world mode, axis toggle, focus, structure tools, bookmarks, and
-                    more.
+                    Settings, export, undo/redo, travel/world mode, camera passthrough vs VR backdrop, axis toggle,
+                    focus, structure tools, bookmarks, and more.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — You can exit VR from <strong>View → Enter VR</strong> (or leave

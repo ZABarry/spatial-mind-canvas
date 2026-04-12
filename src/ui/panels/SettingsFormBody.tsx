@@ -32,44 +32,72 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
     flexWrap: 'wrap',
   }
 
+  /** Checkbox + long caption: avoid `flex-wrap` moving the whole caption below the box (looks like missing text). */
+  const checkboxRow: CSSProperties = {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 8,
+  }
+  const checkboxLabel: CSSProperties = {
+    flex: 1,
+    minWidth: 0,
+    lineHeight: 1.45,
+  }
+
   return (
     <div style={modalStyle(variant)}>
       <h2 style={{ marginTop: variant === 'xr' ? 0 : undefined }}>Settings</h2>
-      <label style={row}>
+      <label style={checkboxRow}>
         <input
           type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
           checked={s.locomotionSmooth}
           onChange={(e) =>
             dispatch({ type: 'patchSettings', patch: { locomotionSmooth: e.target.checked } })
           }
         />
-        Smooth locomotion (VR)
+        <span style={checkboxLabel}>Smooth locomotion (VR)</span>
       </label>
-      <label style={row}>
+      <label style={checkboxRow}>
         <input
           type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
           checked={s.comfortVignette}
           onChange={(e) =>
             dispatch({ type: 'patchSettings', patch: { comfortVignette: e.target.checked } })
           }
         />
-        Comfort vignette
+        <span style={checkboxLabel}>Comfort vignette</span>
       </label>
-      <label style={row}>
+      <label style={checkboxRow}>
         <input
           type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={s.preferXrPassthrough ?? false}
+          onChange={(e) =>
+            dispatch({ type: 'patchSettings', patch: { preferXrPassthrough: e.target.checked } })
+          }
+        />
+        <span style={checkboxLabel}>Prefer camera passthrough when entering XR (if supported)</span>
+      </label>
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
           checked={s.audioEnabled}
           onChange={(e) => dispatch({ type: 'patchSettings', patch: { audioEnabled: e.target.checked } })}
         />
-        Ambient audio
+        <span style={checkboxLabel}>Ambient audio</span>
       </label>
-      <label style={row}>
+      <label style={checkboxRow}>
         <input
           type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
           checked={s.showAllLabels ?? false}
           onChange={(e) => dispatch({ type: 'patchSettings', patch: { showAllLabels: e.target.checked } })}
         />
-        Show all node labels (heavy on Quest)
+        <span style={checkboxLabel}>Show all node labels (heavy on Quest)</span>
       </label>
       <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
         Label budget (when not showing all){' '}

@@ -5,8 +5,10 @@ import { useRootStore } from '../../store/rootStore'
 import {
   graphPointToWorld,
   graphUpNormalWorld,
+  NO_XR_COMFORT,
   vec3Distance,
   worldPointToGraphLocal,
+  XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
 
 /**
@@ -27,6 +29,7 @@ export function ConnectionController() {
     const proj = st.project
     if (!d || !proj) return
     const wt = proj.worldTransform
+    const comfort = XR_STANDING_GRAPH_OFFSET
     const idx =
       d.xrControllerIndex ??
       (() => {
@@ -41,13 +44,13 @@ export function ConnectionController() {
     const from = proj.graph.nodes[d.fromNodeId]?.position
     const normalW = graphUpNormalWorld(wt)
     const ptW = from
-      ? new THREE.Vector3(...graphPointToWorld(wt, from))
+      ? new THREE.Vector3(...graphPointToWorld(wt, from, comfort))
       : new THREE.Vector3(0, 0, 0)
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normalW, ptW)
     const hitW = new THREE.Vector3()
     const ray = new THREE.Ray(origin, dir)
     if (!ray.intersectPlane(plane, hitW)) return
-    const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z])
+    const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z], comfort)
     const prev = d.pathPoints
     const last = prev[prev.length - 1]
     if (!last || vec3Distance(local, last) > 0.12) {
@@ -72,7 +75,7 @@ export function ConnectionController() {
       const from = proj.graph.nodes[d.fromNodeId]?.position
       const normalW = graphUpNormalWorld(wt)
       const ptW = from
-        ? new THREE.Vector3(...graphPointToWorld(wt, from))
+        ? new THREE.Vector3(...graphPointToWorld(wt, from, NO_XR_COMFORT))
         : new THREE.Vector3(0, 0, 0)
       plane.setFromNormalAndCoplanarPoint(normalW, ptW)
 
@@ -82,7 +85,7 @@ export function ConnectionController() {
       raycaster.setFromCamera(ndc, camera)
       const ok = raycaster.ray.intersectPlane(plane, hitW)
       if (ok === null) return
-      const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z])
+      const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z], NO_XR_COMFORT)
       const prev = st.connectionDraft?.pathPoints ?? []
       const last = prev[prev.length - 1]
       if (!last || vec3Distance(local, last) > 0.12) {

@@ -6,7 +6,7 @@ const steps = [
   'Shift-drag from a node to connect; release on another node or on empty ground for a new linked node.',
   'Drag nodes to move. Press Enter to open the inspector; add notes and files there.',
   'Toolbar: Enter VR when on HTTPS. Toggle World mode (move the graph) vs Travel mode (walk the space). Alt+arrows nudges the world on desktop.',
-  'Search with Ctrl+K or / ; Focus (F) dims unrelated nodes. Undo/redo from the toolbar.',
+  'Search with Ctrl+K or /; Focus (F) dims unrelated nodes; Home or . centers the orbit on your selection. Undo/redo: Ctrl/Cmd+Z or the toolbar.',
   'Ctrl+Shift+N creates a new blank map. Clear map clears only this canvas (confirmed). Library lists all local projects.',
 ]
 

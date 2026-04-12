@@ -6,6 +6,7 @@ import {
   graphPointToWorld,
   graphUpNormalWorld,
   worldPointToGraphLocal,
+  XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
 import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
 import { tryHandleXrMenuObject } from './xrMenuActions'
@@ -72,16 +73,17 @@ export function XrRaycastSelect() {
       const proj = st.project
       if (!draft || !proj) return
       const wt = proj.worldTransform
+      const comfort = XR_STANDING_GRAPH_OFFSET
       const from = proj.graph.nodes[draft.fromNodeId]?.position
       const normalW = graphUpNormalWorld(wt)
       const ptW = from
-        ? new THREE.Vector3(...graphPointToWorld(wt, from))
+        ? new THREE.Vector3(...graphPointToWorld(wt, from, comfort))
         : new THREE.Vector3(0, 0, 0)
       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normalW, ptW)
       const hitW = new THREE.Vector3()
       const ray = new THREE.Ray(origin, direction)
       if (ray.intersectPlane(plane, hitW)) {
-        const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z])
+        const local = worldPointToGraphLocal(wt, [hitW.x, hitW.y, hitW.z], comfort)
         st.dispatch({ type: 'finishConnection', dropPosition: local })
       } else {
         st.dispatch({ type: 'cancelConnection' })

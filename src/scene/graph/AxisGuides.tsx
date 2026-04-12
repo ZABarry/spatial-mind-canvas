@@ -10,8 +10,10 @@ import {
   graphAxisDirectionParent,
   graphLocalDeltaToParentPositionDelta,
   graphPointToWorld,
+  NO_XR_COMFORT,
   worldPointToGraphLocal,
   v3,
+  XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
 
 const GIZMO_LEN = 0.44
@@ -38,8 +40,14 @@ const _hit = new THREE.Vector3()
 const _ndc = new THREE.Vector2()
 const _raycaster = new THREE.Raycaster()
 
-function buildDragPlane(wt: WorldTransformLike, anchorGraph: Vec3, axis: 0 | 1 | 2, camera: THREE.Camera): THREE.Plane {
-  const anchorW = new THREE.Vector3(...graphPointToWorld(wt, anchorGraph))
+function buildDragPlane(
+  wt: WorldTransformLike,
+  anchorGraph: Vec3,
+  axis: 0 | 1 | 2,
+  camera: THREE.Camera,
+  comfort: Vec3,
+): THREE.Plane {
+  const anchorW = new THREE.Vector3(...graphPointToWorld(wt, anchorGraph, comfort))
   const axisW = graphAxisDirectionParent(wt, axis)
   const towardCam = new THREE.Vector3().subVectors(camera.position, anchorW)
   if (towardCam.lengthSq() < 1e-10) towardCam.set(0, 1, 0)
@@ -80,9 +88,10 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
       const proj = st.project
       if (!proj) return
       const wt = proj.worldTransform
+      const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
       const w = pointerToWorldOnPlane(clientX, clientY, camera, gl.domElement, s.plane)
       if (!w) return
-      const pNowLocal = worldPointToGraphLocal(wt, w)
+      const pNowLocal = worldPointToGraphLocal(wt, w, comfort)
       const da = pNowLocal[s.axis] - s.pStartLocal[s.axis]
 
       if (s.target.kind === 'world') {
@@ -109,7 +118,7 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
         st.dispatch({ type: 'moveNode', nodeId: s.target.nodeId, position: np })
       }
     },
-    [camera, gl.domElement],
+    [camera, gl],
   )
 
   const end = useCallback(() => {
@@ -125,17 +134,18 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
       if (!proj) return
       const wt = proj.worldTransform
       const ev = e.nativeEvent
+      const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
 
       if (target.kind === 'node') {
         const node = proj.graph.nodes[target.nodeId]
         if (!node || node.pinned) return
       }
 
-      const plane = buildDragPlane(wt, anchorGraph, axis, camera)
+      const plane = buildDragPlane(wt, anchorGraph, axis, camera, comfort)
       const w = pointerToWorldOnPlane(ev.clientX, ev.clientY, camera, gl.domElement, plane)
       if (!w) return
 
-      const pStartLocal = worldPointToGraphLocal(wt, w)
+      const pStartLocal = worldPointToGraphLocal(wt, w, comfort)
       let posStart: Vec3
       if (target.kind === 'world') {
         posStart = [wt.position[0], wt.position[1], wt.position[2]]
@@ -153,6 +163,9 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
         plane,
         pointerId: ev.pointerId,
       }
+      if (target.kind === 'node') {
+        st.dispatch({ type: 'setNodeDragActive', active: true })
+      }
       ;(e.target as HTMLElement).setPointerCapture?.(ev.pointerId)
 
       const onMove = (pe: PointerEvent) => {
@@ -165,12 +178,15 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
         gl.domElement.removeEventListener('pointerup', onUp)
         gl.domElement.removeEventListener('pointercancel', onUp)
         end()
+        if (target.kind === 'node') {
+          useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
+        }
       }
       gl.domElement.addEventListener('pointermove', onMove)
       gl.domElement.addEventListener('pointerup', onUp)
       gl.domElement.addEventListener('pointercancel', onUp)
     },
-    [anchorGraph, applyMove, camera, end, gl.domElement, target],
+    [anchorGraph, applyMove, camera, end, gl, target],
   )
 
   return onPointerDown

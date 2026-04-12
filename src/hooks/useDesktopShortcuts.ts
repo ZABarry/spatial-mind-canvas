@@ -69,6 +69,18 @@ export function useDesktopShortcuts() {
         dispatch({ type: 'focusSelection' })
         return
       }
+      if (e.key === 'Home') {
+        if (!project) return
+        e.preventDefault()
+        dispatch({ type: 'centerViewOnSelection' })
+        return
+      }
+      if (e.key === '.' && !mod) {
+        if (!project) return
+        e.preventDefault()
+        dispatch({ type: 'centerViewOnSelection' })
+        return
+      }
       if (e.altKey && project) {
         const step = 0.35
         if (e.key === 'ArrowLeft') {

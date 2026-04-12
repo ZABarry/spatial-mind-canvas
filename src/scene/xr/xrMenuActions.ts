@@ -16,7 +16,9 @@ export type XrMenuCommand =
   | 'exportJson'
   | 'exportZip'
   | 'toggleMode'
+  | 'togglePassthrough'
   | 'toggleAxis'
+  | 'toggleFloorGrid'
   | 'focus'
   | 'resetView'
   | 'undo'
@@ -64,8 +66,14 @@ function runCommand(cmd: XrMenuCommand) {
     case 'toggleMode':
       cmds.toggleTravelWorldMode()
       break
+    case 'togglePassthrough':
+      cmds.toggleCameraPassthrough()
+      break
     case 'toggleAxis':
       cmds.toggleWorldAxisControls()
+      break
+    case 'toggleFloorGrid':
+      cmds.toggleFloorGrid()
       break
     case 'focus':
       cmds.focusSelection()

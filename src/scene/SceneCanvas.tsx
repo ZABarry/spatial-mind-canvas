@@ -6,6 +6,9 @@ import { useRef } from 'react'
 import type { Group } from 'three'
 import { WhiteVoid } from './environment/WhiteVoid'
 import { CalmParticles } from './environment/CalmParticles'
+import { CenterViewEffect } from './CenterViewEffect'
+import { DESKTOP_INITIAL_CAMERA_POSITION } from './desktopCameraDefaults'
+import { ResetViewEffect } from './ResetViewEffect'
 import { WorldRoot } from './graph/WorldRoot'
 import { xrStore } from './xrStore'
 import { useRootStore } from '../store/rootStore'
@@ -24,10 +27,12 @@ import { XrHelpHud } from './xr/XrHelpHud'
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
+  const nodeDragActive = useRootStore((s) => s.nodeDragActive)
   return (
     <OrbitControls
       makeDefault
       enabled={!session}
+      enableRotate={!nodeDragActive}
       minDistance={2}
       maxDistance={160}
       enableDamping
@@ -63,7 +68,7 @@ function TravelLocomotion({ children }: { children?: ReactNode }) {
 export function SceneCanvas() {
   return (
     <Canvas
-      camera={{ position: [0, 5, 16], fov: 50 }}
+      camera={{ position: DESKTOP_INITIAL_CAMERA_POSITION, fov: 50 }}
       gl={{ antialias: true, localClippingEnabled: true }}
       dpr={[1, 2]}
     >
@@ -84,6 +89,8 @@ export function SceneCanvas() {
         <XrHelpHud />
         <XrWristMenu />
         <WorldRoot />
+        <CenterViewEffect />
+        <ResetViewEffect />
         <NotInXR>
           <OrbitIfFlat />
         </NotInXR>

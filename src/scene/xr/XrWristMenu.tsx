@@ -1,10 +1,12 @@
 import { Text } from '@react-three/drei'
+import type { ThreeEvent } from '@react-three/fiber'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { useXR } from '@react-three/xr'
 import { STRUCTURE_MENU_TOOLS } from '../../ui/structureMenuTools'
 import { useRootStore } from '../../store/rootStore'
-import type { XrMenuHit } from './xrMenuActions'
+import { tryHandleXrMenuObject, type XrMenuHit } from './xrMenuActions'
 import {
   palmFacingHeadScore,
   updatePalmMenuVisibility,
@@ -18,14 +20,19 @@ import {
 const LEFT_CONTROLLER_MENU_BUTTON_INDEX = 4
 
 const PANEL_W = 0.52
-const BTN_H = 0.044
-const GAP = 0.008
+const BTN_H = 0.022
+const GAP = 0.004
 const COLS = 2
 const CELL_W = PANEL_W / COLS
 
 type MenuDef = { label: string; hit: XrMenuHit }
 
-function buildMainMenuDefs(modeLabel: string, axisOn: boolean): MenuDef[] {
+function buildMainMenuDefs(
+  modeLabel: string,
+  passthroughLabel: string,
+  axisOn: boolean,
+  floorGridOn: boolean,
+): MenuDef[] {
   return [
     { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
     { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
@@ -36,7 +43,9 @@ function buildMainMenuDefs(modeLabel: string, axisOn: boolean): MenuDef[] {
     { label: 'Export ZIP', hit: { kind: 'cmd', cmd: 'exportZip' } },
     { label: 'Save view…', hit: { kind: 'cmd', cmd: 'saveBookmark' } },
     { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
+    { label: passthroughLabel, hit: { kind: 'cmd', cmd: 'togglePassthrough' } },
     { label: axisOn ? 'Axis on' : 'Axis off', hit: { kind: 'cmd', cmd: 'toggleAxis' } },
+    { label: floorGridOn ? 'Floor grid on' : 'Floor grid off', hit: { kind: 'cmd', cmd: 'toggleFloorGrid' } },
     { label: 'Focus', hit: { kind: 'cmd', cmd: 'focus' } },
     { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
     { label: 'Undo', hit: { kind: 'cmd', cmd: 'undo' } },
@@ -63,15 +72,20 @@ function MenuButton({
   const x = (col + 0.5) * CELL_W - PANEL_W / 2 + CELL_W / 2
   const y = rowsTop - row * (BTN_H + GAP) - BTN_H / 2
   const z = 0.002
+  const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation()
+    tryHandleXrMenuObject(e.object)
+  }
+
   return (
     <group position={[x, y, z]} userData={{ xrMenuHit: hit }}>
-      <mesh userData={{ xrMenuHit: hit }}>
+      <mesh userData={{ xrMenuHit: hit }} onPointerDown={onPointerDown}>
         <planeGeometry args={[CELL_W - GAP * 2, BTN_H]} />
         <meshBasicMaterial color="#e8eef8" side={THREE.DoubleSide} />
       </mesh>
       <Text
         position={[0, 0, 0.001]}
-        fontSize={0.022}
+        fontSize={0.011}
         color="#1c2330"
         anchorX="center"
         anchorY="middle"
@@ -93,13 +107,17 @@ export function XrWristMenu() {
 
   const mode = useRootStore((s) => s.interactionMode)
   const axisOn = useRootStore((s) => s.project?.settings.worldAxisControls === true)
+  const floorGridOn = useRootStore((s) => s.project?.settings.floorGrid !== false)
   const bookmarks = useRootStore((s) => s.project?.bookmarks ?? [])
+  const xrSessionMode = useXR((s) => s.mode)
 
   const modeLabel = mode === 'travel' ? 'World mode' : 'Travel mode'
+  const passthroughLabel =
+    xrSessionMode === 'immersive-ar' ? 'Use VR backdrop' : 'Use camera passthrough'
 
   const mainDefs = useMemo(
-    () => buildMainMenuDefs(modeLabel, axisOn === true),
-    [modeLabel, axisOn],
+    () => buildMainMenuDefs(modeLabel, passthroughLabel, axisOn === true, floorGridOn),
+    [modeLabel, passthroughLabel, axisOn, floorGridOn],
   )
 
   const mainRows = Math.ceil(mainDefs.length / COLS)
@@ -190,6 +208,7 @@ export function XrWristMenu() {
 
     g.matrixAutoUpdate = false
     g.matrix.copy(base)
+    g.updateMatrixWorld(true)
   })
 
   return (

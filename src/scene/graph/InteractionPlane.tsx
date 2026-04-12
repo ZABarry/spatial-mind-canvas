@@ -1,14 +1,16 @@
 import { useCallback } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useRootStore } from '../../store/rootStore'
-import { worldPointToGraphLocal } from '../../utils/math'
+import { NO_XR_COMFORT, worldPointToGraphLocal, XR_STANDING_GRAPH_OFFSET } from '../../utils/math'
 
 /**
  * Large invisible plane for double-click create and clearing selection on empty ground.
  */
 export function InteractionPlane() {
   const dispatch = useRootStore((s) => s.dispatch)
+  const gl = useThree((s) => s.gl)
 
   const onPointerUp = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
@@ -18,13 +20,14 @@ export function InteractionPlane() {
       if (!d || !proj) return
       e.stopPropagation()
       const p = e.point
-      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z])
+      const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
+      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z], comfort)
       dispatch({
         type: 'finishConnection',
         dropPosition: local,
       })
     },
-    [dispatch],
+    [dispatch, gl],
   )
 
   const onDoubleClick = useCallback(
@@ -33,13 +36,14 @@ export function InteractionPlane() {
       const proj = useRootStore.getState().project
       if (!proj) return
       const p = e.point
-      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z])
+      const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
+      const local = worldPointToGraphLocal(proj.worldTransform, [p.x, p.y, p.z], comfort)
       dispatch({
         type: 'createNodeAt',
         position: local,
       })
     },
-    [dispatch],
+    [dispatch, gl],
   )
 
   return (

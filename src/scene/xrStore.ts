@@ -20,4 +20,9 @@ export const xrStore = createXRStore({
   },
   /** Improves soft-keyboard behavior for Html `<input>` / `<textarea>` while immersive (browser support varies). */
   domOverlay: true,
+  /**
+   * Avoid auto `navigator.xr.offerSession` after exit (defaults to immersive-ar when supported),
+   * which races with explicit VR/MR switches and can feel like passthrough is tied to other toggles.
+   */
+  offerSession: false,
 })

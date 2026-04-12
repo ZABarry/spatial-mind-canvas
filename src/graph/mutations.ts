@@ -114,7 +114,7 @@ export function clearGraph(): GraphState {
   return { nodes: {}, edges: {} }
 }
 
-export function createNodeDefaults(position: Vec3, shape: NodeShape = 'sphere'): Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt'> {
+export function createNodeDefaults(position: Vec3, shape: NodeShape = 'diamond'): Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt'> {
   return {
     title: 'Idea',
     shortDescription: '',

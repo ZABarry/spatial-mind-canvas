@@ -44,6 +44,7 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | IndexedDB + Zod + **ZIP** bundle | [`src/persistence/`](../src/persistence/), [`zipBundle.ts`](../src/persistence/zipBundle.ts) |
 | Media store + quota on attach | [`src/media/`](../src/media/) |
 | Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |
+| Desktop camera defaults, reset / center orbit effects | [`desktopCameraDefaults.ts`](../src/scene/desktopCameraDefaults.ts), [`ResetViewEffect.tsx`](../src/scene/ResetViewEffect.tsx), [`CenterViewEffect.tsx`](../src/scene/CenterViewEffect.tsx) |
 | XR: session bridge, confirm HUD, ray select, two-hand link, wrist menu (palm / Y), world-space detail/search/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrTwoHandLink`, `XrWorldGrab`, `XrWristMenu`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
 | Label budget / settings | [`NodeMeshes.tsx`](../src/scene/graph/NodeMeshes.tsx), [`SettingsPanel.tsx`](../src/ui/SettingsPanel.tsx) |
 | Bookmarks UI | [`BookmarksMenu.tsx`](../src/ui/BookmarksMenu.tsx), toolbar |

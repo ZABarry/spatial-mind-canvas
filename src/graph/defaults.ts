@@ -6,6 +6,7 @@ import { qIdentity, v3 } from '../utils/math'
 export function defaultUserSettings(): UserSettings {
   return {
     worldAxisControls: false,
+    floorGrid: true,
     locomotionSmooth: false,
     snapTurnDegrees: 45,
     comfortVignette: false,
@@ -14,6 +15,7 @@ export function defaultUserSettings(): UserSettings {
     smoothTurnSpeed: 1.2,
     moveSpeed: 2,
     focusHopDepth: 1,
+    preferXrPassthrough: false,
   }
 }
 

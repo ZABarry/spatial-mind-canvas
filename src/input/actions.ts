@@ -31,6 +31,8 @@ export type AppAction =
   | { type: 'scaleWorld'; factor: number }
   | { type: 'resetWorld' }
   | { type: 'focusSelection' }
+  /** Pan the world so the primary selected node aligns with the orbit target (desktop) or world origin. */
+  | { type: 'centerViewOnSelection' }
   | { type: 'setFocusDim'; dim: boolean }
   | { type: 'addBookmark'; label: string }
   | { type: 'removeBookmark'; id: string }
@@ -42,6 +44,8 @@ export type AppAction =
   | { type: 'attachMedia'; nodeId: string; file: File }
   | { type: 'setSearchOpen'; open: boolean }
   | { type: 'patchSettings'; patch: Partial<UserSettings> }
+  /** Desktop: disable orbit rotation while dragging nodes so the camera does not spin. */
+  | { type: 'setNodeDragActive'; active: boolean }
 
 export type StructureToolName =
   | 'alignX'

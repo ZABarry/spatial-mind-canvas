@@ -1,13 +1,21 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from 'react'
 import { Text } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
+import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import type { GraphState, NodeEntity, Project } from '../../graph/types'
 import { shouldRenderNode } from '../../graph/selectors'
 import { NodeAxisGuides } from './AxisGuides'
 import { useNodeGeometry } from './nodeGeometry'
 import { useRootStore } from '../../store/rootStore'
-import { graphPointToWorld, graphUpNormalWorld, worldPointToGraphLocal } from '../../utils/math'
+import type { Vec3 } from '../../utils/math'
+import {
+  graphPointToWorld,
+  graphUpNormalWorld,
+  NO_XR_COMFORT,
+  worldPointToGraphLocal,
+  XR_STANDING_GRAPH_OFFSET,
+} from '../../utils/math'
 import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
 import { xrLastNodeSelectControllerIndex } from '../xr/xrSelectionRefs'
 
@@ -53,6 +61,7 @@ function NodeItem({
   selected,
   hovered,
   showLabel,
+  comfort,
 }: {
   n: NodeEntity
   graph: GraphState
@@ -61,6 +70,7 @@ function NodeItem({
   selected: boolean
   hovered: boolean
   showLabel: boolean
+  comfort: Vec3
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const camera = useThree((s) => s.camera)
@@ -89,7 +99,7 @@ function NodeItem({
       const node = proj.graph.nodes[n.id]
       if (!node) return
       const normalW = graphUpNormalWorld(wt)
-      const anchorW = new THREE.Vector3(...graphPointToWorld(wt, node.position))
+      const anchorW = new THREE.Vector3(...graphPointToWorld(wt, node.position, comfort))
       const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normalW, anchorW)
       const raycaster = new THREE.Raycaster()
       const ndc = new THREE.Vector2()
@@ -99,7 +109,7 @@ function NodeItem({
       raycaster.setFromCamera(ndc, camera)
       const hit = new THREE.Vector3()
       if (raycaster.ray.intersectPlane(plane, hit)) {
-        const local = worldPointToGraphLocal(wt, [hit.x, hit.y, hit.z])
+        const local = worldPointToGraphLocal(wt, [hit.x, hit.y, hit.z], comfort)
         st.dispatch({
           type: 'moveNode',
           nodeId: n.id,
@@ -107,7 +117,7 @@ function NodeItem({
         })
       }
     },
-    [camera, gl.domElement, n.id],
+    [camera, comfort, gl.domElement, n.id],
   )
 
   useEffect(() => {
@@ -119,6 +129,7 @@ function NodeItem({
     const el = gl.domElement
     const onUp = () => {
       setDragging(false)
+      useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
       xrDragControllerIdx.current = null
     }
     el.addEventListener('pointermove', onMove)
@@ -151,12 +162,12 @@ function NodeItem({
     const quat = new THREE.Quaternion().setFromRotationMatrix(controller.matrixWorld)
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(quat).normalize()
     const normalW = graphUpNormalWorld(wt)
-    const anchorW = new THREE.Vector3(...graphPointToWorld(wt, node.position))
+    const anchorW = new THREE.Vector3(...graphPointToWorld(wt, node.position, comfort))
     const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(normalW, anchorW)
     const hit = new THREE.Vector3()
     const ray = new THREE.Ray(origin, dir)
     if (!ray.intersectPlane(plane, hit)) return
-    const local = worldPointToGraphLocal(wt, [hit.x, hit.y, hit.z])
+    const local = worldPointToGraphLocal(wt, [hit.x, hit.y, hit.z], comfort)
     st.dispatch({ type: 'moveNode', nodeId: n.id, position: local })
   })
 
@@ -207,11 +218,15 @@ function NodeItem({
           if (gl.xr.isPresenting && e.ray) {
             xrLastNodeSelectControllerIndex.current = xrControllerIndexFromRayOrigin(gl, e.ray.origin)
           }
-          if (e.button === 0 && !n.pinned) setDragging(true)
+          if (e.button === 0 && !n.pinned) {
+            setDragging(true)
+            useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: true })
+          }
         }}
         onPointerUp={(e) => {
           e.stopPropagation()
           setDragging(false)
+          useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
           xrDragControllerIdx.current = null
           const d = useRootStore.getState().connectionDraft
           if (d) {
@@ -236,6 +251,18 @@ function NodeItem({
           opacity={opacity}
         />
       </mesh>
+      {selected && (
+        <mesh scale={1.16} geometry={geom} renderOrder={-1}>
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.28 * opacity}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
       <NodeAxisGuides n={n} />
       {showLabel && (
         <LabelBillboard>
@@ -262,6 +289,7 @@ function computeVisibleLabels(
   camera: THREE.Camera,
   sel: string[],
   hoverId: string | undefined,
+  comfort: Vec3,
 ): Set<string> {
   const wt = project.worldTransform
   const settings = project.settings
@@ -279,7 +307,7 @@ function computeVisibleLabels(
   if (hoverId) next.add(hoverId)
 
   const scored = nodes.map((n) => {
-    const w = graphPointToWorld(wt, n.position)
+    const w = graphPointToWorld(wt, n.position, comfort)
     const d = new THREE.Vector3(...w).distanceTo(camPos)
     return { id: n.id, d }
   })
@@ -298,13 +326,15 @@ export function NodeMeshes() {
   const sel = useRootStore((s) => s.selection.nodeIds)
   const hoverId = useRootStore((s) => s.hover.nodeId)
   const camera = useThree((s) => s.camera)
+  const inXr = useXR((s) => !!s.session)
+  const comfort: Vec3 = inXr ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
   const [labelVisible, setLabelVisible] = useState<Set<string>>(new Set())
   const lastKey = useRef('')
 
   useFrame(() => {
     if (!project) return
     const { selection, hover } = useRootStore.getState()
-    const next = computeVisibleLabels(project, camera, selection.nodeIds, hover.nodeId)
+    const next = computeVisibleLabels(project, camera, selection.nodeIds, hover.nodeId, comfort)
     const key = [...next].sort().join(',')
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -328,6 +358,7 @@ export function NodeMeshes() {
           selected={sel.includes(n.id)}
           hovered={hoverId === n.id}
           showLabel={labelVisible.has(n.id)}
+          comfort={comfort}
         />
       ))}
     </>

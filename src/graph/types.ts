@@ -106,6 +106,13 @@ export interface UserSettings {
   showAllLabels?: boolean
   /** Show X/Y/Z handles at world origin and on nodes; drag a handle to move along that axis only. */
   worldAxisControls?: boolean
+  /** Floor plane grid in the scene view; default on when unset. */
+  floorGrid?: boolean
+  /**
+   * When entering XR from the app toolbar, start in mixed (camera) reality if the device supports it;
+   * otherwise falls back to immersive VR. In-headset passthrough is toggled separately from travel/world mode.
+   */
+  preferXrPassthrough?: boolean
 }
 
 export interface Project {

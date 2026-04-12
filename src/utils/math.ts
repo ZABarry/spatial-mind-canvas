@@ -18,9 +18,27 @@ const _quat = new THREE.Quaternion()
 const _scale = new THREE.Vector3()
 const _normal = new THREE.Vector3()
 
+/** No extra translation (desktop / non-immersive). */
+export const NO_XR_COMFORT: Vec3 = [0, 0, 0]
+
+/**
+ * While standing in WebXR, graph data stays near y≈0 (desktop “floor” plane). The headset looks
+ * forward, so content at the origin sits outside the vertical FOV (effectively “underfoot”). This
+ * world-space offset lifts and pulls the rendered world so the map sits in front at a readable height.
+ */
+export const XR_STANDING_GRAPH_OFFSET: Vec3 = [0, 1.35, -1.75]
+
 /** Graph-local point → world (same space as `e.point` from R3F events). */
-export function graphPointToWorld(wt: WorldTransformLike, p: Vec3): Vec3 {
-  _pos.set(wt.position[0], wt.position[1], wt.position[2])
+export function graphPointToWorld(
+  wt: WorldTransformLike,
+  p: Vec3,
+  comfort: Vec3 = NO_XR_COMFORT,
+): Vec3 {
+  _pos.set(
+    wt.position[0] + comfort[0],
+    wt.position[1] + comfort[1],
+    wt.position[2] + comfort[2],
+  )
   _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
   const s = wt.scale
   _scale.set(s, s, s)
@@ -30,8 +48,16 @@ export function graphPointToWorld(wt: WorldTransformLike, p: Vec3): Vec3 {
 }
 
 /** World-space point → graph-local (under world root). */
-export function worldPointToGraphLocal(wt: WorldTransformLike, w: Vec3): Vec3 {
-  _pos.set(wt.position[0], wt.position[1], wt.position[2])
+export function worldPointToGraphLocal(
+  wt: WorldTransformLike,
+  w: Vec3,
+  comfort: Vec3 = NO_XR_COMFORT,
+): Vec3 {
+  _pos.set(
+    wt.position[0] + comfort[0],
+    wt.position[1] + comfort[1],
+    wt.position[2] + comfort[2],
+  )
   _quat.set(wt.quaternion[0], wt.quaternion[1], wt.quaternion[2], wt.quaternion[3])
   const s = wt.scale
   _scale.set(s, s, s)

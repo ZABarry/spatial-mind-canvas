@@ -21,6 +21,8 @@ export const UserSettingsSchema = z.object({
   labelBudget: z.number().optional(),
   showAllLabels: z.boolean().optional(),
   worldAxisControls: z.boolean().optional(),
+  floorGrid: z.boolean().optional(),
+  preferXrPassthrough: z.boolean().optional(),
 })
 
 export const MediaAttachmentSchema = z.object({

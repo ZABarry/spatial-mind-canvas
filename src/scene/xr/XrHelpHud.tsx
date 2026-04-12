@@ -4,8 +4,9 @@ import { useRootStore } from '../../store/rootStore'
 
 const tips = [
   'Travel vs world — Travel mode: thumbsticks move you. World mode: stay put for fine graph moves.',
+  'Reset view — Toolbar or wrist menu “Reset view” restores the default camera framing (desktop: same as leaving VR and using the flat toolbar).',
   'Scene — Trigger selects nodes; with one node selected, use the other controller trigger to start a link (like Shift-drag on desktop).',
-  'Wrist menu — Left: Y (controllers) or palm toward you (hands). Library, Settings, Search, Inspect, Help, structure tools, bookmarks.',
+  'Wrist menu — Left: Y (controllers) or palm toward you (hands). Library, Settings, passthrough vs VR backdrop, travel/world, Search, Inspect, Help, structure tools, bookmarks.',
   'Inspect — Select one node, then wrist menu Inspect (or double-click the node on desktop).',
   'Grip — In world mode, squeeze grip to move the graph; both grips + move hands to scale.',
 ]
