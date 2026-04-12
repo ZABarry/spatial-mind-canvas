@@ -255,7 +255,7 @@ function NodeItem({
         />
       </mesh>
       {selected && (
-        <mesh scale={1.16} geometry={geom} renderOrder={-1}>
+        <mesh scale={1.16} geometry={geom} renderOrder={-1} raycast={() => null}>
           <meshBasicMaterial
             color={color}
             transparent
@@ -266,7 +266,7 @@ function NodeItem({
           />
         </mesh>
       )}
-      <NodeAxisGuides n={n} />
+      {selected && <NodeAxisGuides n={n} />}
       {showLabel && (
         <LabelBillboard>
           <Text

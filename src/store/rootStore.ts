@@ -100,6 +100,8 @@ export interface RootState {
   resetViewTick: number
   /** True while a node is pointer-dragged (desktop); orbit controls disable rotation. */
   nodeDragActive: boolean
+  /** True while dragging world origin X/Y/Z handles (desktop); orbit rotation disabled. */
+  worldAxisDragActive: boolean
   historyPast: HistoryEntry[]
   historyFuture: HistoryEntry[]
   /** XR + app */
@@ -783,6 +785,9 @@ export const useRootStore = create<RootState>((set, get) => {
           searchQuery: a.open ? s.searchQuery : '',
         }))
         break
+      case 'setWorldAxisDragActive':
+        set({ worldAxisDragActive: a.active })
+        break
       case 'setNodeDragActive': {
         const sel = get().selection
         const nodeId =
@@ -880,6 +885,7 @@ export const useRootStore = create<RootState>((set, get) => {
     centerViewTick: 0,
     resetViewTick: 0,
     nodeDragActive: false,
+    worldAxisDragActive: false,
     historyPast: [],
     historyFuture: [],
     repo: null,
@@ -953,6 +959,7 @@ export const useRootStore = create<RootState>((set, get) => {
         interactionSession: { kind: 'idle' },
         nodeDragNodeId: null,
         nodeDragActive: false,
+        worldAxisDragActive: false,
         pendingNodeDrag: null,
         worldGrabBefore: null,
         connectionDraft: null,
@@ -1052,6 +1059,7 @@ export const useRootStore = create<RootState>((set, get) => {
         nodeDragNodeId: null,
         pendingNodeDrag: null,
         worldGrabBefore: null,
+        worldAxisDragActive: false,
       })
       if (repo) void repo.save(cleared)
     },

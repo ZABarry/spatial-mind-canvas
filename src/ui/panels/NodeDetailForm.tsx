@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { nextChildPosition } from '../../graph/selectors'
 import { NODE_SHAPES, type NodeEntity, type NodeShape, type Project } from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
 import { MediaAttachmentRow } from '../MediaAttachmentRow'
@@ -149,7 +150,7 @@ export function NodeDetailForm({
           onClick={() =>
             dispatch({
               type: 'createNodeAt',
-              position: [node.position[0] + 1.2, node.position[1], node.position[2]],
+              position: nextChildPosition(project.graph, node),
               parentId: id,
               connectFromId: id,
             })

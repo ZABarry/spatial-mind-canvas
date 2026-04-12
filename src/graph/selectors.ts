@@ -1,4 +1,28 @@
+import type { Vec3 } from '../utils/math'
 import type { GraphState, NodeEntity } from './types'
+
+/** Direct children only (nodes whose `parentId` is this id). */
+export function countDirectChildren(graph: GraphState, parentId: string): number {
+  let c = 0
+  for (const n of Object.values(graph.nodes)) {
+    if (n.parentId === parentId) c++
+  }
+  return c
+}
+
+const CHILD_OFFSET_X = 1.2
+const CHILD_STACK_Y = 0.85
+
+/**
+ * Placement for a new child of `parent`: to the right on X, stacked on Y when there is
+ * already at least one child so siblings do not overlap.
+ */
+export function nextChildPosition(graph: GraphState, parent: NodeEntity): Vec3 {
+  const siblingIndex = countDirectChildren(graph, parent.id)
+  const s = parent.size
+  const [px, py, pz] = parent.position
+  return [px + CHILD_OFFSET_X * s, py + siblingIndex * CHILD_STACK_Y * s, pz]
+}
 
 export function getNode(graph: GraphState, id: string): NodeEntity | undefined {
   return graph.nodes[id]

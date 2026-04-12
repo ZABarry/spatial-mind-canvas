@@ -30,7 +30,8 @@ import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
   const lockOrbitRotate = useRootStore(
-    (s) => s.nodeDragActive || s.connectionDraft != null,
+    (s) =>
+      s.nodeDragActive || s.worldAxisDragActive || s.connectionDraft != null,
   )
   return (
     <OrbitControls

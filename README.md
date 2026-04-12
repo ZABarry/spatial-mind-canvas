@@ -6,15 +6,15 @@ Quest-first, local-only 3D mind mapping in the browser: an infinite calm white s
 
 | Area | What you get |
 | --- | --- |
-| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **Link** tool or link handle (Shift+drag optional expert shortcut), node collapse/expand, graph focus (dim non-neighbors). |
+| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **Link** tool or link handle (Shift+drag optional expert shortcut), node collapse/expand, graph focus (dim non-neighbors); optional **parent/child** links with **Add child** quick placement (desktop). |
 | **Library & projects** | Create / rename / duplicate / delete projects; new blank map; import **JSON** or **ZIP**; export JSON or **ZIP** (full round-trip with media). |
 | **Persistence** | IndexedDB autosave, debounced saves, manual **Ctrl/Cmd+S** save; Zod-validated schemas; portable `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. |
 | **Media** | Attach images, PDFs, text, and generic files per node; storage **quota** checks before large writes; thumbnails for images; **PDF.js** first page in the inspector (**PdfCanvas**); markdown-style notes. |
 | **Search & navigation** | Fuse.js search palette (**Ctrl/Cmd+K** or **/**), focus selection (**F**), **center on selection** (**Home** or **.** moves the primary node to the orbit pivot), bookmarks (save/recall view + optional focus node), **Reset view** (toolbar — full camera reset), **Alt+arrows** to nudge the world. |
 | **Layout (optional)** | Toolbar **Layout** actions on **selection**: align (X/Y/Z), distribute (X/Y/Z), radial, flatten plane, normalize spacing, center cluster — **Undo** reverts; ghost preview before commit is not implemented. |
-| **World & guides** | **World mode** vs **Travel mode**; **Axis controls** toggle for graph-local X/Y/Z handles at the origin and on nodes; **WhiteVoid** environment (desktop: **SkyGradient** at the horizon + fog; headset: tuned background/fog), **CalmParticles**. |
+| **World & guides** | **World mode** vs **Travel mode**; **Axis controls** toggle for graph-local X/Y/Z handles at the origin and on nodes (`AxisGuides` — drag an axis to translate the world root or a node along that axis); **WhiteVoid** environment (desktop: **SkyGradient** at the horizon + fog; headset: tuned background/fog), **CalmParticles**. |
 | **VR / WebXR** | Enter VR; **XrControllerInputBridge** / **XrRaycastSelect** — trigger ray → select nodes, finish connections (target node or ground plane). **XrWorldGrab** — squeeze grips for world move and two-hand scale (world mode). **Hand-primary sessions** (hands only, no controllers) set `xrHandTrackingPrimary` on the store; link handles and other advanced authoring are hidden for reliability. **XrWristMenu** — **hand tracking**: show when the **left palm faces you** (hysteresis); **controllers**: toggle with the **left secondary face button** (Y on typical Quest). Global wrist actions route through **xrGlobalMenuActions** (Library, Search, Settings, Undo, Redo, view resets, Help, Exit VR, etc.). **XrNodeRadial** — Link / Inspect chips on the selected node. **XrStatusHud** — mode, selection, and hints. Dedicated world-space panels: **XrNodeDetailPanel**, **XrSearchPanel**, **XrSettingsPanel**, **XrHelpHud**; **XrTextPromptHud** for in-VR text (e.g. bookmark names). **XrConfirmHud** for destructive confirms; **XrSessionBridge**; locomotion / vignette / smooth movement in Settings. Layout, bookmarks, and ZIP/JSON export stay on the **desktop toolbar** (exit VR). |
-| **UX** | Onboarding banner, **Help** overlay (desktop + VR controls), Settings (labels, locomotion, audio, comfort), **ConfirmModal** for destructive actions on desktop. |
+| **UX** | Onboarding banner, **Help** overlay (desktop + VR controls), Settings (labels, locomotion, audio, comfort), **ConfirmModal** for destructive actions on desktop; **Node quick actions** (desktop, flat UI) on the primary selection — Rename, Add child, Link, Inspect, Delete without opening Help. |
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ Use a **HTTPS** deployment URL on Quest.
 - **Select**: click node (Ctrl/Cmd+click to add to selection).
 - **Connect**: choose **Link** in the toolbar (or **L**), use the **link handle** on a selected node, or with **Select** active use **Shift**+drag from a node (expert shortcut); release on another node or on the ground for a new connected node.
 - **Move**: drag a node (horizontal plane).
-- **Detail**: double-click a node or press **Enter** with selection; attach files and notes in the inspector.
+- **Detail**: double-click a node or press **Enter** with selection; attach files and notes in the inspector. With one node selected, use **Node quick actions** (panel) to rename, add a connected child, jump to **Link**, open **Inspect**, or delete.
 - **Search**: **Ctrl/Cmd+K** or **/** — pick a result to focus.
 - **Focus**: **F** dims non-neighbors (toggle intensity via graph focus state).
 - **Center on selection**: **Home** or **.** — moves the primary selected node to the current orbit pivot (pan the world; different from **Reset view**, which restores the default camera framing).
@@ -132,7 +132,7 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 ## Architecture (short)
 
 - `src/store/rootStore.ts` — app state, graph edits, undo stack, autosave, search index.
-- `src/graph/types.ts` — domain types (`NodeEntity`, edges, bookmarks, `APP_SCHEMA_VERSION`, etc.).
+- `src/graph/types.ts` — domain types (`NodeEntity`, edges, bookmarks, `APP_SCHEMA_VERSION`, etc.); `src/graph/defaults.ts` — blank projects and default settings; `src/graph/selectors.ts` — graph queries and **Add child** placement (`nextChildPosition`).
 - `src/input/actions.ts` — semantic action union consumed by the store.
 - `src/input/adapters/useDesktopInputBridge.ts` — desktop input coordination hook (extend for centralized pointer routing).
 - `src/input/adapters/useXrHandInputBridge.ts` — **XrHandInputStub** in the canvas sets hand-primary XR mode on the store.
@@ -141,8 +141,8 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - `src/input/sessionTypes.ts`, `src/input/sessionMachine.ts` — interaction session scaffold (link drag, node drag, world grab) derived from store state for future exclusivity guarantees.
 - `src/persistence/` — IndexedDB + Zod schemas; `zipBundle.ts` for import/export archives.
 - `src/media/` — quota helpers and image thumbnails.
-- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `LinkPreview`, `FloorGrid`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), `xrStore.ts`.
-- `src/ui/` — HTML overlays (library, toolbar, inspector, search, structure/bookmarks menus, help, modals); `toolbar/sceneToolbarCommands.ts` backs toolbar and XR menu actions.
+- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `AxisGuides`, `LinkPreview`, `FloorGrid`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), `xrStore.ts`.
+- `src/ui/` — HTML overlays (library, toolbar, inspector, search, structure/bookmarks menus, help, modals, `NodeQuickActions`); `toolbar/sceneToolbarCommands.ts` backs toolbar and XR menu actions.
 - `src/utils/xrController.ts` — controller index helpers for XR gestures.
 
 ## License

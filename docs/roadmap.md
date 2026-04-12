@@ -45,6 +45,9 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | Hand-tracking UX policy | [`handGestures.ts`](../src/input/xr/handGestures.ts) |
 | XR global menu command wiring | [`xrGlobalMenuActions.ts`](../src/scene/xr/xrGlobalMenuActions.ts) |
 | Graph domain, layout tools, schema version | [`src/graph/`](../src/graph/), [`types.ts`](../src/graph/types.ts) |
+| Blank projects & default settings; graph selectors (`nextChildPosition`, etc.) | [`defaults.ts`](../src/graph/defaults.ts), [`selectors.ts`](../src/graph/selectors.ts) |
+| World + node axis gizmos (graph-local X/Y/Z drag) | [`AxisGuides.tsx`](../src/scene/graph/AxisGuides.tsx) |
+| Desktop primary-selection quick actions | [`NodeQuickActions.tsx`](../src/ui/NodeQuickActions.tsx) |
 | IndexedDB + Zod + **ZIP** bundle | [`src/persistence/`](../src/persistence/), [`zipBundle.ts`](../src/persistence/zipBundle.ts) |
 | Media store + quota on attach | [`src/media/`](../src/media/) |
 | Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |

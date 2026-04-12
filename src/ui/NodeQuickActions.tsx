@@ -1,4 +1,5 @@
 import { useRootStore } from '../store/rootStore'
+import { nextChildPosition } from '../graph/selectors'
 import * as tb from './toolbar/sceneToolbarCommands'
 
 /**
@@ -18,7 +19,7 @@ export function NodeQuickActions() {
     const beforeIds = new Set(Object.keys(project.graph.nodes))
     dispatch({
       type: 'createNodeAt',
-      position: [node.position[0] + 1.2 * node.size, node.position[1], node.position[2]],
+      position: nextChildPosition(project.graph, node),
       parentId: primary,
       connectFromId: primary,
     })

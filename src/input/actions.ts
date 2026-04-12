@@ -55,6 +55,8 @@ export type AppAction =
   | { type: 'patchDevicePreferences'; patch: Partial<DevicePreferences> }
   /** Desktop: disable orbit rotation while dragging nodes so the camera does not spin. */
   | { type: 'setNodeDragActive'; active: boolean; nodeId?: string }
+  /** Desktop: disable orbit rotation while dragging world origin axis handles. */
+  | { type: 'setWorldAxisDragActive'; active: boolean }
 
 export type StructureToolName =
   | 'alignX'

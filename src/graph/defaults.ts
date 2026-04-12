@@ -19,7 +19,7 @@ export function defaultDevicePreferences(): DevicePreferences {
 export function defaultUserSettings(): UserSettings {
   return {
     ...defaultDevicePreferences(),
-    worldAxisControls: false,
+    worldAxisControls: true,
     floorGrid: true,
     focusHopDepth: 1,
   }
