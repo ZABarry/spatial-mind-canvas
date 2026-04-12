@@ -3,8 +3,6 @@ import type { ThreeEvent } from '@react-three/fiber'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { useXR } from '@react-three/xr'
-import { STRUCTURE_MENU_TOOLS } from '../../ui/structureMenuTools'
 import { useRootStore } from '../../store/rootStore'
 import { tryHandleXrMenuObject, type XrMenuHit } from './xrMenuActions'
 import {
@@ -20,39 +18,23 @@ import {
 const LEFT_CONTROLLER_MENU_BUTTON_INDEX = 4
 
 const PANEL_W = 0.52
-const BTN_H = 0.022
-const GAP = 0.004
+const BTN_H = 0.032
+const GAP = 0.006
 const COLS = 2
 const CELL_W = PANEL_W / COLS
 
 type MenuDef = { label: string; hit: XrMenuHit }
 
-function buildMainMenuDefs(
-  modeLabel: string,
-  passthroughLabel: string,
-  axisOn: boolean,
-  floorGridOn: boolean,
-): MenuDef[] {
+function buildMainMenuDefs(modeLabel: string): MenuDef[] {
   return [
     { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
+    { label: 'Search', hit: { kind: 'cmd', cmd: 'search' } },
     { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
-    { label: 'New map', hit: { kind: 'cmd', cmd: 'newMap' } },
-    { label: 'Duplicate', hit: { kind: 'cmd', cmd: 'duplicate' } },
-    { label: 'Clear map…', hit: { kind: 'cmd', cmd: 'clearMap' } },
-    { label: 'Export JSON', hit: { kind: 'cmd', cmd: 'exportJson' } },
-    { label: 'Export ZIP', hit: { kind: 'cmd', cmd: 'exportZip' } },
-    { label: 'Save view…', hit: { kind: 'cmd', cmd: 'saveBookmark' } },
-    { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
-    { label: passthroughLabel, hit: { kind: 'cmd', cmd: 'togglePassthrough' } },
-    { label: axisOn ? 'Axis on' : 'Axis off', hit: { kind: 'cmd', cmd: 'toggleAxis' } },
-    { label: floorGridOn ? 'Floor grid on' : 'Floor grid off', hit: { kind: 'cmd', cmd: 'toggleFloorGrid' } },
-    { label: 'Focus', hit: { kind: 'cmd', cmd: 'focus' } },
-    { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
     { label: 'Undo', hit: { kind: 'cmd', cmd: 'undo' } },
     { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
-    { label: 'Search', hit: { kind: 'cmd', cmd: 'search' } },
-    { label: 'Inspect', hit: { kind: 'cmd', cmd: 'inspect' } },
-    { label: 'Help', hit: { kind: 'cmd', cmd: 'help' } },
+    { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
+    { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
+    { label: 'Exit VR', hit: { kind: 'cmd', cmd: 'exitVr' } },
   ]
 }
 
@@ -85,7 +67,7 @@ function MenuButton({
       </mesh>
       <Text
         position={[0, 0, 0.001]}
-        fontSize={0.011}
+        fontSize={0.012}
         color="#1c2330"
         anchorX="center"
         anchorY="middle"
@@ -106,24 +88,13 @@ export function XrWristMenu() {
   const lastMenuButton = useRef(false)
 
   const mode = useRootStore((s) => s.interactionMode)
-  const axisOn = useRootStore((s) => s.project?.settings.worldAxisControls === true)
-  const floorGridOn = useRootStore((s) => s.project?.settings.floorGrid !== false)
-  const bookmarks = useRootStore((s) => s.project?.bookmarks ?? [])
-  const xrSessionMode = useXR((s) => s.mode)
 
   const modeLabel = mode === 'travel' ? 'World mode' : 'Travel mode'
-  const passthroughLabel =
-    xrSessionMode === 'immersive-ar' ? 'Use VR backdrop' : 'Use camera passthrough'
 
-  const mainDefs = useMemo(
-    () => buildMainMenuDefs(modeLabel, passthroughLabel, axisOn === true, floorGridOn),
-    [modeLabel, passthroughLabel, axisOn, floorGridOn],
-  )
+  const mainDefs = useMemo(() => buildMainMenuDefs(modeLabel), [modeLabel])
 
   const mainRows = Math.ceil(mainDefs.length / COLS)
-  const structureRows = Math.ceil(STRUCTURE_MENU_TOOLS.length / COLS)
-  const bookmarkRows = Math.ceil(Math.min(bookmarks.length, 8) / COLS)
-  const totalRows = mainRows + structureRows + bookmarkRows
+  const totalRows = mainRows
   const panelH = totalRows * (BTN_H + GAP) + GAP * 2
   const rowsTop = panelH / 2 - GAP
 
@@ -224,28 +195,6 @@ export function XrWristMenu() {
           label={def.label}
           hit={def.hit}
           row={Math.floor(i / COLS)}
-          col={i % COLS}
-          rowsTop={rowsTop}
-        />
-      ))}
-
-      {STRUCTURE_MENU_TOOLS.map((tool, i) => (
-        <MenuButton
-          key={tool.id}
-          label={tool.label}
-          hit={{ kind: 'structure', tool: tool.id }}
-          row={mainRows + Math.floor(i / COLS)}
-          col={i % COLS}
-          rowsTop={rowsTop}
-        />
-      ))}
-
-      {bookmarks.slice(0, 8).map((b, i) => (
-        <MenuButton
-          key={b.id}
-          label={b.label.length > 18 ? `${b.label.slice(0, 16)}…` : b.label}
-          hit={{ kind: 'recallBookmark', id: b.id }}
-          row={mainRows + structureRows + Math.floor(i / COLS)}
           col={i % COLS}
           rowsTop={rowsTop}
         />

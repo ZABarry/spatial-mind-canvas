@@ -1,8 +1,22 @@
 import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import type { AppAction } from '../input/actions'
-import type { Bookmark, EdgeStyle, InteractionMode, Project, SelectionState } from '../graph/types'
-import { createBlankProject, defaultWorldTransform, emptyGraph } from '../graph/defaults'
+import { deriveInteractionSession } from '../input/sessionMachine'
+import type { InteractionSession } from '../input/sessionTypes'
+import {
+  interactionModeFromNavigationMode,
+  navigationModeFromInteractionMode,
+  type NavigationMode,
+  type ToolMode,
+} from '../input/tools'
+import type { Bookmark, DevicePreferences, EdgeStyle, InteractionMode, Project, SelectionState } from '../graph/types'
+import {
+  createBlankProject,
+  defaultDevicePreferences,
+  defaultUserSettings,
+  defaultWorldTransform,
+  emptyGraph,
+} from '../graph/defaults'
 import { addEdge, addNode, createNodeDefaults, patchNode, removeEdge, removeNode } from '../graph/mutations'
 import { neighborIdsByEdges } from '../graph/selectors'
 import * as layoutTools from '../graph/layout/tools'
@@ -18,16 +32,14 @@ import { checkSpaceForBytes, warnIfStorageAlmostFull } from '../media/quota'
 import { buildImageThumbnailJpeg } from '../media/imageThumbnail'
 import { createLocalMediaStore } from '../media/localMediaStore'
 import type { MediaStore } from '../media/types'
-import { getMeta, META_LAST_PROJECT, setMeta } from '../persistence/db'
+import { getMeta, META_DEVICE_PREFS, META_LAST_PROJECT, setMeta } from '../persistence/db'
 import type { MediaAttachment } from '../graph/types'
+import {
+  appendPast,
+  buildProjectHistoryEntry,
+  type HistoryEntry,
+} from '../input/historyTransactions'
 import Fuse from 'fuse.js'
-
-const HISTORY_LIMIT = 80
-
-type HistoryEntry = {
-  undo: () => void
-  redo: () => void
-}
 
 export type AppView = 'home' | 'scene'
 
@@ -39,6 +51,19 @@ export interface RootState {
   selection: SelectionState
   hover: { nodeId?: string; edgeId?: string }
   interactionMode: InteractionMode
+  /** Split navigation (travel vs world manip) from authoring tools — see `ToolMode`. */
+  navigationMode: NavigationMode
+  toolMode: ToolMode
+  /** Derived from gestures; kept on the store for subscribers. */
+  interactionSession: InteractionSession
+  /** Node being dragged when `nodeDragActive` (for session + transactional history). */
+  nodeDragNodeId: string | null
+  /** Snapshot at pointer-down for one undo step on drag release. */
+  pendingNodeDrag: { before: Project; nodeId: string } | null
+  /** Snapshot at XR squeeze-start for one undo step when grab ends. */
+  worldGrabBefore: Project | null
+  /** Headset / locomotion — persisted in IndexedDB meta, not in map files. */
+  devicePreferences: DevicePreferences
   connectionDraft: {
     fromNodeId: string
     style: EdgeStyle
@@ -97,6 +122,46 @@ function cloneProject(p: Project): Project {
   return structuredClone(p)
 }
 
+/** Map-only settings for JSON/ZIP export (device prefs live in app metadata). */
+function mapOnlySettings(s: Project['settings']): Project['settings'] {
+  return {
+    ...defaultUserSettings(),
+    focusHopDepth: s.focusHopDepth,
+    labelBudget: s.labelBudget,
+    showAllLabels: s.showAllLabels,
+    worldAxisControls: s.worldAxisControls,
+    floorGrid: s.floorGrid,
+  }
+}
+
+function recomputeInteractionSession(get: () => RootState): InteractionSession {
+  const s = get()
+  return deriveInteractionSession({
+    connectionDraft: s.connectionDraft,
+    nodeDragActive: s.nodeDragActive,
+    nodeDragNodeId: s.nodeDragNodeId,
+    worldGrabBefore: s.worldGrabBefore,
+    projectNodePosition: (id) => s.project?.graph.nodes[id]?.position,
+  })
+}
+
+function finalizeWorldGrab(get: () => RootState, set: (partial: Partial<RootState>) => void) {
+  const beforeSnap = get().worldGrabBefore
+  const after = get().project
+  if (beforeSnap && after) {
+    const before = cloneProject(beforeSnap)
+    const afterP = cloneProject(after)
+    const entry = buildProjectHistoryEntry(before, afterP, cloneProject, (p) => set({ project: p }))
+    const st = get()
+    set({
+      worldGrabBefore: null,
+      ...appendPast(st.historyPast, entry),
+    })
+  } else {
+    set({ worldGrabBefore: null })
+  }
+}
+
 let fuse: Fuse<{ id: string; text: string }> | null = null
 
 function rebuildSearchIndex(project: Project) {
@@ -140,14 +205,8 @@ export const useRootStore = create<RootState>((set, get) => {
     draft.updatedAt = Date.now()
     const after = draft
     set({ project: after })
-    const entry: HistoryEntry = {
-      undo: () => set({ project: cloneProject(before) }),
-      redo: () => set({ project: cloneProject(after) }),
-    }
-    set((s) => ({
-      historyPast: [...s.historyPast, entry].slice(-HISTORY_LIMIT),
-      historyFuture: [],
-    }))
+    const entry = buildProjectHistoryEntry(before, after, cloneProject, (p) => set({ project: p }))
+    set((s) => appendPast(s.historyPast, entry))
   }
 
   /**
@@ -161,7 +220,8 @@ export const useRootStore = create<RootState>((set, get) => {
         a.type === 'undo' ||
         a.type === 'redo' ||
         a.type === 'setHover' ||
-        a.type === 'setSearchOpen'
+        a.type === 'setSearchOpen' ||
+        a.type === 'patchDevicePreferences'
       ) {
         /* allow */
       } else return
@@ -205,7 +265,21 @@ export const useRootStore = create<RootState>((set, get) => {
         set({ hover: { nodeId: a.nodeId, edgeId: a.edgeId } })
         break
       case 'setInteractionMode':
-        set({ interactionMode: a.mode })
+        if (a.mode === 'travel') finalizeWorldGrab(get, set)
+        set({
+          interactionMode: a.mode,
+          navigationMode: navigationModeFromInteractionMode(a.mode),
+        })
+        break
+      case 'setNavigationMode':
+        if (a.mode === 'travel') finalizeWorldGrab(get, set)
+        set({
+          navigationMode: a.mode,
+          interactionMode: interactionModeFromNavigationMode(a.mode),
+        })
+        break
+      case 'setToolMode':
+        set({ toolMode: a.mode })
         break
       case 'createNodeAt': {
         commit('createNode', (p) => {
@@ -405,6 +479,75 @@ export const useRootStore = create<RootState>((set, get) => {
         })
         break
       }
+      case 'translateWorldLive': {
+        const p = get().project
+        if (!p) break
+        set({
+          project: {
+            ...p,
+            worldTransform: {
+              ...p.worldTransform,
+              position: vec3Add(p.worldTransform.position, a.delta),
+            },
+            updatedAt: Date.now(),
+          },
+        })
+        break
+      }
+      case 'rotateWorldLive': {
+        const p = get().project
+        if (!p) break
+        const axis = a.axis
+        const len = Math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2) || 1
+        const nx = axis[0] / len
+        const ny = axis[1] / len
+        const nz = axis[2] / len
+        const half = a.radians * 0.5
+        const sin = Math.sin(half)
+        const dq: Vec4 = [nx * sin, ny * sin, nz * sin, Math.cos(half)]
+        const q0 = p.worldTransform.quaternion
+        const q1 = dq
+        const w1 = q0[3] * q1[3] - q0[0] * q1[0] - q0[1] * q1[1] - q0[2] * q1[2]
+        const x1 = q0[0] * q1[3] + q0[3] * q1[0] + q0[1] * q1[2] - q0[2] * q1[1]
+        const y1 = q0[1] * q1[3] + q0[3] * q1[1] + q0[2] * q1[0] - q0[0] * q1[2]
+        const z1 = q0[2] * q1[3] + q0[3] * q1[2] + q0[0] * q1[1] - q0[1] * q1[0]
+        set({
+          project: {
+            ...p,
+            worldTransform: {
+              ...p.worldTransform,
+              quaternion: [x1, y1, z1, w1],
+            },
+            updatedAt: Date.now(),
+          },
+        })
+        break
+      }
+      case 'scaleWorldLive': {
+        const p = get().project
+        if (!p) break
+        set({
+          project: {
+            ...p,
+            worldTransform: {
+              ...p.worldTransform,
+              scale: Math.max(0.05, Math.min(40, p.worldTransform.scale * a.factor)),
+            },
+            updatedAt: Date.now(),
+          },
+        })
+        break
+      }
+      case 'beginWorldGrab': {
+        const st = get()
+        if (!st.project || st.worldGrabBefore || st.connectionDraft) break
+        if (st.navigationMode !== 'world') break
+        set({ worldGrabBefore: cloneProject(st.project) })
+        break
+      }
+      case 'endWorldGrab':
+        finalizeWorldGrab(get, set)
+        break
       case 'resetWorld':
         commit('resetW', (p) => {
           p.worldTransform = defaultWorldTransform()
@@ -657,17 +800,63 @@ export const useRootStore = create<RootState>((set, get) => {
           searchQuery: a.open ? s.searchQuery : '',
         }))
         break
-      case 'setNodeDragActive':
-        set({ nodeDragActive: a.active })
+      case 'setNodeDragActive': {
+        const sel = get().selection
+        const nodeId =
+          a.active && a.nodeId !== undefined
+            ? a.nodeId
+            : a.active
+              ? (sel.primaryNodeId ?? sel.nodeIds[0] ?? null)
+              : null
+        const proj = get().project
+
+        if (!a.active) {
+          const pending = get().pendingNodeDrag
+          const cur = get().project
+          if (pending && cur) {
+            const before = pending.before
+            const after = cloneProject(cur)
+            const entry = buildProjectHistoryEntry(before, after, cloneProject, (p) => set({ project: p }))
+            set((s) => ({
+              nodeDragActive: false,
+              nodeDragNodeId: null,
+              pendingNodeDrag: null,
+              ...appendPast(s.historyPast, entry),
+            }))
+          } else {
+            set({
+              nodeDragActive: false,
+              nodeDragNodeId: null,
+              pendingNodeDrag: null,
+            })
+          }
+          break
+        }
+
+        const nextPending = proj && nodeId ? { before: cloneProject(proj), nodeId } : null
+        set({
+          nodeDragActive: true,
+          nodeDragNodeId: nodeId,
+          pendingNodeDrag: nextPending,
+        })
         break
+      }
       case 'patchSettings':
         commit('settings', (p) => {
           p.settings = { ...p.settings, ...a.patch }
         })
         break
+      case 'patchDevicePreferences': {
+        const next = { ...get().devicePreferences, ...a.patch }
+        set({ devicePreferences: next })
+        void setMeta(META_DEVICE_PREFS, next)
+        break
+      }
       default:
         break
     }
+
+    set({ interactionSession: recomputeInteractionSession(get) })
 
     const proj = get().project
     if (proj && shouldRebuildSearchIndex(a)) rebuildSearchIndex(proj)
@@ -681,6 +870,13 @@ export const useRootStore = create<RootState>((set, get) => {
     selection: { nodeIds: [], edgeIds: [] },
     hover: {},
     interactionMode: 'worldManip',
+    navigationMode: 'world',
+    toolMode: 'select',
+    interactionSession: { kind: 'idle' },
+    nodeDragNodeId: null,
+    pendingNodeDrag: null,
+    worldGrabBefore: null,
+    devicePreferences: defaultDevicePreferences(),
     connectionDraft: null,
     placementPreview: null,
     focusDim: false,
@@ -722,6 +918,8 @@ export const useRootStore = create<RootState>((set, get) => {
       index.sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)
       const lastId = (await getMeta(META_LAST_PROJECT)) as string | undefined
       const onboard = (await getMeta('onboardingDismissed')) as boolean | undefined
+      const rawDev = (await getMeta(META_DEVICE_PREFS)) as Partial<DevicePreferences> | undefined
+      const devicePreferences = { ...defaultDevicePreferences(), ...rawDev }
       set({
         repo,
         media,
@@ -729,6 +927,7 @@ export const useRootStore = create<RootState>((set, get) => {
         ready: true,
         onboardingDismissed: !!onboard,
         onboardingStep: 0,
+        devicePreferences,
       })
       if (lastId && ids.includes(lastId)) {
         const pr = await repo.get(lastId)
@@ -737,6 +936,7 @@ export const useRootStore = create<RootState>((set, get) => {
           await repo.save(pr)
           rebuildSearchIndex(pr)
           set({ project: pr, view: 'scene', projectIndex: index.map((x) => (x.id === pr.id ? { ...x, lastOpenedAt: pr.lastOpenedAt } : x)) })
+          set({ interactionSession: recomputeInteractionSession(get) })
         }
       }
     },
@@ -756,10 +956,22 @@ export const useRootStore = create<RootState>((set, get) => {
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: (await buildIndex(repo)),
       })
+      set({ interactionSession: recomputeInteractionSession(get) })
     },
     goHome: () => {
       void get().saveNow()
-      set({ view: 'home', project: null, textPromptDialog: null, xrHelpOpen: false })
+      set({
+        view: 'home',
+        project: null,
+        textPromptDialog: null,
+        xrHelpOpen: false,
+        interactionSession: { kind: 'idle' },
+        nodeDragNodeId: null,
+        nodeDragActive: false,
+        pendingNodeDrag: null,
+        worldGrabBefore: null,
+        connectionDraft: null,
+      })
     },
     newBlankProject: async () => {
       const repo = get().repo
@@ -793,6 +1005,7 @@ export const useRootStore = create<RootState>((set, get) => {
         project: copy,
         projectIndex: await buildIndex(repo),
       })
+      set({ interactionSession: recomputeInteractionSession(get) })
     },
     renameProject: async (id, name) => {
       const repo = get().repo
@@ -848,13 +1061,21 @@ export const useRootStore = create<RootState>((set, get) => {
         textPromptDialog: null,
         xrHelpOpen: false,
         hover: {},
+        navigationMode: 'world',
+        toolMode: 'select',
+        interactionSession: { kind: 'idle' },
+        nodeDragNodeId: null,
+        pendingNodeDrag: null,
+        worldGrabBefore: null,
       })
       if (repo) void repo.save(cleared)
     },
     exportProject: () => {
       const p = get().project
       if (!p) return
-      const blob = new Blob([JSON.stringify(p, null, 2)], { type: 'application/json' })
+      const out = cloneProject(p)
+      out.settings = mapOnlySettings(p.settings)
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -866,7 +1087,9 @@ export const useRootStore = create<RootState>((set, get) => {
       const p = get().project
       const media = get().media
       if (!p || !media) return
-      const bytes = await buildProjectZip(p, media)
+      const out = cloneProject(p)
+      out.settings = mapOnlySettings(p.settings)
+      const bytes = await buildProjectZip(out, media)
       const blob = new Blob([new Uint8Array(bytes)], { type: 'application/zip' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -913,6 +1136,7 @@ export const useRootStore = create<RootState>((set, get) => {
           view: 'scene',
           projectIndex: await buildIndex(repo),
         })
+        set({ interactionSession: recomputeInteractionSession(get) })
         return
       }
       const text = new TextDecoder().decode(buf)
@@ -932,6 +1156,7 @@ export const useRootStore = create<RootState>((set, get) => {
         view: 'scene',
         projectIndex: await buildIndex(repo),
       })
+      set({ interactionSession: recomputeInteractionSession(get) })
     },
     saveNow: async () => {
       const repo = get().repo

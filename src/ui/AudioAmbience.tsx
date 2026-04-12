@@ -3,7 +3,7 @@ import { useRootStore } from '../store/rootStore'
 
 /** Very soft ambient bed — disabled when audio off in settings. */
 export function AudioAmbience() {
-  const enabled = useRootStore((s) => s.project?.settings.audioEnabled ?? true)
+  const enabled = useRootStore((s) => s.devicePreferences.audioEnabled)
   const ctxRef = useRef<AudioContext | null>(null)
 
   useEffect(() => {

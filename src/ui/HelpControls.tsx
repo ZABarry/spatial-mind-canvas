@@ -81,11 +81,17 @@ export function HelpControls() {
                     <strong>Navigate</strong> — Drag to orbit, scroll to zoom.
                   </li>
                   <li>
-                    <strong>New node</strong> — Double-click empty ground, or <Kbd>N</Kbd> at the origin.
+                    <strong>Tools</strong> — Toolbar: <strong>Select</strong>, <strong>Create</strong>,{' '}
+                    <strong>Link</strong>, <strong>Inspect</strong>. Shortcuts: <Kbd>V</Kbd> / <Kbd>N</Kbd> / <Kbd>L</Kbd> /{' '}
+                    <Kbd>I</Kbd>.
                   </li>
                   <li>
-                    <strong>Connect</strong> — <Kbd>Shift</Kbd> + drag from a node; release on another node or empty
-                    ground.
+                    <strong>New node</strong> — Choose <strong>Create</strong>, then double-click empty ground.
+                  </li>
+                  <li>
+                    <strong>Connect</strong> — Choose <strong>Link</strong> (or the cyan link handle on a selected
+                    node), then drag; release on another node or empty ground. <Kbd>Shift</Kbd> + drag still works as a
+                    shortcut.
                   </li>
                   <li>
                     <strong>Select</strong> — Click a node or edge. <Kbd>Ctrl</Kbd>/<Kbd>⌘</Kbd> + click to add nodes;
@@ -141,21 +147,19 @@ export function HelpControls() {
                     wrist menu or when entering XR (Settings).
                   </li>
                   <li>
-                    <strong>Locomotion options</strong> — In Settings: smooth or snap turning, move speed, comfort
-                    vignette, and dominant hand (affects which controller drives movement/turning).
+                    <strong>Locomotion options</strong> — Under <strong>Device &amp; VR</strong> in Settings (stored for
+                    this browser, not inside map files): smooth or snap turning, move speed, comfort vignette, and
+                    dominant hand.
                   </li>
                   <li>
-                    <strong>Scene</strong> — Point the controller or hand ray and use the trigger (or pinch) to select
-                    nodes and edges, drag nodes, and complete connections. With <strong>one node selected</strong>, pull
-                    the <strong>other</strong> controller’s trigger to <strong>start a new link</strong> (like{' '}
-                    <Kbd>Shift</Kbd>+drag on desktop).
+                    <strong>Scene</strong> — Point the controller ray and use the trigger to select nodes and complete
+                    links. Use the <strong>node radial</strong> (Link / Inspect chips) for contextual actions.
                   </li>
                   <li>
                     <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
-                    toggle the floating panel with the <strong>secondary face button</strong> (often Y); with{' '}
-                    <strong>hand tracking</strong>, turn your palm toward you to show it. Raycast buttons for Library,
-                    Settings, export, undo/redo, travel/world mode, camera passthrough vs VR backdrop, axis toggle,
-                    focus, structure tools, bookmarks, and more.
+                    toggle the panel with the <strong>secondary face button</strong> (often Y); with{' '}
+                    <strong>hand tracking</strong>, turn your palm toward you. Global actions only: Library, Search,
+                    Settings, Undo/Redo, Reset view, Travel/World toggle, Exit VR.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — You can exit VR from <strong>View → Enter VR</strong> (or leave

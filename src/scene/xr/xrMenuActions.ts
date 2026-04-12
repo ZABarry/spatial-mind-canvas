@@ -1,106 +1,24 @@
 import * as THREE from 'three'
 import type { StructureToolName } from '../../input/actions'
-import * as cmds from '../../ui/toolbar/sceneToolbarCommands'
+import { runXrGlobalMenuCommand, type XrGlobalMenuCommand } from './xrGlobalMenuActions'
+import { runNodeStructureTool, runRecallBookmark } from './xrNodeMenuActions'
 
 /** Attached to menu hit meshes; walked upward like `nodeId`. */
 export type XrMenuHit =
-  | { kind: 'cmd'; cmd: XrMenuCommand }
+  | { kind: 'cmd'; cmd: XrGlobalMenuCommand }
   | { kind: 'structure'; tool: StructureToolName }
   | { kind: 'recallBookmark'; id: string }
-
-export type XrMenuCommand =
-  | 'library'
-  | 'newMap'
-  | 'duplicate'
-  | 'clearMap'
-  | 'exportJson'
-  | 'exportZip'
-  | 'toggleMode'
-  | 'togglePassthrough'
-  | 'toggleAxis'
-  | 'toggleFloorGrid'
-  | 'focus'
-  | 'resetView'
-  | 'undo'
-  | 'redo'
-  | 'search'
-  | 'settings'
-  | 'saveBookmark'
-  | 'inspect'
-  | 'help'
 
 export function runXrMenuHit(hit: XrMenuHit) {
   switch (hit.kind) {
     case 'cmd':
-      runCommand(hit.cmd)
+      runXrGlobalMenuCommand(hit.cmd)
       break
     case 'structure':
-      cmds.runStructureTool(hit.tool)
+      runNodeStructureTool(hit.tool)
       break
     case 'recallBookmark':
-      cmds.recallBookmark(hit.id)
-      break
-  }
-}
-
-function runCommand(cmd: XrMenuCommand) {
-  switch (cmd) {
-    case 'library':
-      cmds.goLibrary()
-      break
-    case 'newMap':
-      cmds.newBlankMap()
-      break
-    case 'duplicate':
-      cmds.duplicateMap()
-      break
-    case 'clearMap':
-      cmds.requestClearMap()
-      break
-    case 'exportJson':
-      cmds.exportJson()
-      break
-    case 'exportZip':
-      cmds.exportZip()
-      break
-    case 'toggleMode':
-      cmds.toggleTravelWorldMode()
-      break
-    case 'togglePassthrough':
-      cmds.toggleCameraPassthrough()
-      break
-    case 'toggleAxis':
-      cmds.toggleWorldAxisControls()
-      break
-    case 'toggleFloorGrid':
-      cmds.toggleFloorGrid()
-      break
-    case 'focus':
-      cmds.focusSelection()
-      break
-    case 'resetView':
-      cmds.resetView()
-      break
-    case 'undo':
-      cmds.undo()
-      break
-    case 'redo':
-      cmds.redo()
-      break
-    case 'search':
-      cmds.openSearch()
-      break
-    case 'settings':
-      cmds.openSettings()
-      break
-    case 'saveBookmark':
-      cmds.promptSaveBookmark()
-      break
-    case 'inspect':
-      cmds.openInspect()
-      break
-    case 'help':
-      cmds.openXrHelp()
+      runRecallBookmark(hit.id)
       break
   }
 }

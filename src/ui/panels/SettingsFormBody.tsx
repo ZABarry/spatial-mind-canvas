@@ -19,6 +19,7 @@ const modalStyle = (variant: Variant): CSSProperties =>
 export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant }) {
   const project = useRootStore((s) => s.project)
   const dispatch = useRootStore((s) => s.dispatch)
+  const devicePreferences = useRootStore((s) => s.devicePreferences)
 
   if (!project) return null
 
@@ -32,7 +33,6 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
     flexWrap: 'wrap',
   }
 
-  /** Checkbox + long caption: avoid `flex-wrap` moving the whole caption below the box (looks like missing text). */
   const checkboxRow: CSSProperties = {
     display: 'flex',
     alignItems: 'flex-start',
@@ -45,51 +45,15 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
     lineHeight: 1.45,
   }
 
+  const sectionTitle = (label: string) => (
+    <h3 style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 600, color: '#374151' }}>{label}</h3>
+  )
+
   return (
     <div style={modalStyle(variant)}>
       <h2 style={{ marginTop: variant === 'xr' ? 0 : undefined }}>Settings</h2>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.locomotionSmooth}
-          onChange={(e) =>
-            dispatch({ type: 'patchSettings', patch: { locomotionSmooth: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Smooth locomotion (VR)</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.comfortVignette}
-          onChange={(e) =>
-            dispatch({ type: 'patchSettings', patch: { comfortVignette: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Comfort vignette</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.preferXrPassthrough ?? false}
-          onChange={(e) =>
-            dispatch({ type: 'patchSettings', patch: { preferXrPassthrough: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Prefer camera passthrough when entering XR (if supported)</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.audioEnabled}
-          onChange={(e) => dispatch({ type: 'patchSettings', patch: { audioEnabled: e.target.checked } })}
-        />
-        <span style={checkboxLabel}>Ambient audio</span>
-      </label>
+
+      {sectionTitle('Map')}
       <label style={checkboxRow}>
         <input
           type="checkbox"
@@ -115,13 +79,95 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
           style={{ width: 64, marginLeft: 8 }}
         />
       </label>
-      <label style={{ ...row, marginBottom: 12 }}>
-        Dominant hand
-        <select
-          value={s.dominantHand}
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={s.worldAxisControls === true}
+          onChange={(e) => dispatch({ type: 'patchSettings', patch: { worldAxisControls: e.target.checked } })}
+        />
+        <span style={checkboxLabel}>World axis drag handles</span>
+      </label>
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={s.floorGrid !== false}
+          onChange={(e) => dispatch({ type: 'patchSettings', patch: { floorGrid: e.target.checked } })}
+        />
+        <span style={checkboxLabel}>Floor grid</span>
+      </label>
+      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
+        Focus hop depth{' '}
+        <input
+          type="number"
+          min={0}
+          max={4}
+          step={1}
+          value={s.focusHopDepth}
           onChange={(e) =>
             dispatch({
               type: 'patchSettings',
+              patch: { focusHopDepth: Math.max(0, Math.min(4, Number(e.target.value) || 1)) },
+            })
+          }
+          style={{ width: 48, marginLeft: 8 }}
+        />
+      </label>
+      <p style={{ fontSize: 12, color: '#6b7280' }}>Map options are stored in this project file.</p>
+
+      {sectionTitle('Device & VR')}
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={devicePreferences.locomotionSmooth}
+          onChange={(e) =>
+            dispatch({ type: 'patchDevicePreferences', patch: { locomotionSmooth: e.target.checked } })
+          }
+        />
+        <span style={checkboxLabel}>Smooth locomotion (VR)</span>
+      </label>
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={devicePreferences.comfortVignette}
+          onChange={(e) =>
+            dispatch({ type: 'patchDevicePreferences', patch: { comfortVignette: e.target.checked } })
+          }
+        />
+        <span style={checkboxLabel}>Comfort vignette</span>
+      </label>
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={devicePreferences.preferXrPassthrough ?? false}
+          onChange={(e) =>
+            dispatch({ type: 'patchDevicePreferences', patch: { preferXrPassthrough: e.target.checked } })
+          }
+        />
+        <span style={checkboxLabel}>Prefer camera passthrough when entering XR (if supported)</span>
+      </label>
+      <label style={checkboxRow}>
+        <input
+          type="checkbox"
+          style={{ flexShrink: 0, marginTop: 2 }}
+          checked={devicePreferences.audioEnabled}
+          onChange={(e) =>
+            dispatch({ type: 'patchDevicePreferences', patch: { audioEnabled: e.target.checked } })
+          }
+        />
+        <span style={checkboxLabel}>Ambient audio</span>
+      </label>
+      <label style={{ ...row, marginBottom: 12 }}>
+        Dominant hand
+        <select
+          value={devicePreferences.dominantHand}
+          onChange={(e) =>
+            dispatch({
+              type: 'patchDevicePreferences',
               patch: { dominantHand: e.target.value as 'left' | 'right' },
             })
           }
@@ -137,10 +183,10 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
           min={0.5}
           max={8}
           step={0.25}
-          value={s.moveSpeed}
+          value={devicePreferences.moveSpeed}
           onChange={(e) =>
             dispatch({
-              type: 'patchSettings',
+              type: 'patchDevicePreferences',
               patch: { moveSpeed: Math.max(0.5, Math.min(8, Number(e.target.value) || 2)) },
             })
           }
@@ -154,10 +200,10 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
           min={0.5}
           max={6}
           step={0.1}
-          value={s.smoothTurnSpeed}
+          value={devicePreferences.smoothTurnSpeed}
           onChange={(e) =>
             dispatch({
-              type: 'patchSettings',
+              type: 'patchDevicePreferences',
               patch: { smoothTurnSpeed: Math.max(0.5, Math.min(6, Number(e.target.value) || 2)) },
             })
           }
@@ -171,18 +217,22 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
           min={15}
           max={90}
           step={5}
-          value={s.snapTurnDegrees}
+          value={devicePreferences.snapTurnDegrees}
           onChange={(e) =>
             dispatch({
-              type: 'patchSettings',
+              type: 'patchDevicePreferences',
               patch: { snapTurnDegrees: Math.max(15, Math.min(90, Number(e.target.value) || 45)) },
             })
           }
           style={{ width: 64, marginLeft: 8 }}
         />
       </label>
-      <p style={{ fontSize: 13, color: '#6b7280' }}>Saved with this map.</p>
-      <div className={variant === 'desktop' ? 'modal-actions' : undefined} style={variant === 'xr' ? { marginTop: 12, display: 'flex', justifyContent: 'flex-end' } : undefined}>
+      <p style={{ fontSize: 12, color: '#6b7280' }}>Device preferences apply to this browser only and are not embedded in map exports.</p>
+
+      <div
+        className={variant === 'desktop' ? 'modal-actions' : undefined}
+        style={variant === 'xr' ? { marginTop: 12, display: 'flex', justifyContent: 'flex-end' } : undefined}
+      >
         <button
           type="button"
           onClick={() => useRootStore.setState({ settingsOpen: false })}

@@ -32,7 +32,7 @@ export function XrWorldGrab() {
     'squeezestart',
     (e: XRInputSourceEvent) => {
       const st = useRootStore.getState()
-      if (st.connectionDraft || st.interactionMode !== 'worldManip') return
+      if (st.connectionDraft || st.navigationMode !== 'world') return
       const frame = e.frame
       const refSpace = gl.xr.getReferenceSpace()
       const grip = e.inputSource.gripSpace
@@ -40,7 +40,9 @@ export function XrWorldGrab() {
       const pose = frame.getPose(grip, refSpace)
       if (!pose) return
       const p = pose.transform.position
+      const wasEmpty = lastPos.current.size === 0
       lastPos.current.set(e.inputSource, new THREE.Vector3(p.x, p.y, p.z))
+      if (wasEmpty) st.dispatch({ type: 'beginWorldGrab' })
       if (lastPos.current.size < 2) lastPairDist.current = null
     },
     [gl],
@@ -50,15 +52,17 @@ export function XrWorldGrab() {
     'all',
     'squeezeend',
     (e: XRInputSourceEvent) => {
+      const st = useRootStore.getState()
       lastPos.current.delete(e.inputSource)
       if (lastPos.current.size < 2) lastPairDist.current = null
+      if (lastPos.current.size === 0) st.dispatch({ type: 'endWorldGrab' })
     },
     [],
   )
 
   useFrame(() => {
     const st = useRootStore.getState()
-    if (!gl.xr.isPresenting || st.interactionMode !== 'worldManip' || st.connectionDraft) return
+    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || st.connectionDraft) return
     const frame = gl.xr.getFrame()
     const refSpace = gl.xr.getReferenceSpace()
     if (!frame || !refSpace) return
@@ -89,7 +93,7 @@ export function XrWorldGrab() {
         let ratio = lastPairDist.current / dist
         ratio = Math.max(SCALE_CLAMP.min, Math.min(SCALE_CLAMP.max, ratio))
         if (Math.abs(ratio - 1) > 0.002) {
-          st.dispatch({ type: 'scaleWorld', factor: ratio })
+          st.dispatch({ type: 'scaleWorldLive', factor: ratio })
         }
       }
       lastPairDist.current = dist
@@ -110,7 +114,7 @@ export function XrWorldGrab() {
             const twist =
               (da.current.dot(forward.current) - db.current.dot(forward.current)) * ROT_TWIST_SENS
             if (Math.abs(twist) > 0.001) {
-              st.dispatch({ type: 'rotateWorld', axis: [0, 1, 0], radians: twist })
+              st.dispatch({ type: 'rotateWorldLive', axis: [0, 1, 0], radians: twist })
             }
           }
         }
@@ -127,7 +131,7 @@ export function XrWorldGrab() {
       if (!old) return
       const d = new THREE.Vector3().subVectors(newP, old)
       st.dispatch({
-        type: 'translateWorld',
+        type: 'translateWorldLive',
         delta: [d.x * TRANSLATE_SENS, d.y * TRANSLATE_SENS, d.z * TRANSLATE_SENS],
       })
       lastPos.current.set(src, newP.clone())

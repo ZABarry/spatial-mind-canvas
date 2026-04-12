@@ -9,6 +9,8 @@ export function MainToolbar() {
   const [openMenu, setOpenMenu] = useState<ToolbarMenuId | null>(null)
   const xrSession = useRootStore((s) => s.xrSessionActive)
   const mode = useRootStore((s) => s.interactionMode)
+  const navMode = useRootStore((s) => s.navigationMode)
+  const toolMode = useRootStore((s) => s.toolMode)
   const project = useRootStore((s) => s.project)
   const worldAxisControls = project?.settings.worldAxisControls === true
   const floorGridOn = project?.settings.floorGrid !== false
@@ -26,6 +28,56 @@ export function MainToolbar() {
       >
         Library
       </button>
+
+      <div className="toolbar-tools" aria-label="Authoring tools">
+        <span className="toolbar-tools-label">Tools</span>
+        <button
+          type="button"
+          className={toolMode === 'select' ? 'toggle-on' : undefined}
+          onClick={() => tb.setToolMode('select')}
+        >
+          Select
+        </button>
+        <button
+          type="button"
+          className={toolMode === 'create' ? 'toggle-on' : undefined}
+          onClick={() => tb.setToolMode('create')}
+        >
+          Create
+        </button>
+        <button
+          type="button"
+          className={toolMode === 'link' ? 'toggle-on' : undefined}
+          onClick={() => tb.setToolMode('link')}
+        >
+          Link
+        </button>
+        <button
+          type="button"
+          className={toolMode === 'inspect' ? 'toggle-on' : undefined}
+          onClick={() => tb.setToolMode('inspect')}
+        >
+          Inspect
+        </button>
+      </div>
+
+      <div className="toolbar-tools" aria-label="Navigation mode">
+        <span className="toolbar-tools-label">Nav</span>
+        <button
+          type="button"
+          className={navMode === 'world' ? 'toggle-on' : undefined}
+          onClick={() => tb.setNavigationMode('world')}
+        >
+          World
+        </button>
+        <button
+          type="button"
+          className={navMode === 'travel' ? 'toggle-on' : undefined}
+          onClick={() => tb.setNavigationMode('travel')}
+        >
+          Travel
+        </button>
+      </div>
 
       <ToolbarMenu menuId="map" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Map">
         <button type="button" onClick={() => void tb.newBlankMap()}>
@@ -52,7 +104,7 @@ export function MainToolbar() {
           Enter VR
         </button>
         <button type="button" onClick={() => tb.toggleTravelWorldMode()}>
-          {mode === 'travel' ? 'Switch to world mode' : 'Switch to travel mode'}
+          {mode === 'travel' ? 'Toggle: switch to world' : 'Toggle: switch to travel'}
         </button>
         <button
           type="button"

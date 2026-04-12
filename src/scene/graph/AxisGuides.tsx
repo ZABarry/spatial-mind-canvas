@@ -164,7 +164,7 @@ function useAxisPointerDrag(anchorGraph: Vec3, target: DragTarget) {
         pointerId: ev.pointerId,
       }
       if (target.kind === 'node') {
-        st.dispatch({ type: 'setNodeDragActive', active: true })
+        st.dispatch({ type: 'setNodeDragActive', active: true, nodeId: target.nodeId })
       }
       ;(e.target as HTMLElement).setPointerCapture?.(ev.pointerId)
 

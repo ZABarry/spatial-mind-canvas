@@ -153,7 +153,7 @@ function NodeItem({
     const idx =
       xrDragControllerIdx.current ??
       (() => {
-        const dominant = proj.settings.dominantHand
+        const dominant = useRootStore.getState().devicePreferences.dominantHand
         return dominant === 'left' ? 1 : 0
       })()
     const controller = gl.xr.getController(idx)
@@ -197,7 +197,8 @@ function NodeItem({
           } else {
             xrDragControllerIdx.current = null
           }
-          if (e.shiftKey) {
+          const toolMode = useRootStore.getState().toolMode
+          if (toolMode === 'link' || e.shiftKey) {
             useRootStore.getState().dispatch({
               type: 'startConnection',
               fromNodeId: n.id,
@@ -220,7 +221,7 @@ function NodeItem({
           }
           if (e.button === 0 && !n.pinned) {
             setDragging(true)
-            useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: true })
+            useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: true, nodeId: n.id })
           }
         }}
         onPointerUp={(e) => {

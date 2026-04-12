@@ -41,6 +41,7 @@ export function getDb(): Promise<IDBPDatabase<SpatialMindDB>> {
 
 export const META_LAST_PROJECT = 'lastProjectId'
 export const META_ONBOARDING = 'onboardingDone'
+export const META_DEVICE_PREFS = 'devicePreferences'
 
 export async function getMeta(key: string): Promise<unknown> {
   const db = await getDb()

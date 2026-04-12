@@ -12,11 +12,10 @@ import {
 } from '../../utils/math'
 
 /**
- * Samples midpoints for expressive edges while shift-dragging a connection from a node.
- * Points are stored in graph-local space (same frame as node positions).
- * Finish the connection via node pointerUp (target) or InteractionPlane pointerUp (drop).
+ * Renders nothing; samples link path points into `connectionDraft` while a link session is active.
+ * Gesture ownership lives in the input/session layer — this component only follows store draft state.
  */
-export function ConnectionController() {
+export function LinkPreview() {
   const draft = useRootStore((s) => s.connectionDraft)
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
@@ -33,7 +32,7 @@ export function ConnectionController() {
     const idx =
       d.xrControllerIndex ??
       (() => {
-        const dominant = proj.settings.dominantHand
+        const dominant = useRootStore.getState().devicePreferences.dominantHand
         return dominant === 'left' ? 1 : 0
       })()
     const controller = gl.xr.getController(idx)

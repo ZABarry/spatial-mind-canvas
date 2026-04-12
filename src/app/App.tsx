@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useRootStore } from '../store/rootStore'
 import { useDesktopShortcuts } from '../hooks/useDesktopShortcuts'
+import { useDesktopInputBridge } from '../input/adapters/useDesktopInputBridge'
 import { SceneCanvas } from '../scene/SceneCanvas'
 import { ProjectHome } from '../ui/ProjectHome'
 import { MainToolbar } from '../ui/MainToolbar'
@@ -23,6 +24,7 @@ export function App() {
   }, [bootstrap])
 
   useDesktopShortcuts()
+  useDesktopInputBridge()
 
   if (!ready) {
     return (

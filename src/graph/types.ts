@@ -24,7 +24,8 @@ export const NODE_SHAPES = [
 
 export type EdgeStyle = 'straight' | 'spline'
 
-export type InteractionMode = 'worldManip' | 'travel' | 'nodeDetail'
+/** Legacy combined mode; prefer `NavigationMode` + `ToolMode` in new input code. */
+export type InteractionMode = 'worldManip' | 'travel'
 
 export interface MediaAttachment {
   id: string
@@ -89,6 +90,21 @@ export interface WorldTransform {
   quaternion: Vec4
   /** Uniform scale of the entire graph */
   scale: number
+}
+
+/**
+ * Headset / input preferences — stored in app metadata, not in map JSON, so switching maps does not
+ * change locomotion or comfort. (Legacy `UserSettings` may still contain these until migrated.)
+ */
+export interface DevicePreferences {
+  locomotionSmooth: boolean
+  snapTurnDegrees: number
+  comfortVignette: boolean
+  audioEnabled: boolean
+  dominantHand: 'left' | 'right'
+  smoothTurnSpeed: number
+  moveSpeed: number
+  preferXrPassthrough?: boolean
 }
 
 export interface UserSettings {

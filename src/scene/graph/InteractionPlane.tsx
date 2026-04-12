@@ -51,6 +51,7 @@ export function InteractionPlane() {
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, -0.02, 0]}
+        userData={{ hitKind: 'ground' }}
         onPointerUp={onPointerUp}
         onDoubleClick={onDoubleClick}
       >

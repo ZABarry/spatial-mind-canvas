@@ -1,12 +1,10 @@
 import { nanoid } from 'nanoid'
-import type { GraphState, Project, UserSettings, WorldTransform } from './types'
+import type { DevicePreferences, GraphState, Project, UserSettings, WorldTransform } from './types'
 import { APP_SCHEMA_VERSION } from './types'
 import { qIdentity, v3 } from '../utils/math'
 
-export function defaultUserSettings(): UserSettings {
+export function defaultDevicePreferences(): DevicePreferences {
   return {
-    worldAxisControls: false,
-    floorGrid: true,
     locomotionSmooth: false,
     snapTurnDegrees: 45,
     comfortVignette: false,
@@ -14,8 +12,16 @@ export function defaultUserSettings(): UserSettings {
     dominantHand: 'right',
     smoothTurnSpeed: 1.2,
     moveSpeed: 2,
-    focusHopDepth: 1,
     preferXrPassthrough: false,
+  }
+}
+
+export function defaultUserSettings(): UserSettings {
+  return {
+    ...defaultDevicePreferences(),
+    worldAxisControls: false,
+    floorGrid: true,
+    focusHopDepth: 1,
   }
 }
 

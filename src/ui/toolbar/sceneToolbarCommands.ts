@@ -1,6 +1,7 @@
 import { xrStore } from '../../scene/xrStore'
 import { useRootStore } from '../../store/rootStore'
 import type { StructureToolName } from '../../input/actions'
+import type { NavigationMode, ToolMode } from '../../input/tools'
 
 export function goLibrary() {
   useRootStore.getState().goHome()
@@ -34,7 +35,8 @@ export function exportZip() {
 }
 
 export function enterVr() {
-  const preferPt = useRootStore.getState().project?.settings.preferXrPassthrough === true
+  const st = useRootStore.getState()
+  const preferPt = st.devicePreferences.preferXrPassthrough === true
   void (async () => {
     if (preferPt && (await navigator.xr?.isSessionSupported('immersive-ar'))) {
       await xrStore.enterAR()
@@ -80,6 +82,14 @@ export function toggleTravelWorldMode() {
   const st = useRootStore.getState()
   const mode = st.interactionMode
   st.dispatch({ type: 'setInteractionMode', mode: mode === 'travel' ? 'worldManip' : 'travel' })
+}
+
+export function setToolMode(mode: ToolMode) {
+  useRootStore.getState().dispatch({ type: 'setToolMode', mode })
+}
+
+export function setNavigationMode(mode: NavigationMode) {
+  useRootStore.getState().dispatch({ type: 'setNavigationMode', mode })
 }
 
 export function toggleWorldAxisControls() {

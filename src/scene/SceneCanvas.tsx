@@ -15,8 +15,7 @@ import { useRootStore } from '../store/rootStore'
 import { useXRControllerLocomotion } from '@react-three/xr'
 import { XrSessionBridge } from './xr/XrSessionBridge'
 import { XrConfirmHud } from './xr/XrConfirmHud'
-import { XrRaycastSelect } from './xr/XrRaycastSelect'
-import { XrTwoHandLink } from './xr/XrTwoHandLink'
+import { XrControllerInputBridge } from '../input/adapters/useXrControllerInputBridge'
 import { XrWorldGrab } from './xr/XrWorldGrab'
 import { XrWristMenu } from './xr/XrWristMenu'
 import { XrNodeDetailPanel } from './xr/XrNodeDetailPanel'
@@ -24,6 +23,9 @@ import { XrSearchPanel } from './xr/XrSearchPanel'
 import { XrSettingsPanel } from './xr/XrSettingsPanel'
 import { XrTextPromptHud } from './xr/XrTextPromptHud'
 import { XrHelpHud } from './xr/XrHelpHud'
+import { XrNodeRadial } from './xr/XrNodeRadial'
+import { XrToolHud } from './xr/XrToolHud'
+import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
@@ -42,22 +44,22 @@ function OrbitIfFlat() {
 }
 
 function TravelLocomotion({ children }: { children?: ReactNode }) {
-  const mode = useRootStore((s) => s.interactionMode)
-  const settings = useRootStore((s) => s.project?.settings)
+  const nav = useRootStore((s) => s.navigationMode)
+  const dev = useRootStore((s) => s.devicePreferences)
   const ref = useRef<Group>(null)
-  const hand = settings?.dominantHand === 'left' ? 'right' : 'left'
+  const hand = dev.dominantHand === 'left' ? 'right' : 'left'
 
   useXRControllerLocomotion(
     ref,
-    mode === 'travel'
+    nav === 'travel'
       ? {
-          speed: settings?.moveSpeed ?? 2,
+          speed: dev.moveSpeed,
         }
       : false,
-    mode === 'travel'
-      ? settings?.locomotionSmooth
-        ? { type: 'smooth', speed: settings.smoothTurnSpeed }
-        : { type: 'snap', degrees: settings?.snapTurnDegrees ?? 45 }
+    nav === 'travel'
+      ? dev.locomotionSmooth
+        ? { type: 'smooth', speed: dev.smoothTurnSpeed }
+        : { type: 'snap', degrees: dev.snapTurnDegrees }
       : false,
     hand,
   )
@@ -81,8 +83,10 @@ export function SceneCanvas() {
           <XrSearchPanel />
           <XrSettingsPanel />
         </TravelLocomotion>
-        <XrRaycastSelect />
-        <XrTwoHandLink />
+        <XrControllerInputBridge />
+        <XrHandInputStub />
+        <XrNodeRadial />
+        <XrToolHud />
         <XrWorldGrab />
         <XrConfirmHud />
         <XrTextPromptHud />
