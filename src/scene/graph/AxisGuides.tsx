@@ -7,17 +7,17 @@ import type { NodeEntity } from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
 import type { Vec3, WorldTransformLike } from '../../utils/math'
 import {
-  graphAxisDirectionParent,
   graphLocalDeltaToParentPositionDelta,
   graphPointToWorld,
   NO_XR_COMFORT,
-  worldPointToGraphLocal,
   v3,
   XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
 
 const GIZMO_LEN = 0.44
 const GIZMO_RADIUS = 0.034
+/** Wider invisible collider so picking the axis is reliable. */
+const GIZMO_HIT_RADIUS = GIZMO_RADIUS * 2.8
 const EMISSIVE_IDLE = 0.25
 const EMISSIVE_HOVER = 0.55
 const EMISSIVE_DRAG = 0.75
@@ -32,99 +32,63 @@ type DragTarget = { kind: 'world' } | { kind: 'node'; nodeId: string }
 type DragSession = {
   axis: 0 | 1 | 2
   target: DragTarget
-  /** Snapshot at drag start */
+  /** Snapshot at drag start (parent-space world root position for world handles; graph node position for nodes). */
   posStart: Vec3
-  /** Ray/axis solve: graph units along axis from `posStart` at pointer-down (see `solveRayAxisGraphDelta`). */
-  deltaStart: number
   pointerId: number
+  startClientX: number
+  startClientY: number
 }
 
-const _hit = new THREE.Vector3()
-const _ndc = new THREE.Vector2()
-const _raycaster = new THREE.Raycaster()
-const _lo = new THREE.Vector3()
-const _ld = new THREE.Vector3()
-const _w = new THREE.Vector3()
+const _vProj0 = new THREE.Vector3()
+const _vProj1 = new THREE.Vector3()
+
+const MIN_PX_PER_GRAPH_UNIT = 14
 
 /**
- * Closest-point parameter `t` on world line `graphPointToWorld(posStart)+t*ld` to camera ray,
- * where `ld` is world displacement per 1 graph unit along `axis`. `t` is added to posStart[axis].
+ * Screen-space basis for 1D drag along a graph axis: project anchor and anchor+axisStep,
+ * measure pixel delta per graph unit and the axis direction on the canvas.
  */
-function solveRayAxisGraphDelta(
-  clientX: number,
-  clientY: number,
-  camera: THREE.Camera,
-  dom: HTMLElement,
+function computeAxisScreenDragBasis(
   wt: WorldTransformLike,
   comfort: Vec3,
-  posStart: Vec3,
-  axis: 0 | 1 | 2,
-): number | null {
-  const rect = dom.getBoundingClientRect()
-  _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1
-  _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1
-  _raycaster.setFromCamera(_ndc, camera)
-  const ro = _raycaster.ray.origin
-  const rd = _raycaster.ray.direction
-
-  const e = axis === 0 ? v3(1, 0, 0) : axis === 1 ? v3(0, 1, 0) : v3(0, 0, 1)
-  const ldArr = graphLocalDeltaToParentPositionDelta(wt, e)
-  _ld.set(ldArr[0], ldArr[1], ldArr[2])
-
-  const loArr = graphPointToWorld(wt, posStart, comfort)
-  _lo.set(loArr[0], loArr[1], loArr[2])
-
-  _w.subVectors(ro, _lo)
-  const uu = _ld.dot(_ld)
-  const uv = _ld.dot(rd)
-  const vv = 1
-  const uw = _ld.dot(_w)
-  const vw = rd.dot(_w)
-
-  const det = uu * vv - uv * uv
-  if (Math.abs(det) < 1e-22) return null
-
-  return (uw * vv - uv * vw) / det
-}
-
-function buildDragPlane(
-  wt: WorldTransformLike,
   anchorGraph: Vec3,
   axis: 0 | 1 | 2,
   camera: THREE.Camera,
-  comfort: Vec3,
-): THREE.Plane {
-  const anchorW = new THREE.Vector3(...graphPointToWorld(wt, anchorGraph, comfort))
-  const axisW = graphAxisDirectionParent(wt, axis)
-  const towardCam = new THREE.Vector3().subVectors(camera.position, anchorW)
-  if (towardCam.lengthSq() < 1e-10) towardCam.set(0, 1, 0)
-  else towardCam.normalize()
-  let n = new THREE.Vector3().crossVectors(axisW, towardCam)
-  if (n.lengthSq() < 1e-8) {
-    n = new THREE.Vector3().crossVectors(axisW, new THREE.Vector3(0, 1, 0))
+  dom: HTMLElement,
+): { screenDirX: number; screenDirY: number; pixelsPerGraphUnit: number } {
+  const w0 = graphPointToWorld(wt, anchorGraph, comfort)
+  const e = axis === 0 ? v3(1, 0, 0) : axis === 1 ? v3(0, 1, 0) : v3(0, 0, 1)
+  const dWorld = graphLocalDeltaToParentPositionDelta(wt, e)
+  const w1: Vec3 = [w0[0] + dWorld[0], w0[1] + dWorld[1], w0[2] + dWorld[2]]
+
+  _vProj0.set(w0[0], w0[1], w0[2]).project(camera)
+  _vProj1.set(w1[0], w1[1], w1[2]).project(camera)
+
+  const rect = dom.getBoundingClientRect()
+  const sx = (_vProj1.x - _vProj0.x) * 0.5 * rect.width
+  const sy = -(_vProj1.y - _vProj0.y) * 0.5 * rect.height
+  const len = Math.hypot(sx, sy)
+
+  if (len < 4) {
+    return { screenDirX: 1, screenDirY: 0, pixelsPerGraphUnit: MIN_PX_PER_GRAPH_UNIT }
   }
-  n.normalize()
-  return new THREE.Plane().setFromNormalAndCoplanarPoint(n, anchorW)
+
+  return {
+    screenDirX: sx / len,
+    screenDirY: sy / len,
+    pixelsPerGraphUnit: Math.max(len, MIN_PX_PER_GRAPH_UNIT),
+  }
 }
 
-function pointerToWorldOnPlane(
-  clientX: number,
-  clientY: number,
-  camera: THREE.Camera,
-  dom: HTMLElement,
-  plane: THREE.Plane,
-): Vec3 | null {
-  const rect = dom.getBoundingClientRect()
-  _ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1
-  _ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1
-  _raycaster.setFromCamera(_ndc, camera)
-  if (!_raycaster.ray.intersectPlane(plane, _hit)) return null
-  return [_hit.x, _hit.y, _hit.z]
+function syncOrbitEnableFromStore(controls: { enableRotate?: boolean } | null) {
+  if (!controls || typeof controls.enableRotate !== 'boolean') return
+  const st = useRootStore.getState()
+  controls.enableRotate = !(
+    st.nodeDragActive || st.worldAxisDragActive || st.connectionDraft != null
+  )
 }
 
 function useAxisPointerDrag(
-  /** Graph-space point at the gizmo center (world origin for world handles; the node’s position for node handles). */
-  dragAnchorGraph: Vec3,
   target: DragTarget,
   opts?: {
     onDragStart?: (axis: 0 | 1 | 2) => void
@@ -133,6 +97,7 @@ function useAxisPointerDrag(
 ) {
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
+  const controls = useThree((s) => s.controls) as { enableRotate?: boolean } | null
   const sessionRef = useRef<DragSession | null>(null)
 
   const applyMove = useCallback(
@@ -144,10 +109,20 @@ function useAxisPointerDrag(
       if (!proj) return
       const wt = proj.worldTransform
       const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
-      const w = pointerToWorldOnPlane(clientX, clientY, camera, gl.domElement, s.plane)
-      if (!w) return
-      const pNowLocal = worldPointToGraphLocal(wt, w, comfort)
-      const da = pNowLocal[s.axis] - s.pStartLocal[s.axis]
+
+      let anchorGraph: Vec3
+      if (s.target.kind === 'world') {
+        anchorGraph = v3(0, 0, 0)
+      } else {
+        const n = proj.graph.nodes[s.target.nodeId]
+        if (!n || n.pinned) return
+        anchorGraph = [n.position[0], n.position[1], n.position[2]]
+      }
+
+      const basis = computeAxisScreenDragBasis(wt, comfort, anchorGraph, s.axis, camera, gl.domElement)
+      const along =
+        (clientX - s.startClientX) * basis.screenDirX + (clientY - s.startClientY) * basis.screenDirY
+      const da = along / basis.pixelsPerGraphUnit
 
       if (s.target.kind === 'world') {
         const ld =
@@ -161,7 +136,7 @@ function useAxisPointerDrag(
         st.dispatch({ type: 'setWorldPosition', position: newPos })
       } else {
         const node = proj.graph.nodes[s.target.nodeId]
-        if (!node || node.pinned) return
+        if (!node) return
         const ax = s.axis
         const v = s.posStart[ax] + da
         const np =
@@ -183,24 +158,20 @@ function useAxisPointerDrag(
   const onPointerDown = useCallback(
     (axis: 0 | 1 | 2, e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation()
+      const ev = e.nativeEvent
+      ev.preventDefault()
+
       const st = useRootStore.getState()
       if (st.connectionDraft) return
       const proj = st.project
       if (!proj) return
       const wt = proj.worldTransform
-      const ev = e.nativeEvent
-      const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT
 
       if (target.kind === 'node') {
         const node = proj.graph.nodes[target.nodeId]
         if (!node || node.pinned) return
       }
 
-      const plane = buildDragPlane(wt, dragAnchorGraph, axis, camera, comfort)
-      const w = pointerToWorldOnPlane(ev.clientX, ev.clientY, camera, gl.domElement, plane)
-      if (!w) return
-
-      const pStartLocal = worldPointToGraphLocal(wt, w, comfort)
       let posStart: Vec3
       if (target.kind === 'world') {
         posStart = [wt.position[0], wt.position[1], wt.position[2]]
@@ -214,15 +185,17 @@ function useAxisPointerDrag(
         axis,
         target,
         posStart,
-        pStartLocal,
-        plane,
         pointerId: ev.pointerId,
+        startClientX: ev.clientX,
+        startClientY: ev.clientY,
       }
+
       if (target.kind === 'node') {
         st.dispatch({ type: 'setNodeDragActive', active: true, nodeId: target.nodeId })
       } else {
         st.dispatch({ type: 'setWorldAxisDragActive', active: true })
       }
+      syncOrbitEnableFromStore(controls)
       opts?.onDragStart?.(axis)
       gl.domElement.setPointerCapture?.(ev.pointerId)
 
@@ -235,22 +208,23 @@ function useAxisPointerDrag(
         if (gl.domElement.hasPointerCapture?.(pe.pointerId)) {
           gl.domElement.releasePointerCapture(pe.pointerId)
         }
-        gl.domElement.removeEventListener('pointermove', onMove)
-        gl.domElement.removeEventListener('pointerup', onUp)
-        gl.domElement.removeEventListener('pointercancel', onUp)
+        gl.domElement.removeEventListener('pointermove', onMove, { capture: true })
+        gl.domElement.removeEventListener('pointerup', onUp, { capture: true })
+        gl.domElement.removeEventListener('pointercancel', onUp, { capture: true })
         end()
         if (target.kind === 'node') {
           useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
         } else {
           useRootStore.getState().dispatch({ type: 'setWorldAxisDragActive', active: false })
         }
+        syncOrbitEnableFromStore(controls)
         opts?.onDragEnd?.()
       }
-      gl.domElement.addEventListener('pointermove', onMove)
-      gl.domElement.addEventListener('pointerup', onUp)
-      gl.domElement.addEventListener('pointercancel', onUp)
+      gl.domElement.addEventListener('pointermove', onMove, { capture: true })
+      gl.domElement.addEventListener('pointerup', onUp, { capture: true })
+      gl.domElement.addEventListener('pointercancel', onUp, { capture: true })
     },
-    [applyMove, camera, dragAnchorGraph, end, gl, opts, target],
+    [applyMove, controls, end, gl, opts, target],
   )
 
   return onPointerDown
@@ -259,12 +233,9 @@ function useAxisPointerDrag(
 function AxisTriplet({
   /** Parent-local offset for the gizmo mesh (node handles sit at the node’s origin). */
   groupPosition,
-  /** Graph-space anchor for drag planes and ray math. */
-  dragAnchorGraph,
   target,
 }: {
   groupPosition: Vec3
-  dragAnchorGraph: Vec3
   target: DragTarget
 }) {
   const gl = useThree((s) => s.gl)
@@ -296,7 +267,7 @@ function AxisTriplet({
     [],
   )
 
-  const onPointerDown = useAxisPointerDrag(dragAnchorGraph, target, dragOpts)
+  const onPointerDown = useAxisPointerDrag(target, dragOpts)
 
   return (
     <group position={groupPosition}>
@@ -319,6 +290,10 @@ function AxisTriplet({
               }}
               onDoubleClick={(e) => e.stopPropagation()}
             >
+              <cylinderGeometry args={[GIZMO_HIT_RADIUS, GIZMO_HIT_RADIUS, GIZMO_LEN, 12]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} toneMapped={false} />
+            </mesh>
+            <mesh position={[0, GIZMO_LEN * 0.5, 0]} raycast={() => null}>
               <cylinderGeometry args={[GIZMO_RADIUS, GIZMO_RADIUS, GIZMO_LEN, 10]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={emissive} roughness={0.4} />
             </mesh>
@@ -345,7 +320,7 @@ export function WorldAxisGuides() {
   const on = useRootStore((s) => s.project?.settings.worldAxisControls === true)
   if (!on) return null
   const o = v3(0, 0, 0)
-  return <AxisTriplet groupPosition={o} dragAnchorGraph={o} target={{ kind: 'world' }} />
+  return <AxisTriplet groupPosition={o} target={{ kind: 'world' }} />
 }
 
 /** Per-node axis handles (same graph-local axes as the world gizmo). Render inside a group already at the node position. */
@@ -354,10 +329,6 @@ export function NodeAxisGuides({ n }: { n: NodeEntity }) {
   if (!on) return null
   const o = v3(0, 0, 0)
   return (
-    <AxisTriplet
-      groupPosition={o}
-      dragAnchorGraph={n.position}
-      target={{ kind: 'node', nodeId: n.id }}
-    />
+    <AxisTriplet groupPosition={o} target={{ kind: 'node', nodeId: n.id }} />
   )
 }

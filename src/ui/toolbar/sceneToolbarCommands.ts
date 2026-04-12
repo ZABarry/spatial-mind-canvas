@@ -38,11 +38,15 @@ export function enterVr() {
   const st = useRootStore.getState()
   const preferPt = st.devicePreferences.preferXrPassthrough === true
   void (async () => {
-    if (preferPt && (await navigator.xr?.isSessionSupported('immersive-ar'))) {
-      await xrStore.enterAR()
-      return
+    try {
+      if (preferPt && (await navigator.xr?.isSessionSupported('immersive-ar'))) {
+        await xrStore.enterAR()
+        return
+      }
+      await xrStore.enterVR()
+    } catch (e) {
+      console.error('Enter VR failed:', e)
     }
-    await xrStore.enterVR()
   })()
 }
 

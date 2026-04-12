@@ -16,8 +16,15 @@ export const xrStore = createXRStore({
    * IWER’s default synthetic room (`office_small`) is a separate compositor layer and can sit in
    * front of the app’s base WebGL layer in dev, yielding a blank grey headset view. Disable SEM so
    * the scene (grid, graph, particles) is what you see in the simulator.
+   *
+   * `inject: true` (dev only): default injection only matched `hostname === "localhost"`, so
+   * `127.0.0.1` and LAN dev URLs skipped IWER. IWER is still skipped when native WebXR exists
+   * (e.g. Chrome WebXR Emulator extension). Production builds disable emulation so real headsets
+   * use the browser runtime only.
    */
-  emulate: { type: 'metaQuest3', syntheticEnvironment: false },
+  emulate: import.meta.env.DEV
+    ? { type: 'metaQuest3', syntheticEnvironment: false, inject: true }
+    : false,
   controller: {
     rayPointer,
   },
@@ -31,4 +38,7 @@ export const xrStore = createXRStore({
    * which races with explicit VR/MR switches and can feel like passthrough is tied to other toggles.
    */
   offerSession: false,
+  /** Optional features that some desktop WebXR emulators handle poorly; not used by this app. */
+  meshDetection: false,
+  planeDetection: false,
 })

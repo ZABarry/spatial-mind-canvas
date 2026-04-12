@@ -13,6 +13,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { AudioAmbience } from '../ui/AudioAmbience'
 import { HelpControls } from '../ui/HelpControls'
 import { NodeQuickActions } from '../ui/NodeQuickActions'
+import { CanvasMountGate } from './CanvasMountGate'
 
 export function App() {
   const ready = useRootStore((s) => s.ready)
@@ -44,7 +45,9 @@ export function App() {
         <>
           <AudioAmbience />
           <div className="scene-wrap">
-            <SceneCanvas />
+            <CanvasMountGate>
+              <SceneCanvas />
+            </CanvasMountGate>
             <MainToolbar />
             {!xrSession && (
               <>

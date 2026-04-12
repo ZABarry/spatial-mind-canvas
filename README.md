@@ -131,6 +131,8 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 
 ## Architecture (short)
 
+- `src/app/App.tsx` — project home vs scene; wraps `SceneCanvas` in **`CanvasMountGate`** so the R3F canvas mounts after the first effect (avoids React Strict Mode double-mount tearing down WebGL/WebXR in dev).
+- `src/threeMaterialOnBuildPolyfill.ts` — imported from `main.tsx`; no-op `Material.prototype.onBuild` so IWER / XR dev emulation stays compatible with three.js builds that removed `onBuild`.
 - `src/store/rootStore.ts` — app state, graph edits, undo stack, autosave, search index.
 - `src/graph/types.ts` — domain types (`NodeEntity`, edges, bookmarks, `APP_SCHEMA_VERSION`, etc.); `src/graph/defaults.ts` — blank projects and default settings; `src/graph/selectors.ts` — graph queries and **Add child** placement (`nextChildPosition`).
 - `src/input/actions.ts` — semantic action union consumed by the store.
@@ -141,7 +143,7 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - `src/input/sessionTypes.ts`, `src/input/sessionMachine.ts` — interaction session scaffold (link drag, node drag, world grab) derived from store state for future exclusivity guarantees.
 - `src/persistence/` — IndexedDB + Zod schemas; `zipBundle.ts` for import/export archives.
 - `src/media/` — quota helpers and image thumbnails.
-- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `AxisGuides`, `LinkPreview`, `FloorGrid`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), `xrStore.ts`.
+- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `AxisGuides`, `LinkPreview`, `FloorGrid`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`). **`xrStore.ts`** configures `@react-three/xr` (blue ray pointer, DOM overlay, no auto `offerSession`); in **dev**, IWER Meta Quest 3 emulation disables the synthetic room layer so the simulator shows the app scene; production uses the device runtime only.
 - `src/ui/` — HTML overlays (library, toolbar, inspector, search, structure/bookmarks menus, help, modals, `NodeQuickActions`); `toolbar/sceneToolbarCommands.ts` backs toolbar and XR menu actions.
 - `src/utils/xrController.ts` — controller index helpers for XR gestures.
 
