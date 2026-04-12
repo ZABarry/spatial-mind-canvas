@@ -2,94 +2,106 @@ import { describe, expect, it } from 'vitest'
 import { createBlankProject, emptyGraph } from '../graph/defaults'
 import { addNode, createNodeDefaults } from '../graph/mutations'
 import { v3 } from '../utils/math'
+import { noneHit } from './hitTargets'
 import { getInteractionPhase } from './interactionPhase'
-import { deriveInteractionSession } from './sessionMachine'
-import { idleSession } from './sessionTypes'
+import { linkPreviewTargetFromSession, sessionDisablesOrbitRotation, withLinkPreviewTarget } from './sessionMachine'
+import { idleSession, type InteractionSession } from './sessionTypes'
 
 const wt = () => createBlankProject().worldTransform
 
-function sessionInput(overrides: Partial<Parameters<typeof deriveInteractionSession>[0]>) {
-  let g = emptyGraph()
-  const added = addNode(g, createNodeDefaults(v3(1, 0, 0)))
-  g = added.graph
-  const nodeId = added.node.id
-  const base: Parameters<typeof deriveInteractionSession>[0] = {
-    connectionDraft: null,
-    nodeDragActive: false,
-    nodeDragNodeId: null,
-    worldGrabBefore: null,
-    projectNodePosition: (id) => g.nodes[id]?.position,
-    ...overrides,
-  }
-  if (overrides.nodeDragNodeId === undefined && overrides.nodeDragActive) {
-    base.nodeDragNodeId = nodeId
-  }
-  return base
-}
-
-describe('deriveInteractionSession', () => {
-  it('returns idle when nothing active', () => {
-    expect(deriveInteractionSession(sessionInput({})).kind).toBe('idle')
+describe('sessionDisablesOrbitRotation', () => {
+  it('is true for link and nodeDrag', () => {
+    expect(
+      sessionDisablesOrbitRotation({
+        kind: 'link',
+        pointerId: 'm',
+        fromNodeId: 'a',
+      }),
+    ).toBe(true)
+    expect(
+      sessionDisablesOrbitRotation({
+        kind: 'nodeDrag',
+        pointerId: 'p',
+        nodeId: 'a',
+        start: [0, 0, 0],
+        current: [1, 0, 0],
+      }),
+    ).toBe(true)
   })
 
-  it('prefers worldGrab over link and drag', () => {
-    const p = createBlankProject()
-    const s = deriveInteractionSession(
-      sessionInput({
-        worldGrabBefore: p,
-        connectionDraft: { fromNodeId: 'x' },
-        nodeDragActive: true,
-        nodeDragNodeId: 'a',
+  it('is false for idle and worldGrab', () => {
+    expect(sessionDisablesOrbitRotation(idleSession)).toBe(false)
+    expect(
+      sessionDisablesOrbitRotation({
+        kind: 'worldGrab',
+        pointerIds: [],
+        startWorld: wt(),
       }),
-    )
-    expect(s.kind).toBe('worldGrab')
-    if (s.kind === 'worldGrab') {
-      expect(s.startWorld).toEqual(p.worldTransform)
-    }
+    ).toBe(false)
+  })
+})
+
+describe('linkPreviewTargetFromSession', () => {
+  it('returns undefined when not link', () => {
+    expect(linkPreviewTargetFromSession(idleSession)).toBeUndefined()
   })
 
-  it('returns link session with mouse pointer when connectionDraft set', () => {
-    const s = deriveInteractionSession(
-      sessionInput({
-        connectionDraft: { fromNodeId: 'n1' },
-      }),
-    )
-    expect(s).toMatchObject({
+  it('returns previewTarget for link session', () => {
+    const s: InteractionSession = {
       kind: 'link',
-      pointerId: 'mouse',
-      fromNodeId: 'n1',
-    })
-  })
-
-  it('returns link session with xr controller id when draft has index', () => {
-    const s = deriveInteractionSession(
-      sessionInput({
-        connectionDraft: { fromNodeId: 'n1', xrControllerIndex: 1 },
-      }),
-    )
-    expect(s).toMatchObject({
-      kind: 'link',
-      pointerId: 'xr-controller-1',
-      fromNodeId: 'n1',
-    })
-  })
-
-  it('returns nodeDrag when dragging without draft or grab', () => {
-    let g = emptyGraph()
-    const added = addNode(g, { ...createNodeDefaults(v3(1, 0, 0)), id: 'a' })
-    g = added.graph
-    const s = deriveInteractionSession({
-      connectionDraft: null,
-      nodeDragActive: true,
-      nodeDragNodeId: 'a',
-      worldGrabBefore: null,
-      projectNodePosition: (id) => g.nodes[id]?.position,
-    })
-    expect(s.kind).toBe('nodeDrag')
-    if (s.kind === 'nodeDrag') {
-      expect(s.nodeId).toBe('a')
-      expect(s.current).toEqual([1, 0, 0])
+      pointerId: 'm',
+      fromNodeId: 'a',
+      previewTarget: { kind: 'node', nodeId: 'b' },
     }
+    expect(linkPreviewTargetFromSession(s)).toEqual({ kind: 'node', nodeId: 'b' })
+  })
+})
+
+describe('withLinkPreviewTarget', () => {
+  it('returns null when session is not link', () => {
+    expect(withLinkPreviewTarget(idleSession, { kind: 'node', nodeId: 'x' })).toBeNull()
+  })
+
+  it('returns null when target unchanged', () => {
+    const s: InteractionSession = {
+      kind: 'link',
+      pointerId: 'm',
+      fromNodeId: 'a',
+      previewTarget: { kind: 'node', nodeId: 'b' },
+    }
+    expect(withLinkPreviewTarget(s, { kind: 'node', nodeId: 'b' })).toBeNull()
+  })
+
+  it('returns updated session when target changes', () => {
+    const s: InteractionSession = {
+      kind: 'link',
+      pointerId: 'm',
+      fromNodeId: 'a',
+    }
+    const next = withLinkPreviewTarget(s, { kind: 'ground', point: [0, 0, 0] })
+    expect(next).toMatchObject({
+      kind: 'link',
+      previewTarget: { kind: 'ground', point: [0, 0, 0] },
+    })
+  })
+
+  it('clears preview with undefined', () => {
+    const s: InteractionSession = {
+      kind: 'link',
+      pointerId: 'm',
+      fromNodeId: 'a',
+      previewTarget: { kind: 'node', nodeId: 'b' },
+    }
+    const next = withLinkPreviewTarget(s, undefined)
+    expect(next).not.toBeNull()
+    if (next?.kind === 'link') expect(next.previewTarget).toBeUndefined()
+  })
+
+  it('treats noneHit as distinct from undefined', () => {
+    const s: InteractionSession = { kind: 'link', pointerId: 'm', fromNodeId: 'a' }
+    const next = withLinkPreviewTarget(s, noneHit)
+    expect(next).not.toBeNull()
+    if (next?.kind === 'link') expect(next.previewTarget).toEqual(noneHit)
   })
 })
 
@@ -98,12 +110,10 @@ describe('getInteractionPhase', () => {
     confirmDialog: null,
     searchOpen: false,
     detailNodeId: null,
-    connectionDraft: null,
     placementPreview: null,
     interactionMode: 'worldManip' as const,
     hover: {},
     interactionSession: idleSession,
-    nodeDragActive: false,
   }
 
   it('modalConfirm blocks other phases', () => {
@@ -137,11 +147,10 @@ describe('getInteractionPhase', () => {
     ).toBe('grabbingWorld')
   })
 
-  it('drawingEdge when connection draft or link session', () => {
+  it('drawingEdge when link session', () => {
     expect(
       getInteractionPhase({
         ...basePhase,
-        connectionDraft: { fromNodeId: 'a' },
         interactionSession: {
           kind: 'link',
           pointerId: 'm',
@@ -152,11 +161,13 @@ describe('getInteractionPhase', () => {
   })
 
   it('placingNode over drag when placement preview set', () => {
+    let g = emptyGraph()
+    const added = addNode(g, { ...createNodeDefaults(v3(1, 0, 0)), id: 'a' })
+    g = added.graph
     expect(
       getInteractionPhase({
         ...basePhase,
         placementPreview: { position: [0, 0, 0] },
-        nodeDragActive: true,
         interactionSession: {
           kind: 'nodeDrag',
           pointerId: 'p',
@@ -168,11 +179,10 @@ describe('getInteractionPhase', () => {
     ).toBe('placingNode')
   })
 
-  it('draggingNode when node drag active', () => {
+  it('draggingNode when nodeDrag session', () => {
     expect(
       getInteractionPhase({
         ...basePhase,
-        nodeDragActive: true,
         interactionSession: {
           kind: 'nodeDrag',
           pointerId: 'p',

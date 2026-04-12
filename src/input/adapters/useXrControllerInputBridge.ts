@@ -50,9 +50,9 @@ export function useXrControllerInputBridge() {
           const id = o.userData?.nodeId as string | undefined
           if (id) {
             const st = useRootStore.getState()
-            const draft = st.connectionDraft
-            if (draft) {
-              if (id === draft.fromNodeId) {
+            const sess = st.interactionSession
+            if (sess.kind === 'link') {
+              if (id === sess.fromNodeId) {
                 st.dispatch({ type: 'cancelConnection' })
               } else {
                 st.dispatch({ type: 'finishConnection', targetNodeId: id })
@@ -68,12 +68,12 @@ export function useXrControllerInputBridge() {
       }
 
       const st = useRootStore.getState()
-      const draft = st.connectionDraft
+      const sess = st.interactionSession
       const proj = st.project
-      if (!draft || !proj) return
+      if (sess.kind !== 'link' || !proj) return
       const wt = proj.worldTransform
       const comfort = XR_STANDING_GRAPH_OFFSET
-      const from = proj.graph.nodes[draft.fromNodeId]?.position
+      const from = proj.graph.nodes[sess.fromNodeId]?.position
       const normalW = graphUpNormalWorld(wt)
       const ptW = from
         ? new THREE.Vector3(...graphPointToWorld(wt, from, comfort))

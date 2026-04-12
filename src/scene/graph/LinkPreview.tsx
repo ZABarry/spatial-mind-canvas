@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useLayoutEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { useXR } from '@react-three/xr'
+import { hitTargetFromUserData, type HitTarget } from '../../input/hitTargets'
 import { useRootStore } from '../../store/rootStore'
 import {
   graphPointToWorld,
@@ -41,7 +42,7 @@ function createLinkPreviewLine(): THREE.Line {
  * Ghost segment while drafting a connection (graph-local space under {@link WorldRoot}).
  */
 export function LinkPreview() {
-  const { camera, pointer, gl } = useThree()
+  const { camera, pointer, gl, scene } = useThree()
   const session = useXR((s) => s.session)
   const lineObject = useMemo(() => createLinkPreviewLine(), [])
 
@@ -57,14 +58,16 @@ export function LinkPreview() {
     const posAttr = geom.attributes.position
     if (!posAttr) return
 
-    const { connectionDraft: draft, project } = useRootStore.getState()
+    const st = useRootStore.getState()
+    const sess = st.interactionSession
+    const project = st.project
 
-    if (!draft || !project) {
+    if (sess.kind !== 'link' || !project) {
       lineObject.visible = false
       return
     }
 
-    const fromNode = project.graph.nodes[draft.fromNodeId]
+    const fromNode = project.graph.nodes[sess.fromNodeId]
     if (!fromNode) {
       lineObject.visible = false
       return
@@ -81,7 +84,7 @@ export function LinkPreview() {
     _plane.setFromNormalAndCoplanarPoint(normalW, _planePt)
 
     if (inXr) {
-      const idx = draft.xrControllerIndex ?? 0
+      const idx = sess.xrControllerIndex ?? 0
       const ctrl = gl.xr.getController(idx)
       ctrl.updateMatrixWorld()
       _origin.setFromMatrixPosition(ctrl.matrixWorld)
@@ -93,6 +96,29 @@ export function LinkPreview() {
     }
     _ray.near = 0.05
     _ray.far = 500
+
+    const hits = _ray.intersectObjects(scene.children, true)
+    let previewTarget: HitTarget | undefined
+    for (const h of hits) {
+      let o: THREE.Object3D | null = h.object
+      while (o) {
+        const ud = o.userData as Record<string, unknown>
+        if (ud?.hitKind === 'ground' && h.point) {
+          previewTarget = {
+            kind: 'ground',
+            point: worldPointToGraphLocal(wt, [h.point.x, h.point.y, h.point.z], comfort),
+          }
+          break
+        }
+        if (ud?.nodeId || ud?.edgeId) {
+          previewTarget = hitTargetFromUserData(ud)
+          break
+        }
+        o = o.parent
+      }
+      if (previewTarget) break
+    }
+    st.dispatch({ type: 'setLinkPreviewTarget', target: previewTarget })
 
     const arr = posAttr.array as Float32Array
     arr[0] = from[0]

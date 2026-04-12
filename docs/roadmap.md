@@ -40,7 +40,7 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | App state, undo stack, autosave | [`src/store/rootStore.ts`](../src/store/rootStore.ts) |
 | Semantic actions | [`src/input/actions.ts`](../src/input/actions.ts) |
 | Interaction phases helper | [`src/input/interactionPhase.ts`](../src/input/interactionPhase.ts) |
-| Interaction session scaffold (link / node drag / world grab) | [`sessionTypes.ts`](../src/input/sessionTypes.ts), [`sessionMachine.ts`](../src/input/sessionMachine.ts), [`sessionMachine.test.ts`](../src/input/sessionMachine.test.ts) |
+| Interaction session (canonical link / node drag / world grab) | [`sessionTypes.ts`](../src/input/sessionTypes.ts), [`sessionMachine.ts`](../src/input/sessionMachine.ts) (preview/orbit helpers), [`sessionMachine.test.ts`](../src/input/sessionMachine.test.ts); live state in [`rootStore.ts`](../src/store/rootStore.ts) `interactionSession` |
 | Desktop / XR input adapters | [`useDesktopInputBridge.ts`](../src/input/adapters/useDesktopInputBridge.ts), [`useXrHandInputBridge.ts`](../src/input/adapters/useXrHandInputBridge.ts) (hand-primary flag) |
 | Hand-tracking UX policy | [`handGestures.ts`](../src/input/xr/handGestures.ts) |
 | XR global menu command wiring | [`xrGlobalMenuActions.ts`](../src/scene/xr/xrGlobalMenuActions.ts) |
@@ -66,12 +66,12 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 These amendments apply on top of the base plan:
 
 1. **Graph-local geometry** — Node positions, straight edges (endpoints in graph space), structure-tool previews, and bookmarks should live in the graph’s coordinate system under the world root. Avoid storing connection geometry only in world space after the user has rotated/scaled the universe.
-2. **Interaction state machine** — Mutually exclusive high-level states (see [`interactionPhase.ts`](../src/input/interactionPhase.ts)); session kinds are derived in [`sessionMachine.ts`](../src/input/sessionMachine.ts) from store fields (link draft, node drag, world grab) toward stricter exclusivity.
+2. **Interaction state machine** — Mutually exclusive high-level phases (see [`interactionPhase.ts`](../src/input/interactionPhase.ts)); live gestures are driven by **`interactionSession`** on the store (updated in `dispatch`), not parallel legacy flags. [`sessionMachine.ts`](../src/input/sessionMachine.ts) holds pure helpers (e.g. link preview deduping, orbit lock).
 3. **Export UX** — Prefer a **single downloadable `.zip`** with `manifest.json` for portable backup; JSON-only export remains a fallback (see README **Data & export**).
 4. **Quota-aware media** — Use Storage API `estimate()` where appropriate; warn before large imports; surface quota failures clearly.
 5. **Multi-select** — **Ctrl/Cmd+click** to add nodes to selection; **Shift+click** edges for additive edge selection (and later lasso/box) so optional structure tools have a natural selection model on desktop.
 6. **Label policy on Quest** — Prefer selected / nearby / focus; distance fade or cull; hard budget; “show all labels” non-default or debug-only.
-7. **Clear-map semantics** — Clearing the current map should also reset undo/redo, transient interaction (connection draft, placement preview), search state, detail UI, and pending modals where applicable, so the app never sits in a half-cleared state.
+7. **Clear-map semantics** — Clearing the current map should also reset undo/redo, transient interaction (in-progress link / drag / grab session, placement preview), search state, detail UI, and pending modals where applicable, so the app never sits in a half-cleared state.
 8. **Performance budgets** — Define targets (e.g. max visible labels, particle cap, max texture/page resolution for media, frame-time goals for idle vs active editing) and document them; optimize for Quest from the start.
 9. **Media cost** — Thumbnails for galleries, lazy full-resolution loads, cap texture resolution on Quest, unload hidden panels.
 10. **Secure context early** — WebXR requires HTTPS (or localhost); validate HTTPS preview/deploy paths for Quest testing from Milestone 1 onward.
@@ -150,4 +150,5 @@ The MVP is **done** when all of the following are demonstrably true:
 ## References
 
 - [README — setup, scripts, deployment, testing](../README.md)
+- [Golden paths — manual QA checklist](golden-paths.md)
 - Architecture pointers: `src/store/rootStore.ts`, `src/input/actions.ts`, `src/persistence/`, `src/scene/`, `src/ui/`

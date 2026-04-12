@@ -2,6 +2,32 @@ import type { NodeShape } from '../../graph/types'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 
+/** `s` in {@link useNodeGeometry}; distance from origin to mesh surface along +X / +Y / +Z (axis-aligned bounds). */
+export function nodeShapeHalfExtents(shape: NodeShape, size: number): { x: number; y: number; z: number } {
+  const s = 0.35 * size
+  switch (shape) {
+    case 'cube':
+      return { x: s * 0.8, y: s * 0.8, z: s * 0.8 }
+    case 'capsule':
+      return { x: s * 0.7, y: s * 1.3, z: s * 0.7 }
+    case 'pill':
+      return { x: s * 0.65, y: s * 1.35, z: s * 0.65 }
+    case 'tetra':
+      return { x: s * 1.4, y: s * 1.4, z: s * 1.4 }
+    case 'ring': {
+      const R = s * 1.1
+      const tube = s * 0.18
+      const xz = R + tube
+      return { x: xz, y: xz, z: tube }
+    }
+    case 'diamond':
+      return { x: s * 1.2, y: s * 1.2, z: s * 1.2 }
+    case 'sphere':
+    default:
+      return { x: s * 1.2, y: s * 1.2, z: s * 1.2 }
+  }
+}
+
 export function useNodeGeometry(shape: NodeShape, size: number) {
   return useMemo(() => {
     const s = 0.35 * size

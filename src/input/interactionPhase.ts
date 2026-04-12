@@ -26,20 +26,18 @@ export function getInteractionPhase(s: {
   confirmDialog: unknown
   searchOpen: boolean
   detailNodeId: string | null
-  connectionDraft: unknown
   placementPreview: unknown
   interactionMode: InteractionMode
   hover: { nodeId?: string; edgeId?: string }
   interactionSession: InteractionSession
-  nodeDragActive: boolean
 }): InteractionPhase {
   if (s.confirmDialog) return 'modalConfirm'
   if (s.searchOpen) return 'searchPalette'
   if (s.detailNodeId) return 'nodeDetail'
   if (s.interactionSession.kind === 'worldGrab') return 'grabbingWorld'
-  if (s.connectionDraft || s.interactionSession.kind === 'link') return 'drawingEdge'
+  if (s.interactionSession.kind === 'link') return 'drawingEdge'
   if (s.placementPreview) return 'placingNode'
-  if (s.interactionSession.kind === 'nodeDrag' || s.nodeDragActive) return 'draggingNode'
+  if (s.interactionSession.kind === 'nodeDrag') return 'draggingNode'
   if (s.interactionMode === 'travel') return 'travel'
   if (s.hover.nodeId || s.hover.edgeId) return 'hovering'
   return 'idle'

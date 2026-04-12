@@ -1,4 +1,5 @@
 import type { DevicePreferences, InteractionMode, NodeShape, UserSettings } from '../graph/types'
+import type { HitTarget } from './hitTargets'
 import type { NavigationMode, ToolMode } from './tools'
 import type { Vec3, Vec4 } from '../utils/math'
 
@@ -22,6 +23,10 @@ export type AppAction =
   | { type: 'startConnection'; fromNodeId: string; xrControllerIndex?: number }
   | { type: 'finishConnection'; targetNodeId?: string; dropPosition?: Vec3 }
   | { type: 'cancelConnection' }
+  /** Update hover/preview target while drafting a link (session must be `link`). */
+  | { type: 'setLinkPreviewTarget'; target: HitTarget | undefined }
+  /** Abort link, node drag, or world grab without committing a new history frame (drag/grab restore start snapshot). */
+  | { type: 'cancelActiveInteraction' }
   | { type: 'openNodeDetail'; nodeId: string | null }
   | { type: 'updateNodeProps'; nodeId: string; patch: Record<string, unknown> }
   | { type: 'toggleCollapse'; nodeId: string }

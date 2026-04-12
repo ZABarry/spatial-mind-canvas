@@ -5,6 +5,8 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { NodeEntity } from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
+import { LabelBillboard } from './LabelBillboard'
+import { nodeShapeHalfExtents } from './nodeGeometry'
 import type { Vec3, WorldTransformLike } from '../../utils/math'
 import {
   graphLocalDeltaToParentPositionDelta,
@@ -15,9 +17,11 @@ import {
 } from '../../utils/math'
 
 const GIZMO_LEN = 0.44
-const GIZMO_RADIUS = 0.034
+/** Extra length beyond mesh bounds so axis handles stay grabbable (esp. tall capsule / pill). */
+const GIZMO_CLEARANCE = 0.12
+const GIZMO_RADIUS = 0.021
 /** Wider invisible collider so picking the axis is reliable. */
-const GIZMO_HIT_RADIUS = GIZMO_RADIUS * 2.8
+const GIZMO_HIT_RADIUS = GIZMO_RADIUS * 3.0
 const EMISSIVE_IDLE = 0.25
 const EMISSIVE_HOVER = 0.55
 const EMISSIVE_DRAG = 0.75
@@ -83,8 +87,9 @@ function computeAxisScreenDragBasis(
 function syncOrbitEnableFromStore(controls: { enableRotate?: boolean } | null) {
   if (!controls || typeof controls.enableRotate !== 'boolean') return
   const st = useRootStore.getState()
+  const ik = st.interactionSession.kind
   controls.enableRotate = !(
-    st.nodeDragActive || st.worldAxisDragActive || st.connectionDraft != null
+    ik === 'nodeDrag' || ik === 'link' || st.worldAxisDragActive
   )
 }
 
@@ -162,7 +167,7 @@ function useAxisPointerDrag(
       ev.preventDefault()
 
       const st = useRootStore.getState()
-      if (st.connectionDraft) return
+      if (st.interactionSession.kind === 'link') return
       const proj = st.project
       if (!proj) return
       const wt = proj.worldTransform
@@ -234,10 +239,14 @@ function AxisTriplet({
   /** Parent-local offset for the gizmo mesh (node handles sit at the node’s origin). */
   groupPosition,
   target,
+  /** Per-axis arrow length from origin; defaults to uniform `GIZMO_LEN`. */
+  axisLens,
 }: {
   groupPosition: Vec3
   target: DragTarget
+  axisLens?: [number, number, number]
 }) {
+  const lens = axisLens ?? [GIZMO_LEN, GIZMO_LEN, GIZMO_LEN]
   const gl = useThree((s) => s.gl)
   const [hovered, setHovered] = useState<0 | 1 | 2 | null>(null)
   const [dragAxis, setDragAxis] = useState<0 | 1 | 2 | null>(null)
@@ -272,12 +281,13 @@ function AxisTriplet({
   return (
     <group position={groupPosition}>
       {AXIS.map(({ key, color, label, rot }) => {
+        const len = lens[key]
         const emphasis = dragAxis === key || hovered === key
         const emissive = dragAxis === key ? EMISSIVE_DRAG : emphasis ? EMISSIVE_HOVER : EMISSIVE_IDLE
         return (
           <group key={key} rotation={rot}>
             <mesh
-              position={[0, GIZMO_LEN * 0.5, 0]}
+              position={[0, len * 0.5, 0]}
               userData={{ axisHandle: key, axisTarget: target.kind }}
               onPointerDown={(e) => onPointerDown(key, e)}
               onPointerOver={(e) => {
@@ -290,24 +300,28 @@ function AxisTriplet({
               }}
               onDoubleClick={(e) => e.stopPropagation()}
             >
-              <cylinderGeometry args={[GIZMO_HIT_RADIUS, GIZMO_HIT_RADIUS, GIZMO_LEN, 12]} />
+              <cylinderGeometry args={[GIZMO_HIT_RADIUS, GIZMO_HIT_RADIUS, len, 12]} />
               <meshBasicMaterial transparent opacity={0} depthWrite={false} toneMapped={false} />
             </mesh>
-            <mesh position={[0, GIZMO_LEN * 0.5, 0]} raycast={() => null}>
-              <cylinderGeometry args={[GIZMO_RADIUS, GIZMO_RADIUS, GIZMO_LEN, 10]} />
+            <mesh position={[0, len * 0.5, 0]} raycast={() => null}>
+              <cylinderGeometry args={[GIZMO_RADIUS, GIZMO_RADIUS, len, 10]} />
               <meshStandardMaterial color={color} emissive={color} emissiveIntensity={emissive} roughness={0.4} />
             </mesh>
-            <Text
-              position={[0, GIZMO_LEN + 0.12, 0]}
-              fontSize={0.16}
-              color={color}
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.02}
-              outlineColor="#ffffff"
-            >
-              {label}
-            </Text>
+            <group position={[0, len + 0.12, 0]}>
+              <LabelBillboard>
+                <Text
+                  position={[0, 0, 0]}
+                  fontSize={0.16}
+                  color={color}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.02}
+                  outlineColor="#ffffff"
+                >
+                  {label}
+                </Text>
+              </LabelBillboard>
+            </group>
           </group>
         )
       })}
@@ -328,7 +342,17 @@ export function NodeAxisGuides({ n }: { n: NodeEntity }) {
   const on = useRootStore((s) => s.project?.settings.worldAxisControls === true)
   if (!on) return null
   const o = v3(0, 0, 0)
+  const half = nodeShapeHalfExtents(n.shape, n.size)
+  const axisLens: [number, number, number] = [
+    Math.max(GIZMO_LEN, half.x + GIZMO_CLEARANCE),
+    Math.max(GIZMO_LEN, half.y + GIZMO_CLEARANCE),
+    Math.max(GIZMO_LEN, half.z + GIZMO_CLEARANCE),
+  ]
   return (
-    <AxisTriplet groupPosition={o} target={{ kind: 'node', nodeId: n.id }} />
+    <AxisTriplet
+      groupPosition={o}
+      target={{ kind: 'node', nodeId: n.id }}
+      axisLens={axisLens}
+    />
   )
 }

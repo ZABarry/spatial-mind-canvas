@@ -15,9 +15,8 @@ export function InteractionPlane() {
   const onPointerUp = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       const st = useRootStore.getState()
-      const d = st.connectionDraft
+      if (st.interactionSession.kind !== 'link' || !st.project) return
       const proj = st.project
-      if (!d || !proj) return
       e.stopPropagation()
       const p = e.point
       const comfort = gl.xr.isPresenting ? XR_STANDING_GRAPH_OFFSET : NO_XR_COMFORT

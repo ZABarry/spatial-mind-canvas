@@ -11,6 +11,7 @@ import { DESKTOP_INITIAL_CAMERA_POSITION } from './desktopCameraDefaults'
 import { ResetViewEffect } from './ResetViewEffect'
 import { WorldRoot } from './graph/WorldRoot'
 import { xrStore } from './xrStore'
+import { sessionDisablesOrbitRotation } from '../input/sessionMachine'
 import { useRootStore } from '../store/rootStore'
 import { useXRControllerLocomotion } from '@react-three/xr'
 import { XrSessionBridge } from './xr/XrSessionBridge'
@@ -30,8 +31,7 @@ import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
   const lockOrbitRotate = useRootStore(
-    (s) =>
-      s.nodeDragActive || s.worldAxisDragActive || s.connectionDraft != null,
+    (s) => sessionDisablesOrbitRotation(s.interactionSession) || s.worldAxisDragActive,
   )
   return (
     <OrbitControls

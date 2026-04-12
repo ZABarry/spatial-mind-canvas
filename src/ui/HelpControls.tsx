@@ -131,8 +131,8 @@ export function HelpControls() {
                     <strong>Pan world</strong> — <Kbd>Alt</Kbd> + arrow keys
                   </li>
                   <li>
-                    <strong>Clear / cancel</strong> — <Kbd>Esc</Kbd> (clears selection, closes panels, cancels
-                    connection)
+                    <strong>Clear / cancel</strong> — <Kbd>Esc</Kbd> (clears selection, closes panels, cancels an
+                    in-progress link, node drag, or world grab)
                   </li>
                 </ul>
               </section>
@@ -172,9 +172,10 @@ export function HelpControls() {
                     <strong>Status HUD</strong> — Shows tool, navigation mode, selection, and hints in front of you.
                   </li>
                   <li>
-                    <strong>Node radial</strong> — When a node is selected, <strong>Inspect</strong> appears beside
-                    it; with controllers, <strong>Link</strong> is available. Hand-tracking-only sessions hide Link
-                    authoring for reliability.
+                    <strong>Node radial</strong> — When a node is selected, a compact menu appears beside it:{' '}
+                    <strong>Child</strong> (add connected child), <strong>Inspect</strong>, <strong>Delete</strong>,{' '}
+                    <strong>Focus</strong>, <strong>Recenter</strong>, and with controllers <strong>Link</strong>.
+                    Hand-tracking-only sessions hide Link for reliability.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — Exit the XR session (or use <strong>Exit VR</strong> in the wrist

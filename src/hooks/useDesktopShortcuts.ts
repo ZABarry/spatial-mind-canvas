@@ -41,10 +41,10 @@ export function useDesktopShortcuts() {
       }
 
       if (e.key === 'Escape') {
+        dispatch({ type: 'cancelActiveInteraction' })
         dispatch({ type: 'clearSelection' })
         dispatch({ type: 'openNodeDetail', nodeId: null })
         dispatch({ type: 'setSearchOpen', open: false })
-        dispatch({ type: 'cancelConnection' })
         dispatch({ type: 'setToolMode', mode: 'select' })
         return
       }

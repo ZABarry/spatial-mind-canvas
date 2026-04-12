@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import { nanoid } from 'nanoid'
 import type { AppAction } from '../input/actions'
-import { deriveInteractionSession } from '../input/sessionMachine'
-import type { InteractionSession } from '../input/sessionTypes'
+import { withLinkPreviewTarget } from '../input/sessionMachine'
+import { idleSession, type InteractionSession } from '../input/sessionTypes'
 import {
   interactionModeFromNavigationMode,
   navigationModeFromInteractionMode,
@@ -54,21 +54,14 @@ export interface RootState {
   /** Split navigation (travel vs world manip) from authoring tools — see `ToolMode`. */
   navigationMode: NavigationMode
   toolMode: ToolMode
-  /** Derived from gestures; kept on the store for subscribers. */
+  /** Authoritative live gesture state (link, node drag, world grab). */
   interactionSession: InteractionSession
-  /** Node being dragged when `nodeDragActive` (for session + transactional history). */
-  nodeDragNodeId: string | null
   /** Snapshot at pointer-down for one undo step on drag release. */
   pendingNodeDrag: { before: Project; nodeId: string } | null
   /** Snapshot at XR squeeze-start for one undo step when grab ends. */
   worldGrabBefore: Project | null
   /** Headset / locomotion — persisted in IndexedDB meta, not in map files. */
   devicePreferences: DevicePreferences
-  connectionDraft: {
-    fromNodeId: string
-    /** WebXR: controller index from the hand that started the gesture (see `xrControllerIndexFromRayOrigin`). */
-    xrControllerIndex?: number
-  } | null
   placementPreview: {
     position: Vec3
     parentId?: string
@@ -98,8 +91,6 @@ export interface RootState {
   centerViewTick: number
   /** Bumped on `resetWorld`; canvas restores desktop orbit camera to its initial pose. */
   resetViewTick: number
-  /** True while a node is pointer-dragged (desktop); orbit controls disable rotation. */
-  nodeDragActive: boolean
   /** True while dragging world origin X/Y/Z handles (desktop); orbit rotation disabled. */
   worldAxisDragActive: boolean
   historyPast: HistoryEntry[]
@@ -138,17 +129,6 @@ function mapOnlySettings(s: Project['settings']): Project['settings'] {
   }
 }
 
-function recomputeInteractionSession(get: () => RootState): InteractionSession {
-  const s = get()
-  return deriveInteractionSession({
-    connectionDraft: s.connectionDraft,
-    nodeDragActive: s.nodeDragActive,
-    nodeDragNodeId: s.nodeDragNodeId,
-    worldGrabBefore: s.worldGrabBefore,
-    projectNodePosition: (id) => s.project?.graph.nodes[id]?.position,
-  })
-}
-
 function finalizeWorldGrab(get: () => RootState, set: (partial: Partial<RootState>) => void) {
   const beforeSnap = get().worldGrabBefore
   const after = get().project
@@ -159,10 +139,11 @@ function finalizeWorldGrab(get: () => RootState, set: (partial: Partial<RootStat
     const st = get()
     set({
       worldGrabBefore: null,
+      interactionSession: idleSession,
       ...appendPast(st.historyPast, entry),
     })
   } else {
-    set({ worldGrabBefore: null })
+    set({ worldGrabBefore: null, interactionSession: idleSession })
   }
 }
 
@@ -306,13 +287,20 @@ export const useRootStore = create<RootState>((set, get) => {
       case 'moveNode': {
         const p = get().project
         if (!p) break
-        set({
-          project: {
-            ...p,
-            graph: patchNode(p.graph, a.nodeId, { position: a.position }),
-            updatedAt: Date.now(),
-          },
-        })
+        const nextProject: Project = {
+          ...p,
+          graph: patchNode(p.graph, a.nodeId, { position: a.position }),
+          updatedAt: Date.now(),
+        }
+        const sess = get().interactionSession
+        if (sess.kind === 'nodeDrag' && sess.nodeId === a.nodeId) {
+          set({
+            project: nextProject,
+            interactionSession: { ...sess, current: a.position },
+          })
+        } else {
+          set({ project: nextProject })
+        }
         break
       }
       case 'deleteNode': {
@@ -351,21 +339,26 @@ export const useRootStore = create<RootState>((set, get) => {
         })
         break
       }
-      case 'startConnection':
+      case 'startConnection': {
+        const pointerId =
+          a.xrControllerIndex !== undefined ? `xr-controller-${a.xrControllerIndex}` : 'mouse'
         set({
-          connectionDraft: {
+          interactionSession: {
+            kind: 'link',
+            pointerId,
             fromNodeId: a.fromNodeId,
             ...(a.xrControllerIndex !== undefined ? { xrControllerIndex: a.xrControllerIndex } : {}),
           },
         })
         break
+      }
       case 'finishConnection': {
-        const draft = get().connectionDraft
-        if (!draft || !get().project) {
-          set({ connectionDraft: null })
+        const sess = get().interactionSession
+        if (sess.kind !== 'link' || !get().project) {
+          set({ interactionSession: idleSession })
           break
         }
-        const fromId = draft.fromNodeId
+        const fromId = sess.fromNodeId
         if (a.targetNodeId) {
           dispatch({
             type: 'connectNodes',
@@ -384,12 +377,53 @@ export const useRootStore = create<RootState>((set, get) => {
             p.graph = e.graph
           })
         }
-        set({ connectionDraft: null })
+        set({ interactionSession: idleSession })
         break
       }
       case 'cancelConnection':
-        set({ connectionDraft: null })
+        if (get().interactionSession.kind === 'link') {
+          set({ interactionSession: idleSession })
+        }
         break
+      case 'setLinkPreviewTarget': {
+        const sess = get().interactionSession
+        const next = withLinkPreviewTarget(sess, a.target)
+        if (next) set({ interactionSession: next })
+        break
+      }
+      case 'cancelActiveInteraction': {
+        const sess = get().interactionSession
+        if (sess.kind === 'link') {
+          set({ interactionSession: idleSession })
+          break
+        }
+        if (sess.kind === 'nodeDrag') {
+          const pending = get().pendingNodeDrag
+          if (pending && pending.nodeId === sess.nodeId) {
+            set({
+              project: cloneProject(pending.before),
+              interactionSession: idleSession,
+              pendingNodeDrag: null,
+            })
+          } else {
+            set({ interactionSession: idleSession, pendingNodeDrag: null })
+          }
+          break
+        }
+        if (sess.kind === 'worldGrab') {
+          const snap = get().worldGrabBefore
+          if (snap) {
+            set({
+              project: cloneProject(snap),
+              worldGrabBefore: null,
+              interactionSession: idleSession,
+            })
+          } else {
+            set({ interactionSession: idleSession, worldGrabBefore: null })
+          }
+        }
+        break
+      }
       case 'openNodeDetail':
         set({ detailNodeId: a.nodeId })
         break
@@ -525,9 +559,20 @@ export const useRootStore = create<RootState>((set, get) => {
       }
       case 'beginWorldGrab': {
         const st = get()
-        if (!st.project || st.worldGrabBefore || st.connectionDraft) break
+        if (!st.project || st.worldGrabBefore) break
         if (st.navigationMode !== 'world') break
-        set({ worldGrabBefore: cloneProject(st.project) })
+        const k = st.interactionSession.kind
+        if (k === 'link' || k === 'nodeDrag') break
+        if (k === 'worldGrab') break
+        const wt = { ...st.project.worldTransform }
+        set({
+          worldGrabBefore: cloneProject(st.project),
+          interactionSession: {
+            kind: 'worldGrab',
+            pointerIds: [],
+            startWorld: wt,
+          },
+        })
         break
       }
       case 'endWorldGrab':
@@ -806,25 +851,32 @@ export const useRootStore = create<RootState>((set, get) => {
             const after = cloneProject(cur)
             const entry = buildProjectHistoryEntry(before, after, cloneProject, (p) => set({ project: p }))
             set((s) => ({
-              nodeDragActive: false,
-              nodeDragNodeId: null,
+              interactionSession: idleSession,
               pendingNodeDrag: null,
               ...appendPast(s.historyPast, entry),
             }))
           } else {
             set({
-              nodeDragActive: false,
-              nodeDragNodeId: null,
+              interactionSession: idleSession,
               pendingNodeDrag: null,
             })
           }
           break
         }
 
-        const nextPending = proj && nodeId ? { before: cloneProject(proj), nodeId } : null
+        if (!nodeId || !proj) break
+
+        const pos = proj.graph.nodes[nodeId]?.position
+        const p0 = pos ?? v3(0, 0, 0)
+        const nextPending = { before: cloneProject(proj), nodeId }
         set({
-          nodeDragActive: true,
-          nodeDragNodeId: nodeId,
+          interactionSession: {
+            kind: 'nodeDrag',
+            pointerId: 'primary',
+            nodeId,
+            start: [p0[0], p0[1], p0[2]],
+            current: [p0[0], p0[1], p0[2]],
+          },
           pendingNodeDrag: nextPending,
         })
         break
@@ -844,8 +896,6 @@ export const useRootStore = create<RootState>((set, get) => {
         break
     }
 
-    set({ interactionSession: recomputeInteractionSession(get) })
-
     const proj = get().project
     if (proj && shouldRebuildSearchIndex(a)) rebuildSearchIndex(proj)
   }
@@ -860,12 +910,10 @@ export const useRootStore = create<RootState>((set, get) => {
     interactionMode: 'worldManip',
     navigationMode: 'world',
     toolMode: 'select',
-    interactionSession: { kind: 'idle' },
-    nodeDragNodeId: null,
+    interactionSession: idleSession,
     pendingNodeDrag: null,
     worldGrabBefore: null,
     devicePreferences: defaultDevicePreferences(),
-    connectionDraft: null,
     placementPreview: null,
     focusDim: false,
     focusSet: null,
@@ -884,7 +932,6 @@ export const useRootStore = create<RootState>((set, get) => {
     xrDebugHud: false,
     centerViewTick: 0,
     resetViewTick: 0,
-    nodeDragActive: false,
     worldAxisDragActive: false,
     historyPast: [],
     historyFuture: [],
@@ -927,7 +974,7 @@ export const useRootStore = create<RootState>((set, get) => {
           await repo.save(pr)
           rebuildSearchIndex(pr)
           set({ project: pr, view: 'scene', projectIndex: index.map((x) => (x.id === pr.id ? { ...x, lastOpenedAt: pr.lastOpenedAt } : x)) })
-          set({ interactionSession: recomputeInteractionSession(get) })
+          set({ interactionSession: idleSession })
         }
       }
     },
@@ -946,8 +993,8 @@ export const useRootStore = create<RootState>((set, get) => {
         view: 'scene',
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: (await buildIndex(repo)),
+        interactionSession: idleSession,
       })
-      set({ interactionSession: recomputeInteractionSession(get) })
     },
     goHome: () => {
       void get().saveNow()
@@ -956,13 +1003,10 @@ export const useRootStore = create<RootState>((set, get) => {
         project: null,
         textPromptDialog: null,
         xrHelpOpen: false,
-        interactionSession: { kind: 'idle' },
-        nodeDragNodeId: null,
-        nodeDragActive: false,
+        interactionSession: idleSession,
         worldAxisDragActive: false,
         pendingNodeDrag: null,
         worldGrabBefore: null,
-        connectionDraft: null,
       })
     },
     newBlankProject: async () => {
@@ -996,8 +1040,8 @@ export const useRootStore = create<RootState>((set, get) => {
       set({
         project: copy,
         projectIndex: await buildIndex(repo),
+        interactionSession: idleSession,
       })
-      set({ interactionSession: recomputeInteractionSession(get) })
     },
     renameProject: async (id, name) => {
       const repo = get().repo
@@ -1042,7 +1086,6 @@ export const useRootStore = create<RootState>((set, get) => {
         detailNodeId: null,
         focusSet: null,
         focusDim: false,
-        connectionDraft: null,
         placementPreview: null,
         searchOpen: false,
         searchQuery: '',
@@ -1055,8 +1098,7 @@ export const useRootStore = create<RootState>((set, get) => {
         hover: {},
         navigationMode: 'world',
         toolMode: 'select',
-        interactionSession: { kind: 'idle' },
-        nodeDragNodeId: null,
+        interactionSession: idleSession,
         pendingNodeDrag: null,
         worldGrabBefore: null,
         worldAxisDragActive: false,
@@ -1128,8 +1170,8 @@ export const useRootStore = create<RootState>((set, get) => {
           project: valid.data as Project,
           view: 'scene',
           projectIndex: await buildIndex(repo),
+          interactionSession: idleSession,
         })
-        set({ interactionSession: recomputeInteractionSession(get) })
         return
       }
       const text = new TextDecoder().decode(buf)
@@ -1148,8 +1190,8 @@ export const useRootStore = create<RootState>((set, get) => {
         project: data,
         view: 'scene',
         projectIndex: await buildIndex(repo),
+        interactionSession: idleSession,
       })
-      set({ interactionSession: recomputeInteractionSession(get) })
     },
     saveNow: async () => {
       const repo = get().repo

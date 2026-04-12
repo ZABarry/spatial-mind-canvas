@@ -133,14 +133,11 @@ export function resetWorldScaleToDefault() {
 /** Close drafts, panels, and search — recovery from a stuck interaction. */
 export function cancelInteraction() {
   const st = useRootStore.getState()
-  st.dispatch({ type: 'cancelConnection' })
+  st.dispatch({ type: 'cancelActiveInteraction' })
   st.dispatch({ type: 'openNodeDetail', nodeId: null })
   st.dispatch({ type: 'setPlacementPreview', preview: null })
   st.dispatch({ type: 'setSearchOpen', open: false })
   st.dispatch({ type: 'setToolMode', mode: 'select' })
-  if (st.nodeDragActive) {
-    st.dispatch({ type: 'setNodeDragActive', active: false })
-  }
 }
 
 export function undo() {

@@ -32,7 +32,8 @@ export function XrWorldGrab() {
     'squeezestart',
     (e: XRInputSourceEvent) => {
       const st = useRootStore.getState()
-      if (st.connectionDraft || st.navigationMode !== 'world') return
+      const ik = st.interactionSession.kind
+      if (ik === 'link' || ik === 'nodeDrag' || st.navigationMode !== 'world') return
       const frame = e.frame
       const refSpace = gl.xr.getReferenceSpace()
       const grip = e.inputSource.gripSpace
@@ -62,7 +63,9 @@ export function XrWorldGrab() {
 
   useFrame(() => {
     const st = useRootStore.getState()
-    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || st.connectionDraft) return
+    const ik = st.interactionSession.kind
+    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || ik === 'link' || ik === 'nodeDrag')
+      return
     const frame = gl.xr.getFrame()
     const refSpace = gl.xr.getReferenceSpace()
     if (!frame || !refSpace) return

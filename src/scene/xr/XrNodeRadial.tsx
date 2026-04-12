@@ -1,18 +1,26 @@
 import { Text } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useRootStore } from '../../store/rootStore'
-import { useXR } from '@react-three/xr'
 import { hideAdvancedAuthoringForHandTracking } from '../../input/xr/handGestures'
-import { runNodeInspect } from './xrNodeMenuActions'
+import {
+  runNodeAddChild,
+  runNodeDelete,
+  runNodeFocus,
+  runNodeInspect,
+  runNodeRecenter,
+  runNodeStartLink,
+} from './xrNodeMenuActions'
+
+type RadialBtn = { label: string; color: string; onPress: () => void }
 
 /**
- * Contextual actions for the selected node (VR controllers).
+ * Contextual authoring for the selected node (VR controllers). Node-specific only — wrist menu stays global.
  */
 export function XrNodeRadial() {
   const project = useRootStore((s) => s.project)
   const primary = useRootStore((s) => s.selection.primaryNodeId)
   const handLite = useRootStore((s) => s.xrHandTrackingPrimary)
-  const inXr = useXR((s) => !!s.session)
+  const inXr = useRootStore((s) => s.xrSessionActive)
   const hideLink = hideAdvancedAuthoringForHandTracking(handLite)
 
   if (!inXr || !project || !primary) return null
@@ -20,7 +28,20 @@ export function XrNodeRadial() {
   if (!n) return null
 
   const y = 0.55 * n.size + 0.5
-  const inspectX = hideLink ? 0 : -0.75 * n.size
+  const w = 0.26
+  const gap = 0.06
+
+  const buttons: RadialBtn[] = [
+    { label: 'Child', color: '#34d399', onPress: () => runNodeAddChild() },
+    ...(hideLink ? [] : ([{ label: 'Link', color: '#5ad4ff', onPress: () => runNodeStartLink() }] as RadialBtn[])),
+    { label: 'Inspect', color: '#c4b5fd', onPress: () => runNodeInspect() },
+    { label: 'Delete', color: '#fb7185', onPress: () => runNodeDelete() },
+    { label: 'Focus', color: '#fcd34d', onPress: () => runNodeFocus() },
+    { label: 'Recenter', color: '#94a3b8', onPress: () => runNodeRecenter() },
+  ]
+
+  const totalW = buttons.length * w + (buttons.length - 1) * gap
+  const startX = -totalW / 2 + w / 2
 
   const onAct =
     (fn: () => void) =>
@@ -31,29 +52,20 @@ export function XrNodeRadial() {
 
   return (
     <group position={n.position as unknown as [number, number, number]}>
-      {!hideLink ? (
-        <>
-          <mesh
-            position={[0.75 * n.size, y, 0]}
-            onPointerDown={onAct(() =>
-              useRootStore.getState().dispatch({ type: 'startConnection', fromNodeId: n.id }),
-            )}
-          >
-            <boxGeometry args={[0.22, 0.1, 0.04]} />
-            <meshStandardMaterial color="#5ad4ff" />
-          </mesh>
-          <Text position={[0.75 * n.size, y, 0.03]} fontSize={0.05} color="#0f172a" anchorX="center" anchorY="middle">
-            Link
-          </Text>
-        </>
-      ) : null}
-      <mesh position={[inspectX, y, 0]} onPointerDown={onAct(() => runNodeInspect())}>
-        <boxGeometry args={[0.24, 0.1, 0.04]} />
-        <meshStandardMaterial color="#c4b5fd" />
-      </mesh>
-      <Text position={[inspectX, y, 0.03]} fontSize={0.045} color="#0f172a" anchorX="center" anchorY="middle">
-        Inspect
-      </Text>
+      {buttons.map((b, i) => {
+        const x = startX + i * (w + gap)
+        return (
+          <group key={b.label} position={[x, y, 0]}>
+            <mesh onPointerDown={onAct(b.onPress)}>
+              <boxGeometry args={[w * 0.85, 0.1, 0.04]} />
+              <meshStandardMaterial color={b.color} />
+            </mesh>
+            <Text position={[0, 0, 0.03]} fontSize={0.038} color="#0f172a" anchorX="center" anchorY="middle">
+              {b.label}
+            </Text>
+          </group>
+        )
+      })}
     </group>
   )
 }

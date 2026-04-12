@@ -8,7 +8,14 @@ import type { HitTarget } from './hitTargets'
 export type InteractionSession =
   | { kind: 'idle' }
   | { kind: 'nodeDrag'; pointerId: string; nodeId: string; start: Vec3; current: Vec3 }
-  | { kind: 'link'; pointerId: string; fromNodeId: string; previewTarget?: HitTarget }
+  | {
+      kind: 'link'
+      pointerId: string
+      fromNodeId: string
+      previewTarget?: HitTarget
+      /** WebXR controller index when the link was started from a controller ray. */
+      xrControllerIndex?: number
+    }
   | { kind: 'worldGrab'; pointerIds: string[]; startWorld: WorldTransform }
   | { kind: 'menu'; menu: 'global' | 'node' }
 

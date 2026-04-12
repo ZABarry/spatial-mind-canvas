@@ -1,4 +1,5 @@
 import { Line } from '@react-three/drei'
+import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import type { EdgeEntity, GraphState } from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
@@ -11,6 +12,7 @@ function edgePoints(graph: GraphState, e: EdgeEntity): THREE.Vector3[] {
 }
 
 export function EdgeMeshes() {
+  const inXr = useXR((s) => !!s.session)
   const project = useRootStore((s) => s.project)
   const focusDim = useRootStore((s) => s.focusDim)
   const focusSet = useRootStore((s) => s.focusSet)
@@ -39,12 +41,17 @@ export function EdgeMeshes() {
             ? !focusSet.has(e.sourceId) && !focusSet.has(e.targetId)
             : false
         const lineOpacity = dim ? 0.08 : selE.includes(e.id) || hoverE === e.id ? 1 : 0.75
+        /** Drei `Line` uses Line2/LineSegments2; screen-space raycast needs `raycaster.camera`, which is often null in XR — use world units there instead. */
+        const lineWidth = inXr
+          ? Math.max(0.008, e.thickness * 0.012)
+          : Math.max(1, e.thickness * 1.5)
         return (
           <group key={e.id} userData={{ edgeId: e.id }}>
             <Line
               points={pts}
               vertexColors={colors}
-              lineWidth={Math.max(1, e.thickness * 1.5)}
+              lineWidth={lineWidth}
+              worldUnits={inXr}
               transparent
               opacity={lineOpacity}
               depthWrite={false}

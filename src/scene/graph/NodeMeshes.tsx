@@ -5,6 +5,7 @@ import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import type { GraphState, NodeEntity, Project } from '../../graph/types'
 import { shouldRenderNode } from '../../graph/selectors'
+import { LabelBillboard } from './LabelBillboard'
 import { NodeAxisGuides } from './AxisGuides'
 import { useNodeGeometry } from './nodeGeometry'
 import { useRootStore } from '../../store/rootStore'
@@ -18,40 +19,6 @@ import {
 } from '../../utils/math'
 import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
 import { xrLastNodeSelectControllerIndex } from '../xr/xrSelectionRefs'
-
-const _billboardParentQ = new THREE.Quaternion()
-const _billboardParentInv = new THREE.Quaternion()
-
-/**
- * Drei's Billboard uses `camera.getWorldQuaternion()`, which in WebXR is wrong for an
- * {@link THREE.ArrayCamera} — labels end up edge-on and appear to spin. Face the first eye camera instead.
- */
-function LabelBillboard({ children }: { children: React.ReactNode }) {
-  const outerRef = useRef<THREE.Group>(null)
-  const innerRef = useRef<THREE.Group>(null)
-  const gl = useThree((s) => s.gl)
-  const camera = useThree((s) => s.camera)
-
-  useFrame(() => {
-    if (!outerRef.current || !innerRef.current) return
-    let faceCam: THREE.Camera = camera
-    if (gl.xr.isPresenting) {
-      const xrCam = gl.xr.getCamera()
-      const eyes = (xrCam as THREE.ArrayCamera).cameras
-      if (eyes?.[0]) faceCam = eyes[0]
-    }
-    outerRef.current.updateWorldMatrix(false, false)
-    outerRef.current.getWorldQuaternion(_billboardParentQ)
-    _billboardParentInv.copy(_billboardParentQ).invert()
-    faceCam.getWorldQuaternion(innerRef.current.quaternion).premultiply(_billboardParentInv)
-  })
-
-  return (
-    <group ref={outerRef}>
-      <group ref={innerRef}>{children}</group>
-    </group>
-  )
-}
 
 function NodeItem({
   n,
@@ -231,9 +198,9 @@ function NodeItem({
           setDragging(false)
           useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
           xrDragControllerIdx.current = null
-          const d = useRootStore.getState().connectionDraft
-          if (d) {
-            if (d.fromNodeId === n.id) {
+          const sess = useRootStore.getState().interactionSession
+          if (sess.kind === 'link') {
+            if (sess.fromNodeId === n.id) {
               useRootStore.getState().dispatch({ type: 'cancelConnection' })
             } else {
               useRootStore.getState().dispatch({

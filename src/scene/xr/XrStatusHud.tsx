@@ -21,6 +21,7 @@ export function XrStatusHud() {
   const project = useRootStore((s) => s.project)
   const xrDebugHud = useRootStore((s) => s.xrDebugHud)
   const handPrimary = useRootStore((s) => s.xrHandTrackingPrimary)
+  const interactionSession = useRootStore((s) => s.interactionSession)
   const groupRef = useRef<Group>(null)
   const { camera } = useThree()
 
@@ -34,17 +35,24 @@ export function XrStatusHud() {
       ? 'L stick: move · R stick: turn · Y: menu'
       : 'Grip: move/scale graph · Y: menu · Wrist: recenter & reset'
 
+  const sessionHint =
+    interactionSession.kind === 'link'
+      ? 'Linking: aim at node or ground · same node cancels'
+      : interactionSession.kind === 'nodeDrag'
+        ? 'Dragging node'
+        : interactionSession.kind === 'worldGrab'
+          ? 'Moving world'
+          : null
+
   const st = useRootStore.getState()
   const phase = getInteractionPhase({
     confirmDialog: st.confirmDialog,
     searchOpen: st.searchOpen,
     detailNodeId: st.detailNodeId,
-    connectionDraft: st.connectionDraft,
     placementPreview: st.placementPreview,
     interactionMode: st.interactionMode,
     hover: st.hover,
     interactionSession: st.interactionSession,
-    nodeDragActive: st.nodeDragActive,
   })
   const line4 =
     import.meta.env.DEV && xrDebugHud
@@ -74,13 +82,25 @@ export function XrStatusHud() {
         <Text fontSize={0.028} color="#64748b" anchorX="center" anchorY="top" position={[0, -0.04, 0]} maxWidth={2.4}>
           {line3}
         </Text>
+        {sessionHint ? (
+          <Text
+            fontSize={0.026}
+            color="#0ea5e9"
+            anchorX="center"
+            anchorY="top"
+            position={[0, -0.085, 0]}
+            maxWidth={2.5}
+          >
+            {sessionHint}
+          </Text>
+        ) : null}
         {line4 ? (
           <Text
             fontSize={0.024}
             color="#94a3b8"
             anchorX="center"
             anchorY="top"
-            position={[0, -0.09, 0]}
+            position={[0, sessionHint ? -0.125 : -0.09, 0]}
             maxWidth={2.6}
           >
             {line4}
