@@ -85,8 +85,8 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 | **M1** | Foundation | Scaffold Vite React-TS, ESLint, Prettier, Vitest; app shell (project home vs scene); infinite white void (fog, soft light, cheap particles); desktop camera; XR bootstrap; IndexedDB persistence skeleton; project library CRUD; new blank map & clear map (with confirmation); `vercel.json` SPA rewrites; README & deploy notes; **HTTPS path for Quest**. |
 | **M2** | Graph core | Domain types & commands; node & edge rendering (straight + spline); selection/hover; CRUD nodes/edges; debounced autosave; import/export MVP (JSON; **ZIP + manifest as target**). |
 | **M3** | Desktop + VR + modes | Full semantic dispatch + history; desktop shortcuts & connection gestures; Quest controllers (ray, grab, menus); world manipulation vs travel; focus, recenter, reset; node detail & contextual actions (e.g. action ring). |
-| **M4** | Hands, media, search, tools | Hand tracking with fallbacks; `MediaStore` + viewers (markdown, images, PDF, generic files); search/focus/dim; collapse/expand; undo/redo; bookmarks; **optional** structure tools on selected clusters (preview → commit, undoable). |
-| **M5** | Polish + QA | Onboarding; settings (audio, locomotion, vignette, etc.); ambient audio optional; performance pass; Quest comfort pass; README Quest/desktop QA checklists; deployment verification. |
+| **M4** | Hands, media, search, tools | **Shipped (v1):** media attachments + quota + thumbnails + PDF panel; Fuse search; focus/dim; collapse/expand; bookmarks; layout tools on selection (no ghost preview). Hands: `select`-based path + notes file; not full custom hand rig. |
+| **M5** | Polish + QA | **Shipped (v1):** onboarding, help overlay, settings (audio, locomotion, vignette, labels), `performance.md`, README checklists; ongoing Quest perf/comfort validation in the field. |
 
 ---
 
@@ -98,7 +98,8 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 - [x] Destructive actions (clear map, delete project, bulk delete) confirmed on **desktop and in VR** with equivalent clarity (`ConfirmModal` + [`XrConfirmHud`](../src/scene/xr/XrConfirmHud.tsx)).
 - [x] Onboarding covers: create node, connect, move world, open node, world vs travel, search/focus, new map, clear map (see [`OnboardingBanner`](../src/ui/OnboardingBanner.tsx)).
 - [x] Bookmarks: save/recall viewpoints or graph states (toolbar + [`BookmarksMenu`](../src/ui/BookmarksMenu.tsx)).
-- [ ] Optional structure tools: align, distribute, radial, branch, flatten, stack, tidy neighborhood, normalize spacing, center cluster — only on selection; **preview before commit** still optional; undoable via normal history.
+- [x] Optional structure tools (v1 subset): **align** (X/Y/Z), **distribute** (X/Y/Z), **radial**, **flatten** plane, **normalize spacing**, **center cluster** — apply to current selection via [`StructureMenu`](../src/ui/StructureMenu.tsx); undoable via history.
+- [ ] Further layout tools (e.g. branch, stack, tidy neighborhood) and **ghost preview before commit** — not implemented; menu notes preview gap explicitly.
 
 ### Engineering guardrails (from above)
 
@@ -113,7 +114,8 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 
 ### Testing & release
 
-- [ ] Unit tests for graph/domain/history (extended over time; see `graph.test.ts`, `math.test.ts`).
+- [x] Core unit tests present: [`graph.test.ts`](../src/graph/graph.test.ts), [`math.test.ts`](../src/utils/math.test.ts), [`zipBundle.test.ts`](../src/persistence/zipBundle.test.ts) (`npm run test`).
+- [ ] Extended coverage for store/history/XR adapters over time.
 - [ ] Desktop smoke path (manual or automated where practical).
 - [ ] Manual XR QA: follow [README Quest checklist](../README.md#quest-testing-manual-qa); expand to full matrix (controllers + hands + desktop parity).
 
@@ -123,16 +125,16 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 
 The MVP is **done** when all of the following are demonstrably true:
 
-- [ ] Runs locally on desktop with mouse & keyboard for **major** workflows.
-- [ ] Deploys to **Vercel** (or equivalent static host) with HTTPS for Quest.
-- [ ] Opens in **Quest Browser**; can enter **immersive VR**.
-- [ ] Create nodes in 3D; **connect** with paths (including gradient treatment as designed).
-- [ ] Move nodes; **manipulate the whole graph** (universe) in world mode.
-- [ ] **Open a node** into spatial detail; **browse** attached content.
-- [ ] **Search** and **focus** ideas; **collapse/expand** branches as implemented.
-- [ ] **Multiple** separate mind maps (projects); **clear current map** and start again.
-- [ ] **Save, load, import, export** local projects (format as shipped; ZIP target per roadmap).
-- [ ] **Controllers** and **hand tracking** support core flows (within browser capability).
+- [x] Runs locally on desktop with mouse & keyboard for **major** workflows (see [README desktop checklist](../README.md#desktop-testing-quick)).
+- [x] Static app is deployable to **Vercel** (`dist/`, SPA rewrites); use **HTTPS** for Quest (see [README deployment](../README.md#deployment-vercel)).
+- [x] Code path exists to enter **immersive VR** (`Enter VR`); **Quest Browser** validation remains manual QA.
+- [x] Create nodes in 3D; **connect** with straight/spline edges; style and focus tooling as shipped.
+- [x] Move nodes; **manipulate the whole graph** in world mode (grab, two-hand scale, axis handles when enabled).
+- [x] **Open a node** in the inspector; **browse** notes and attachments (images, PDF page preview, files).
+- [x] **Search** (palette) and **focus**; **collapse/expand** nodes; optional **layout** tools on selection.
+- [x] **Multiple** projects; **clear current map** with confirmation; library CRUD.
+- [x] **Save, load, import, export** — IndexedDB + **ZIP** + JSON per README.
+- [x] **Controllers**: ray select, locomotion, world grab — shipped. **Hands**: runtimes that map pinch to `select` work with the same ray path; dedicated hand meshes / custom pinch thresholds are not a separate product tier in v1 (see [`handInputNotes.ts`](../src/input/handInputNotes.ts)).
 
 ---
 
