@@ -24,17 +24,19 @@ import { XrSettingsPanel } from './xr/XrSettingsPanel'
 import { XrTextPromptHud } from './xr/XrTextPromptHud'
 import { XrHelpHud } from './xr/XrHelpHud'
 import { XrNodeRadial } from './xr/XrNodeRadial'
-import { XrToolHud } from './xr/XrToolHud'
+import { XrStatusHud } from './xr/XrStatusHud'
 import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
-  const nodeDragActive = useRootStore((s) => s.nodeDragActive)
+  const lockOrbitRotate = useRootStore(
+    (s) => s.nodeDragActive || s.connectionDraft != null,
+  )
   return (
     <OrbitControls
       makeDefault
       enabled={!session}
-      enableRotate={!nodeDragActive}
+      enableRotate={!lockOrbitRotate}
       minDistance={2}
       maxDistance={160}
       enableDamping
@@ -86,7 +88,7 @@ export function SceneCanvas() {
         <XrControllerInputBridge />
         <XrHandInputStub />
         <XrNodeRadial />
-        <XrToolHud />
+        <XrStatusHud />
         <XrWorldGrab />
         <XrConfirmHud />
         <XrTextPromptHud />

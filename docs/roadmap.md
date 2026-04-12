@@ -40,13 +40,16 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | App state, undo stack, autosave | [`src/store/rootStore.ts`](../src/store/rootStore.ts) |
 | Semantic actions | [`src/input/actions.ts`](../src/input/actions.ts) |
 | Interaction phases helper | [`src/input/interactionPhase.ts`](../src/input/interactionPhase.ts) |
-| Interaction session scaffold (link / node drag / world grab) | [`sessionTypes.ts`](../src/input/sessionTypes.ts), [`sessionMachine.ts`](../src/input/sessionMachine.ts) |
+| Interaction session scaffold (link / node drag / world grab) | [`sessionTypes.ts`](../src/input/sessionTypes.ts), [`sessionMachine.ts`](../src/input/sessionMachine.ts), [`sessionMachine.test.ts`](../src/input/sessionMachine.test.ts) |
+| Desktop / XR input adapters | [`useDesktopInputBridge.ts`](../src/input/adapters/useDesktopInputBridge.ts), [`useXrHandInputBridge.ts`](../src/input/adapters/useXrHandInputBridge.ts) (hand-primary flag) |
+| Hand-tracking UX policy | [`handGestures.ts`](../src/input/xr/handGestures.ts) |
+| XR global menu command wiring | [`xrGlobalMenuActions.ts`](../src/scene/xr/xrGlobalMenuActions.ts) |
 | Graph domain, layout tools, schema version | [`src/graph/`](../src/graph/), [`types.ts`](../src/graph/types.ts) |
 | IndexedDB + Zod + **ZIP** bundle | [`src/persistence/`](../src/persistence/), [`zipBundle.ts`](../src/persistence/zipBundle.ts) |
 | Media store + quota on attach | [`src/media/`](../src/media/) |
 | Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |
 | Desktop camera defaults, reset / center orbit effects | [`desktopCameraDefaults.ts`](../src/scene/desktopCameraDefaults.ts), [`ResetViewEffect.tsx`](../src/scene/ResetViewEffect.tsx), [`CenterViewEffect.tsx`](../src/scene/CenterViewEffect.tsx) |
-| XR: session bridge, confirm HUD, ray select, two-hand link, wrist menu (palm / Y), node radial, tool HUD, world-space detail/search/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrTwoHandLink`, `XrWorldGrab`, `XrWristMenu`, `XrNodeRadial`, `XrToolHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
+| XR: session bridge, confirm HUD, ray select + controller bridge, wrist menu (palm / Y), hand menu anchor stub, node radial, tool/status HUD, world-space detail/search/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
 | Label budget / settings | [`NodeMeshes.tsx`](../src/scene/graph/NodeMeshes.tsx), [`SettingsPanel.tsx`](../src/ui/SettingsPanel.tsx) |
 | Bookmarks UI | [`BookmarksMenu.tsx`](../src/ui/BookmarksMenu.tsx), toolbar |
 | PDF / image in inspector | [`MediaAttachmentRow.tsx`](../src/ui/MediaAttachmentRow.tsx), [`PdfCanvas.tsx`](../src/ui/PdfCanvas.tsx) |
@@ -116,7 +119,7 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 
 ### Testing & release
 
-- [x] Core unit tests present: [`graph.test.ts`](../src/graph/graph.test.ts), [`math.test.ts`](../src/utils/math.test.ts), [`zipBundle.test.ts`](../src/persistence/zipBundle.test.ts) (`npm run test`).
+- [x] Core unit tests present: [`graph.test.ts`](../src/graph/graph.test.ts), [`math.test.ts`](../src/utils/math.test.ts), [`zipBundle.test.ts`](../src/persistence/zipBundle.test.ts), [`sessionMachine.test.ts`](../src/input/sessionMachine.test.ts) (`npm run test`).
 - [ ] Extended coverage for store/history/XR adapters over time.
 - [ ] Desktop smoke path (manual or automated where practical).
 - [ ] Manual XR QA: follow [README Quest checklist](../README.md#quest-testing-manual-qa); include **wrist menu** (controller Y vs hand palm-facing) and **two-hand link**; expand to full matrix (controllers + hands + desktop parity).

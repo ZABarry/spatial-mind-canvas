@@ -89,9 +89,13 @@ export function HelpControls() {
                     <strong>New node</strong> — Choose <strong>Create</strong>, then double-click empty ground.
                   </li>
                   <li>
+                    <strong>Quick actions</strong> — With a node selected, use the floating strip (Rename, Add child,
+                    Link, Inspect, Delete) without opening the full inspector.
+                  </li>
+                  <li>
                     <strong>Connect</strong> — Choose <strong>Link</strong> (or the cyan link handle on a selected
-                    node), then drag; release on another node or empty ground. <Kbd>Shift</Kbd> + drag still works as a
-                    shortcut.
+                    node); release on another node or empty ground for a ghost preview line. With <strong>Select</strong>{' '}
+                    active, <Kbd>Shift</Kbd> + drag from a node is an expert shortcut to start linking.
                   </li>
                   <li>
                     <strong>Select</strong> — Click a node or edge. <Kbd>Ctrl</Kbd>/<Kbd>⌘</Kbd> + click to add nodes;
@@ -158,13 +162,19 @@ export function HelpControls() {
                   <li>
                     <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
                     toggle the panel with the <strong>secondary face button</strong> (often Y); with{' '}
-                    <strong>hand tracking</strong>, turn your palm toward you. Commands: Library, Search, Settings,
-                    Undo, Redo, Reset view, Travel/World toggle, Help, Exit VR. <strong>Layout</strong>,{' '}
-                    <strong>bookmarks</strong>, and <strong>export</strong> are on the flat toolbar (exit VR to use them).
+                    <strong>hand tracking</strong>, turn your palm toward you. Global commands include Library, Search,
+                    Settings, Undo, Redo, Reset view, <strong>Recenter</strong> (on selection), <strong>Reset scale</strong>,{' '}
+                    <strong>Cancel</strong> (close drafts/panels), Travel/World, Help, Exit VR.{' '}
+                    <strong>Layout</strong>, <strong>bookmarks</strong>, and <strong>export</strong> stay on the flat
+                    toolbar (exit VR to use them).
                   </li>
                   <li>
-                    <strong>Node radial</strong> — When a node is selected, <strong>Link</strong> and{' '}
-                    <strong>Inspect</strong> appear beside it in the scene.
+                    <strong>Status HUD</strong> — Shows tool, navigation mode, selection, and hints in front of you.
+                  </li>
+                  <li>
+                    <strong>Node radial</strong> — When a node is selected, <strong>Inspect</strong> appears beside
+                    it; with controllers, <strong>Link</strong> is available. Hand-tracking-only sessions hide Link
+                    authoring for reliability.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — Exit the XR session (or use <strong>Exit VR</strong> in the wrist

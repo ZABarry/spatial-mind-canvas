@@ -1,11 +1,9 @@
 import { useEffect } from 'react'
 
 /**
- * Desktop adapter: normalized pointer/keyboard intents will route through the session machine here.
- * Today, mesh handlers and `useDesktopShortcuts` dispatch `AppAction`s; this hook is the extension point.
+ * Desktop adapter: mesh handlers and `useDesktopShortcuts` dispatch `AppAction`s.
+ * Ghost edge preview lives in `LinkPreview`; extend this hook when centralizing pointer routing.
  */
 export function useDesktopInputBridge() {
-  useEffect(() => {
-    return undefined
-  }, [])
+  useEffect(() => undefined, [])
 }

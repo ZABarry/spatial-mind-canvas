@@ -12,6 +12,7 @@ import { SettingsPanel } from '../ui/SettingsPanel'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { AudioAmbience } from '../ui/AudioAmbience'
 import { HelpControls } from '../ui/HelpControls'
+import { NodeQuickActions } from '../ui/NodeQuickActions'
 
 export function App() {
   const ready = useRootStore((s) => s.ready)
@@ -48,6 +49,7 @@ export function App() {
             {!xrSession && (
               <>
                 <SearchPalette />
+                <NodeQuickActions />
                 <NodeInspector />
                 <OnboardingBanner />
                 <SettingsPanel />

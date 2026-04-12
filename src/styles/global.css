@@ -349,6 +349,44 @@ textarea {
   border-color: #c9d6ea;
 }
 
+.node-quick-actions {
+  position: absolute;
+  top: 120px;
+  left: 16px;
+  z-index: 14;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  max-width: min(520px, 94vw);
+}
+
+.node-quick-actions-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-right: 8px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-quick-actions button {
+  border: none;
+  background: #f5f7fb;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1c2330;
+}
+
+.node-quick-actions button:hover {
+  background: #e8edf5;
+}
+
 .inspector {
   position: absolute;
   top: 16px;

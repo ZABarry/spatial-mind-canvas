@@ -7,6 +7,7 @@ import { WorldAxisGuides } from './AxisGuides'
 import { FloorGrid } from './FloorGrid'
 import { InteractionPlane } from './InteractionPlane'
 import { NodeHandles } from './NodeHandles'
+import { LinkPreview } from './LinkPreview'
 import { useRootStore } from '../../store/rootStore'
 import { NO_XR_COMFORT, vec3Add, XR_STANDING_GRAPH_OFFSET } from '../../utils/math'
 
@@ -36,6 +37,7 @@ export function WorldRoot() {
       scale={[wt.scale, wt.scale, wt.scale]}
     >
       <NodeHandles />
+      <LinkPreview />
       <WorldAxisGuides />
       {showFloorGrid ? <FloorGrid /> : null}
       <InteractionPlane />

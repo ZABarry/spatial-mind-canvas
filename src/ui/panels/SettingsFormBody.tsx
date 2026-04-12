@@ -20,6 +20,7 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
   const project = useRootStore((s) => s.project)
   const dispatch = useRootStore((s) => s.dispatch)
   const devicePreferences = useRootStore((s) => s.devicePreferences)
+  const xrDebugHud = useRootStore((s) => s.xrDebugHud)
 
   if (!project) return null
 
@@ -228,6 +229,18 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
         />
       </label>
       <p style={{ fontSize: 12, color: '#6b7280' }}>Device preferences apply to this browser only and are not embedded in map exports.</p>
+
+      {import.meta.env.DEV ? (
+        <label style={checkboxRow}>
+          <input
+            type="checkbox"
+            style={{ flexShrink: 0, marginTop: 2 }}
+            checked={xrDebugHud}
+            onChange={(e) => useRootStore.setState({ xrDebugHud: e.target.checked })}
+          />
+          <span style={checkboxLabel}>XR debug HUD (immersive; extra status line)</span>
+        </label>
+      ) : null}
 
       <div
         className={variant === 'desktop' ? 'modal-actions' : undefined}

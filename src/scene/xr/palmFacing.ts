@@ -5,9 +5,9 @@ import * as THREE from 'three'
  * Raise OPEN / CLOSE together if the panel appears too often; lower if it rarely appears.
  */
 /** Combined score above this → transition to visible (hysteresis open). */
-export const PALM_FACE_OPEN_THRESHOLD = 0.38
+export const PALM_FACE_OPEN_THRESHOLD = 0.32
 /** Below this → transition to hidden (hysteresis close). */
-export const PALM_FACE_CLOSE_THRESHOLD = 0.24
+export const PALM_FACE_CLOSE_THRESHOLD = 0.2
 
 export type PalmFacingHysteresis = {
   visible: boolean

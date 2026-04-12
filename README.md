@@ -6,14 +6,14 @@ Quest-first, local-only 3D mind mapping in the browser: an infinite calm white s
 
 | Area | What you get |
 | --- | --- |
-| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, Shift+drag to connect, node collapse/expand, graph focus (dim non-neighbors). |
+| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **Link** tool or link handle (Shift+drag optional expert shortcut), node collapse/expand, graph focus (dim non-neighbors). |
 | **Library & projects** | Create / rename / duplicate / delete projects; new blank map; import **JSON** or **ZIP**; export JSON or **ZIP** (full round-trip with media). |
 | **Persistence** | IndexedDB autosave, debounced saves, manual **Ctrl/Cmd+S** save; Zod-validated schemas; portable `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. |
 | **Media** | Attach images, PDFs, text, and generic files per node; storage **quota** checks before large writes; thumbnails for images; **PDF.js** first page in the inspector (**PdfCanvas**); markdown-style notes. |
 | **Search & navigation** | Fuse.js search palette (**Ctrl/Cmd+K** or **/**), focus selection (**F**), **center on selection** (**Home** or **.** moves the primary node to the orbit pivot), bookmarks (save/recall view + optional focus node), **Reset view** (toolbar — full camera reset), **Alt+arrows** to nudge the world. |
 | **Layout (optional)** | Toolbar **Layout** actions on **selection**: align (X/Y/Z), distribute (X/Y/Z), radial, flatten plane, normalize spacing, center cluster — **Undo** reverts; ghost preview before commit is not implemented. |
 | **World & guides** | **World mode** vs **Travel mode**; **Axis controls** toggle for graph-local X/Y/Z handles at the origin and on nodes; **WhiteVoid** environment (desktop: **SkyGradient** at the horizon + fog; headset: tuned background/fog), **CalmParticles**. |
-| **VR / WebXR** | Enter VR; controller/hand **XrRaycastSelect** (trigger or pinch → select, drag, finish connections); **XrTwoHandLink** — with one node selected, pull the **other** controller’s trigger to start a new link (same gesture family as Shift+drag on desktop). **XrWorldGrab** — squeeze grips for world move and two-hand scale. **XrWristMenu** — **hand tracking**: show when the **left palm faces you** (hysteresis); **controllers**: toggle with the **left secondary face button** (Y on typical Quest). Buttons: Library, Search, Settings, Undo, Redo, Reset view, Travel/World toggle, Help, Exit VR. **XrNodeRadial** — Link / Inspect chips on the selected node. Dedicated world-space panels: **XrNodeDetailPanel**, **XrSearchPanel**, **XrSettingsPanel**, **XrHelpHud**; **XrTextPromptHud** for in-VR text (e.g. bookmark names). **XrConfirmHud** for destructive confirms; **XrSessionBridge**; locomotion / vignette / smooth movement in Settings. Layout, bookmarks, and ZIP/JSON export stay on the **desktop toolbar** (exit VR). |
+| **VR / WebXR** | Enter VR; **XrControllerInputBridge** / **XrRaycastSelect** — trigger ray → select nodes, finish connections (target node or ground plane). **XrWorldGrab** — squeeze grips for world move and two-hand scale (world mode). **Hand-primary sessions** (hands only, no controllers) set `xrHandTrackingPrimary` on the store; link handles and other advanced authoring are hidden for reliability. **XrWristMenu** — **hand tracking**: show when the **left palm faces you** (hysteresis); **controllers**: toggle with the **left secondary face button** (Y on typical Quest). Global wrist actions route through **xrGlobalMenuActions** (Library, Search, Settings, Undo, Redo, view resets, Help, Exit VR, etc.). **XrNodeRadial** — Link / Inspect chips on the selected node. **XrStatusHud** — mode, selection, and hints. Dedicated world-space panels: **XrNodeDetailPanel**, **XrSearchPanel**, **XrSettingsPanel**, **XrHelpHud**; **XrTextPromptHud** for in-VR text (e.g. bookmark names). **XrConfirmHud** for destructive confirms; **XrSessionBridge**; locomotion / vignette / smooth movement in Settings. Layout, bookmarks, and ZIP/JSON export stay on the **desktop toolbar** (exit VR). |
 | **UX** | Onboarding banner, **Help** overlay (desktop + VR controls), Settings (labels, locomotion, audio, comfort), **ConfirmModal** for destructive actions on desktop. |
 
 ## Prerequisites
@@ -65,7 +65,7 @@ Use a **HTTPS** deployment URL on Quest.
 - **Library**: create / rename / duplicate / delete projects; import **JSON or ZIP**.
 - **Tools**: toolbar **Select / Create / Link / Inspect** or shortcuts **V / N / L / I**. **Scene**: choose **Create** (or press **N**), then double-click the ground to place a node.
 - **Select**: click node (Ctrl/Cmd+click to add to selection).
-- **Connect**: **Shift**+drag from a node; release on another node or on the ground for a new connected node.
+- **Connect**: choose **Link** in the toolbar (or **L**), use the **link handle** on a selected node, or with **Select** active use **Shift**+drag from a node (expert shortcut); release on another node or on the ground for a new connected node.
 - **Move**: drag a node (horizontal plane).
 - **Detail**: double-click a node or press **Enter** with selection; attach files and notes in the inspector.
 - **Search**: **Ctrl/Cmd+K** or **/** — pick a result to focus.
@@ -87,7 +87,7 @@ Use a **HTTPS** preview or production URL.
 - [ ] Enter immersive VR from the toolbar; scene renders (white void, particles, graph).
 - [ ] Controllers: ray select nodes; trigger to activate UI affordances where applicable.
 - [ ] Create nodes (workflow depends on XR pointer events hitting meshes).
-- [ ] **Two-hand link**: select a node with one controller, then **trigger on the other** controller to start a connection; complete by selecting a target node or ground (matches **XrTwoHandLink**).
+- [ ] **Link in VR**: start a link from **XrNodeRadial** (Link) or the link handle, then **trigger** on a target node or the ground plane to finish (same semantics as desktop).
 - [ ] Toggle **Travel mode** vs **World mode** in the toolbar; move with thumbsticks in travel mode.
 - [ ] In **World mode**, squeeze **grip** on a controller: move the graph with one hand; squeeze **both** grips and move hands closer/farther to scale the graph.
 - [ ] **Library / home**: from the wrist menu choose **Library** (returns to the project home and ends the immersive session when the canvas unmounts), or exit VR from the flat toolbar **View** menu if you prefer.
@@ -134,11 +134,14 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - `src/store/rootStore.ts` — app state, graph edits, undo stack, autosave, search index.
 - `src/graph/types.ts` — domain types (`NodeEntity`, edges, bookmarks, `APP_SCHEMA_VERSION`, etc.).
 - `src/input/actions.ts` — semantic action union consumed by the store.
+- `src/input/adapters/useDesktopInputBridge.ts` — desktop input coordination hook (extend for centralized pointer routing).
+- `src/input/adapters/useXrHandInputBridge.ts` — **XrHandInputStub** in the canvas sets hand-primary XR mode on the store.
+- `src/input/xr/handGestures.ts` — hand-tracking UX policy (e.g. when to hide advanced authoring).
 - `src/input/interactionPhase.ts` — high-level interaction phase notes (desktop vs modal vs search).
 - `src/input/sessionTypes.ts`, `src/input/sessionMachine.ts` — interaction session scaffold (link drag, node drag, world grab) derived from store state for future exclusivity guarantees.
 - `src/persistence/` — IndexedDB + Zod schemas; `zipBundle.ts` for import/export archives.
 - `src/media/` — quota helpers and image thumbnails.
-- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `ConnectionController`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrTwoHandLink`, `XrWorldGrab`, `XrWristMenu`, `XrNodeRadial`, `XrToolHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `palmFacing`, `xrSelectionRefs`), `xrStore.ts`.
+- `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `LinkPreview`, `FloorGrid`, …), WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), `xrStore.ts`.
 - `src/ui/` — HTML overlays (library, toolbar, inspector, search, structure/bookmarks menus, help, modals); `toolbar/sceneToolbarCommands.ts` backs toolbar and XR menu actions.
 - `src/utils/xrController.ts` — controller index helpers for XR gestures.
 

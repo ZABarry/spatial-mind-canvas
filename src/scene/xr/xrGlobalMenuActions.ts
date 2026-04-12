@@ -9,6 +9,9 @@ export type XrGlobalMenuCommand =
   | 'undo'
   | 'redo'
   | 'resetView'
+  | 'recenterSelection'
+  | 'resetScale'
+  | 'cancel'
   | 'toggleMode'
   | 'help'
   | 'exitVr'
@@ -32,6 +35,15 @@ export function runXrGlobalMenuCommand(cmd: XrGlobalMenuCommand) {
       break
     case 'resetView':
       cmds.resetView()
+      break
+    case 'recenterSelection':
+      cmds.centerViewOnSelection()
+      break
+    case 'resetScale':
+      cmds.resetWorldScaleToDefault()
+      break
+    case 'cancel':
+      cmds.cancelInteraction()
       break
     case 'toggleMode':
       cmds.toggleTravelWorldMode()

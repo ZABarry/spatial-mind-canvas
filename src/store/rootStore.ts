@@ -90,6 +90,10 @@ export interface RootState {
   xrHelpOpen: boolean
   /** Set from WebXR session inside canvas — hides flat HTML modals while immersive. */
   xrSessionActive: boolean
+  /** True when the session has hand input without tracked gamepad controllers (hand-tracking lite UX). */
+  xrHandTrackingPrimary: boolean
+  /** Dev-only: show extra XR HUD diagnostics (toggled from Settings). */
+  xrDebugHud: boolean
   /** Bumped when `centerViewOnSelection` runs; canvas reads orbit target and applies `translateWorld`. */
   centerViewTick: number
   /** Bumped on `resetWorld`; canvas restores desktop orbit camera to its initial pose. */
@@ -871,6 +875,8 @@ export const useRootStore = create<RootState>((set, get) => {
     textPromptDialog: null,
     xrHelpOpen: false,
     xrSessionActive: false,
+    xrHandTrackingPrimary: false,
+    xrDebugHud: false,
     centerViewTick: 0,
     resetViewTick: 0,
     nodeDragActive: false,

@@ -198,7 +198,10 @@ function NodeItem({
             xrDragControllerIdx.current = null
           }
           const toolMode = useRootStore.getState().toolMode
-          if (toolMode === 'link' || e.shiftKey) {
+          const expertShiftLink = e.shiftKey && toolMode === 'select'
+          const handLite = useRootStore.getState().xrHandTrackingPrimary
+          const allowLink = (toolMode === 'link' || expertShiftLink) && !(gl.xr.isPresenting && handLite)
+          if (allowLink) {
             useRootStore.getState().dispatch({
               type: 'startConnection',
               fromNodeId: n.id,

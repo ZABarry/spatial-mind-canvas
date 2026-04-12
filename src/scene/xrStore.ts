@@ -12,6 +12,12 @@ const rayPointer = {
 }
 
 export const xrStore = createXRStore({
+  /**
+   * IWER’s default synthetic room (`office_small`) is a separate compositor layer and can sit in
+   * front of the app’s base WebGL layer in dev, yielding a blank grey headset view. Disable SEM so
+   * the scene (grid, graph, particles) is what you see in the simulator.
+   */
+  emulate: { type: 'metaQuest3', syntheticEnvironment: false },
   controller: {
     rayPointer,
   },

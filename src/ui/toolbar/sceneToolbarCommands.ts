@@ -112,6 +112,33 @@ export function resetView() {
   useRootStore.getState().dispatch({ type: 'resetWorld' })
 }
 
+export function centerViewOnSelection() {
+  useRootStore.getState().dispatch({ type: 'centerViewOnSelection' })
+}
+
+/** Sets world graph scale multiplier back to 1 (undo stack may still apply). */
+export function resetWorldScaleToDefault() {
+  const st = useRootStore.getState()
+  const p = st.project
+  if (!p) return
+  const s = p.worldTransform.scale
+  if (s <= 0) return
+  st.dispatch({ type: 'scaleWorld', factor: 1 / s })
+}
+
+/** Close drafts, panels, and search — recovery from a stuck interaction. */
+export function cancelInteraction() {
+  const st = useRootStore.getState()
+  st.dispatch({ type: 'cancelConnection' })
+  st.dispatch({ type: 'openNodeDetail', nodeId: null })
+  st.dispatch({ type: 'setPlacementPreview', preview: null })
+  st.dispatch({ type: 'setSearchOpen', open: false })
+  st.dispatch({ type: 'setToolMode', mode: 'select' })
+  if (st.nodeDragActive) {
+    st.dispatch({ type: 'setNodeDragActive', active: false })
+  }
+}
+
 export function undo() {
   useRootStore.getState().dispatch({ type: 'undo' })
 }

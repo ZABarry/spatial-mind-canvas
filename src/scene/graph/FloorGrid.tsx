@@ -38,6 +38,7 @@ void main() {
 /** World-space XZ floor grid; lines only (clear background), distance-faded from the camera. */
 export function FloorGrid() {
   const camera = useThree((s) => s.camera)
+  const gl = useThree((s) => s.gl)
 
   const uniforms = useMemo(
     () => ({
@@ -71,7 +72,15 @@ export function FloorGrid() {
   useEffect(() => () => material.dispose(), [material])
 
   useFrame(() => {
-    material.uniforms.uCameraPosition.value.copy(camera.position)
+    const pos = material.uniforms.uCameraPosition.value
+    if (gl.xr.isPresenting) {
+      const xrCam = gl.xr.getCamera() as THREE.ArrayCamera
+      const eye = xrCam.cameras[0]
+      if (eye) eye.getWorldPosition(pos)
+      else xrCam.getWorldPosition(pos)
+    } else {
+      pos.copy(camera.position)
+    }
   })
 
   return (

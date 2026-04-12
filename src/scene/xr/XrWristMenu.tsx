@@ -18,8 +18,8 @@ import {
 const LEFT_CONTROLLER_MENU_BUTTON_INDEX = 4
 
 const PANEL_W = 0.52
-const BTN_H = 0.032
-const GAP = 0.006
+const BTN_H = 0.042
+const GAP = 0.008
 const COLS = 2
 const CELL_W = PANEL_W / COLS
 
@@ -33,6 +33,9 @@ function buildMainMenuDefs(modeLabel: string): MenuDef[] {
     { label: 'Undo', hit: { kind: 'cmd', cmd: 'undo' } },
     { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
     { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
+    { label: 'Recenter', hit: { kind: 'cmd', cmd: 'recenterSelection' } },
+    { label: 'Reset scale', hit: { kind: 'cmd', cmd: 'resetScale' } },
+    { label: 'Cancel', hit: { kind: 'cmd', cmd: 'cancel' } },
     { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
     { label: 'Help', hit: { kind: 'cmd', cmd: 'help' } },
     { label: 'Exit VR', hit: { kind: 'cmd', cmd: 'exitVr' } },
@@ -69,7 +72,7 @@ function MenuButton({
       </mesh>
       <Text
         position={[0, 0, 0.001]}
-        fontSize={0.012}
+        fontSize={0.014}
         color="#1c2330"
         anchorX="center"
         anchorY="middle"
