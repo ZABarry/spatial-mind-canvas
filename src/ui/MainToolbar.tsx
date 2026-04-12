@@ -1,108 +1,101 @@
-import { xrStore } from '../scene/xrStore'
+import { useState } from 'react'
 import { useRootStore } from '../store/rootStore'
-import { StructureMenu } from './StructureMenu'
-import { BookmarksMenu } from './BookmarksMenu'
+import * as tb from './toolbar/sceneToolbarCommands'
+import { BookmarksDropdown } from './BookmarksMenu'
+import { StructureMenuContent } from './StructureMenu'
+import { ToolbarMenu, type ToolbarMenuId } from './ToolbarMenu'
 
 export function MainToolbar() {
-  const goHome = useRootStore((s) => s.goHome)
+  const [openMenu, setOpenMenu] = useState<ToolbarMenuId | null>(null)
+  const xrSession = useRootStore((s) => s.xrSessionActive)
   const mode = useRootStore((s) => s.interactionMode)
-  const dispatch = useRootStore((s) => s.dispatch)
-  const newBlank = useRootStore((s) => s.newBlankProject)
-  const exportProject = useRootStore((s) => s.exportProject)
-  const exportProjectZip = useRootStore((s) => s.exportProjectZip)
-  const clearMap = useRootStore((s) => s.clearCurrentMap)
-  const duplicate = useRootStore((s) => s.duplicateCurrentProject)
   const project = useRootStore((s) => s.project)
   const worldAxisControls = project?.settings.worldAxisControls === true
 
+  if (xrSession) return null
+
   return (
     <div className="toolbar panel">
-      <button type="button" onClick={() => goHome()}>
-        Library
-      </button>
-      <button type="button" onClick={() => void newBlank()}>
-        New map
-      </button>
-      <button type="button" onClick={() => void duplicate()}>
-        Duplicate map
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          useRootStore.setState({
-            confirmDialog: {
-              title: 'Clear this map',
-              message:
-                'Remove all nodes, edges, and bookmarks from the current map? The project stays; only content is cleared.',
-              onConfirm: () => clearMap(),
-            },
-          })
-        }
-      >
-        Clear map
-      </button>
-      <button type="button" onClick={() => exportProject()}>
-        Export JSON
-      </button>
-      <button type="button" onClick={() => void exportProjectZip()}>
-        Export ZIP
-      </button>
       <button
         type="button"
         onClick={() => {
-          const label = window.prompt('Bookmark this view', 'Saved view')
-          if (label?.trim()) dispatch({ type: 'addBookmark', label: label.trim() })
+          setOpenMenu(null)
+          tb.goLibrary()
         }}
       >
-        Save bookmark
+        Library
       </button>
-      <BookmarksMenu />
-      <button type="button" className="primary" onClick={() => void xrStore.enterVR()}>
-        Enter VR
-      </button>
+
+      <ToolbarMenu menuId="map" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Map">
+        <button type="button" onClick={() => void tb.newBlankMap()}>
+          New map
+        </button>
+        <button type="button" onClick={() => void tb.duplicateMap()}>
+          Duplicate map
+        </button>
+        <button type="button" className="toolbar-menu-danger" onClick={() => tb.requestClearMap()}>
+          Clear map…
+        </button>
+        <button type="button" onClick={() => tb.exportJson()}>
+          Export JSON
+        </button>
+        <button type="button" onClick={() => void tb.exportZip()}>
+          Export ZIP
+        </button>
+      </ToolbarMenu>
+
+      <BookmarksDropdown openMenu={openMenu} setOpenMenu={setOpenMenu} />
+
+      <ToolbarMenu menuId="view" openMenu={openMenu} setOpenMenu={setOpenMenu} label="View">
+        <button type="button" className="primary" onClick={() => void tb.enterVr()}>
+          Enter VR
+        </button>
+        <button type="button" onClick={() => tb.toggleTravelWorldMode()}>
+          {mode === 'travel' ? 'Switch to world mode' : 'Switch to travel mode'}
+        </button>
+        <button
+          type="button"
+          className={worldAxisControls ? 'primary' : undefined}
+          onClick={() => tb.toggleWorldAxisControls()}
+        >
+          {worldAxisControls ? 'World axis controls on' : 'World axis controls off'}
+        </button>
+        <button type="button" onClick={() => tb.focusSelection()}>
+          Focus selection
+        </button>
+        <button type="button" onClick={() => tb.resetView()}>
+          Reset view
+        </button>
+      </ToolbarMenu>
+
+      <ToolbarMenu menuId="edit" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Edit">
+        <button type="button" onClick={() => tb.undo()}>
+          Undo
+        </button>
+        <button type="button" onClick={() => tb.redo()}>
+          Redo
+        </button>
+        <button type="button" onClick={() => tb.openSearch()}>
+          Search…
+        </button>
+        <p className="toolbar-menu-hint">Shortcuts: ⌘Z / ⌘⇧Z, ⌘K</p>
+      </ToolbarMenu>
+
+      <ToolbarMenu menuId="layout" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Layout">
+        <StructureMenuContent />
+      </ToolbarMenu>
+
       <button
         type="button"
-        onClick={() => dispatch({ type: 'setInteractionMode', mode: mode === 'travel' ? 'worldManip' : 'travel' })}
-      >
-        {mode === 'travel' ? 'World mode' : 'Travel mode'}
-      </button>
-      <button
-        type="button"
-        className={worldAxisControls ? 'primary' : undefined}
-        onClick={() =>
-          dispatch({
-            type: 'patchSettings',
-            patch: { worldAxisControls: !worldAxisControls },
-          })
-        }
-      >
-        {worldAxisControls ? 'Axis controls on' : 'Axis controls'}
-      </button>
-      <button type="button" onClick={() => dispatch({ type: 'undo' })}>
-        Undo
-      </button>
-      <button type="button" onClick={() => dispatch({ type: 'redo' })}>
-        Redo
-      </button>
-      <button type="button" onClick={() => dispatch({ type: 'setSearchOpen', open: true })}>
-        Search
-      </button>
-      <button type="button" onClick={() => dispatch({ type: 'focusSelection' })}>
-        Focus
-      </button>
-      <button type="button" onClick={() => dispatch({ type: 'resetWorld' })}>
-        Reset view
-      </button>
-      <button
-        type="button"
-        onClick={() => useRootStore.setState({ settingsOpen: true })}
+        onClick={() => {
+          setOpenMenu(null)
+          tb.openSettings()
+        }}
       >
         Settings
       </button>
-      <StructureMenu />
-      <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>
-        {project?.name ?? ''}
-      </span>
+
+      <span className="toolbar-project-name">{project?.name ?? ''}</span>
     </div>
   )
 }

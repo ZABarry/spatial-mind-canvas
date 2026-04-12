@@ -11,6 +11,17 @@ export type NodeShape =
   | 'diamond'
   | 'pill'
 
+/** All variants; keep in sync with geometry in `scene/graph/nodeGeometry.tsx`. */
+export const NODE_SHAPES = [
+  'sphere',
+  'cube',
+  'capsule',
+  'tetra',
+  'ring',
+  'diamond',
+  'pill',
+] as const satisfies readonly NodeShape[]
+
 export type EdgeStyle = 'straight' | 'spline'
 
 export type InteractionMode = 'worldManip' | 'travel' | 'nodeDetail'
@@ -124,6 +135,8 @@ export interface ConnectionDraftState {
   style: EdgeStyle
   /** Sampled world points along drag for expressive spline */
   pathPoints: Vec3[]
+  /** WebXR: controller index for the ray that is drawing this connection */
+  xrControllerIndex?: number
 }
 
 export interface PlacementPreviewState {

@@ -43,6 +43,8 @@ export interface RootState {
     fromNodeId: string
     style: EdgeStyle
     pathPoints: Vec3[]
+    /** WebXR: controller index from the hand that started the gesture (see `xrControllerIndexFromRayOrigin`). */
+    xrControllerIndex?: number
   } | null
   placementPreview: {
     position: Vec3
@@ -59,6 +61,10 @@ export interface RootState {
   onboardingStep: number
   settingsOpen: boolean
   confirmDialog: { title: string; message: string; onConfirm: () => void } | null
+  /** Text prompt for VR (e.g. bookmark name); replaces `window.prompt` while immersive. */
+  textPromptDialog: { title: string; defaultValue: string; onSubmit: (value: string) => void } | null
+  /** In-headset help overlay (replaces floating Help button DOM). */
+  xrHelpOpen: boolean
   /** Set from WebXR session inside canvas — hides flat HTML modals while immersive. */
   xrSessionActive: boolean
   historyPast: HistoryEntry[]
@@ -253,6 +259,7 @@ export const useRootStore = create<RootState>((set, get) => {
             fromNodeId: a.fromNodeId,
             style: a.style,
             pathPoints: [],
+            ...(a.xrControllerIndex !== undefined ? { xrControllerIndex: a.xrControllerIndex } : {}),
           },
         })
         break
@@ -651,6 +658,8 @@ export const useRootStore = create<RootState>((set, get) => {
     onboardingStep: 0,
     settingsOpen: false,
     confirmDialog: null,
+    textPromptDialog: null,
+    xrHelpOpen: false,
     xrSessionActive: false,
     historyPast: [],
     historyFuture: [],
@@ -712,7 +721,7 @@ export const useRootStore = create<RootState>((set, get) => {
     },
     goHome: () => {
       void get().saveNow()
-      set({ view: 'home', project: null })
+      set({ view: 'home', project: null, textPromptDialog: null, xrHelpOpen: false })
     },
     newBlankProject: async () => {
       const repo = get().repo
@@ -798,6 +807,8 @@ export const useRootStore = create<RootState>((set, get) => {
         historyPast: [],
         historyFuture: [],
         confirmDialog: null,
+        textPromptDialog: null,
+        xrHelpOpen: false,
         hover: {},
       })
       if (repo) void repo.save(cleared)

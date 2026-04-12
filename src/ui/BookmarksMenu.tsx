@@ -1,52 +1,55 @@
+import type { Dispatch, SetStateAction } from 'react'
 import { useRootStore } from '../store/rootStore'
+import { ToolbarMenu, type ToolbarMenuId } from './ToolbarMenu'
 
-export function BookmarksMenu() {
+type BookmarksDropdownProps = {
+  openMenu: ToolbarMenuId | null
+  setOpenMenu: Dispatch<SetStateAction<ToolbarMenuId | null>>
+}
+
+export function BookmarksDropdown({ openMenu, setOpenMenu }: BookmarksDropdownProps) {
   const project = useRootStore((s) => s.project)
   const dispatch = useRootStore((s) => s.dispatch)
+  const count = project?.bookmarks.length ?? 0
 
-  if (!project || project.bookmarks.length === 0) return null
+  const label = count > 0 ? `Bookmarks (${count})` : 'Bookmarks'
 
   return (
-    <details className="panel" style={{ padding: '6px 10px', cursor: 'pointer' }}>
-      <summary style={{ listStyle: 'none', fontSize: 13 }}>Bookmarks ({project.bookmarks.length})</summary>
-      <ul
-        style={{
-          margin: '8px 0 0',
-          padding: 0,
-          maxHeight: 200,
-          overflowY: 'auto',
-          fontSize: 13,
-          listStyle: 'none',
+    <ToolbarMenu menuId="bookmarks" openMenu={openMenu} setOpenMenu={setOpenMenu} label={label}>
+      <button
+        type="button"
+        onClick={() => {
+          const name = window.prompt('Bookmark this view', 'Saved view')
+          if (name?.trim()) dispatch({ type: 'addBookmark', label: name.trim() })
         }}
       >
-        {project.bookmarks.map((b) => (
-          <li
-            key={b.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              marginBottom: 6,
-            }}
-          >
-            <button
-              type="button"
-              style={{ border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', flex: 1 }}
-              onClick={() => dispatch({ type: 'recallBookmark', id: b.id })}
-            >
-              {b.label}
-            </button>
-            <button
-              type="button"
-              style={{ fontSize: 11, color: '#b91c1c' }}
-              onClick={() => dispatch({ type: 'removeBookmark', id: b.id })}
-            >
-              ×
-            </button>
-          </li>
-        ))}
-      </ul>
-    </details>
+        Save current view…
+      </button>
+      {count === 0 ? (
+        <p className="toolbar-menu-hint">No saved views yet.</p>
+      ) : (
+        <ul className="toolbar-menu-list">
+          {project!.bookmarks.map((b) => (
+            <li key={b.id}>
+              <button
+                type="button"
+                className="toolbar-menu-list-primary"
+                onClick={() => dispatch({ type: 'recallBookmark', id: b.id })}
+              >
+                {b.label}
+              </button>
+              <button
+                type="button"
+                className="toolbar-menu-list-remove"
+                title="Remove bookmark"
+                onClick={() => dispatch({ type: 'removeBookmark', id: b.id })}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </ToolbarMenu>
   )
 }

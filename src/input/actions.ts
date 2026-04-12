@@ -16,7 +16,7 @@ export type AppAction =
   | { type: 'deleteNode'; id: string }
   | { type: 'deleteEdge'; id: string }
   | { type: 'connectNodes'; fromId: string; toId: string; style: EdgeStyle; controlPoints?: Vec3[] }
-  | { type: 'startConnection'; fromNodeId: string; style: EdgeStyle }
+  | { type: 'startConnection'; fromNodeId: string; style: EdgeStyle; xrControllerIndex?: number }
   | { type: 'updateConnectionDrag'; pathPoints: Vec3[] }
   | { type: 'finishConnection'; targetNodeId?: string; dropPosition?: Vec3 }
   | { type: 'cancelConnection' }

@@ -16,6 +16,7 @@ export function App() {
   const ready = useRootStore((s) => s.ready)
   const view = useRootStore((s) => s.view)
   const bootstrap = useRootStore((s) => s.bootstrap)
+  const xrSession = useRootStore((s) => s.xrSessionActive)
 
   useEffect(() => {
     void bootstrap()
@@ -42,11 +43,15 @@ export function App() {
           <div className="scene-wrap">
             <SceneCanvas />
             <MainToolbar />
-            <SearchPalette />
-            <NodeInspector />
-            <OnboardingBanner />
-            <SettingsPanel />
-            <HelpControls />
+            {!xrSession && (
+              <>
+                <SearchPalette />
+                <NodeInspector />
+                <OnboardingBanner />
+                <SettingsPanel />
+                <HelpControls />
+              </>
+            )}
           </div>
         </>
       )}

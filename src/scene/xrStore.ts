@@ -18,4 +18,6 @@ export const xrStore = createXRStore({
   hand: {
     rayPointer,
   },
+  /** Improves soft-keyboard behavior for Html `<input>` / `<textarea>` while immersive (browser support varies). */
+  domOverlay: true,
 })

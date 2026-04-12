@@ -27,8 +27,12 @@ export function ConnectionController() {
     const proj = st.project
     if (!d || !proj) return
     const wt = proj.worldTransform
-    const dominant = proj.settings.dominantHand
-    const idx = dominant === 'left' ? 1 : 0
+    const idx =
+      d.xrControllerIndex ??
+      (() => {
+        const dominant = proj.settings.dominantHand
+        return dominant === 'left' ? 1 : 0
+      })()
     const controller = gl.xr.getController(idx)
     controller.updateMatrixWorld()
     const origin = new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld)
@@ -52,7 +56,7 @@ export function ConnectionController() {
   })
 
   useEffect(() => {
-    if (!draft) return
+    if (!draft || gl.xr.isPresenting) return
     const el = gl.domElement
     const plane = new THREE.Plane()
     const raycaster = new THREE.Raycaster()
@@ -90,7 +94,7 @@ export function ConnectionController() {
     return () => {
       el.removeEventListener('pointermove', onMove)
     }
-  }, [draft, camera, gl, dispatch])
+  }, [draft, camera, gl, gl.xr.isPresenting, dispatch])
 
   return null
 }

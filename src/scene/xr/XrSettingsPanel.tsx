@@ -1,0 +1,20 @@
+import { Html } from '@react-three/drei'
+import { useXR } from '@react-three/xr'
+import { useRootStore } from '../../store/rootStore'
+import { SettingsFormBody } from '../../ui/panels/SettingsFormBody'
+
+export function XrSettingsPanel() {
+  const session = useXR((s) => s.session)
+  const open = useRootStore((s) => s.settingsOpen)
+  const project = useRootStore((s) => s.project)
+
+  if (!session || !open || !project) return null
+
+  return (
+    <group position={[0.44, 1.38, -0.62]}>
+      <Html transform occlude={false} style={{ pointerEvents: 'auto' }}>
+        <SettingsFormBody variant="xr" />
+      </Html>
+    </group>
+  )
+}

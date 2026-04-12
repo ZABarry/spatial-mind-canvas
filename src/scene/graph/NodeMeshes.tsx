@@ -8,6 +8,8 @@ import { NodeAxisGuides } from './AxisGuides'
 import { useNodeGeometry } from './nodeGeometry'
 import { useRootStore } from '../../store/rootStore'
 import { graphPointToWorld, graphUpNormalWorld, worldPointToGraphLocal } from '../../utils/math'
+import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
+import { xrLastNodeSelectControllerIndex } from '../xr/xrSelectionRefs'
 
 const _billboardParentQ = new THREE.Quaternion()
 const _billboardParentInv = new THREE.Quaternion()
@@ -65,6 +67,8 @@ function NodeItem({
   const gl = useThree((s) => s.gl)
   const [dragging, setDragging] = useState(false)
   const draggingRef = useRef(false)
+  /** WebXR: `getController` index for the hand that started the drag (not dominant-hand order). */
+  const xrDragControllerIdx = useRef<number | null>(null)
   const geom = useNodeGeometry(n.shape, n.size)
   const color = useMemo(() => new THREE.Color(n.color), [n.color])
 
@@ -113,7 +117,10 @@ function NodeItem({
   useEffect(() => {
     if (!dragging) return
     const el = gl.domElement
-    const onUp = () => setDragging(false)
+    const onUp = () => {
+      setDragging(false)
+      xrDragControllerIdx.current = null
+    }
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
     el.addEventListener('pointercancel', onUp)
@@ -132,8 +139,12 @@ function NodeItem({
     const wt = proj.worldTransform
     const node = proj.graph.nodes[n.id]
     if (!node) return
-    const dominant = proj.settings.dominantHand
-    const idx = dominant === 'left' ? 1 : 0
+    const idx =
+      xrDragControllerIdx.current ??
+      (() => {
+        const dominant = proj.settings.dominantHand
+        return dominant === 'left' ? 1 : 0
+      })()
     const controller = gl.xr.getController(idx)
     controller.updateMatrixWorld()
     const origin = new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld)
@@ -170,11 +181,19 @@ function NodeItem({
         }}
         onPointerDown={(e) => {
           e.stopPropagation()
+          if (gl.xr.isPresenting && e.ray) {
+            xrDragControllerIdx.current = xrControllerIndexFromRayOrigin(gl, e.ray.origin)
+          } else {
+            xrDragControllerIdx.current = null
+          }
           if (e.shiftKey) {
             useRootStore.getState().dispatch({
               type: 'startConnection',
               fromNodeId: n.id,
               style: 'spline',
+              ...(gl.xr.isPresenting && xrDragControllerIdx.current !== null
+                ? { xrControllerIndex: xrDragControllerIdx.current }
+                : {}),
             })
             return
           }
@@ -185,11 +204,15 @@ function NodeItem({
             ids: [n.id],
             additive: !!additive,
           })
+          if (gl.xr.isPresenting && e.ray) {
+            xrLastNodeSelectControllerIndex.current = xrControllerIndexFromRayOrigin(gl, e.ray.origin)
+          }
           if (e.button === 0 && !n.pinned) setDragging(true)
         }}
         onPointerUp={(e) => {
           e.stopPropagation()
           setDragging(false)
+          xrDragControllerIdx.current = null
           const d = useRootStore.getState().connectionDraft
           if (d) {
             if (d.fromNodeId === n.id) {

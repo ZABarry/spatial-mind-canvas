@@ -43,14 +43,16 @@ export function InteractionPlane() {
   )
 
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -0.02, 0]}
-      onPointerUp={onPointerUp}
-      onDoubleClick={onDoubleClick}
-    >
-      <planeGeometry args={[400, 400]} />
-      <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
-    </mesh>
+    <>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.02, 0]}
+        onPointerUp={onPointerUp}
+        onDoubleClick={onDoubleClick}
+      >
+        <planeGeometry args={[400, 400]} />
+        <meshBasicMaterial transparent opacity={0} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+    </>
   )
 }

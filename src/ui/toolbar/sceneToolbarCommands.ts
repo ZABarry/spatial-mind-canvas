@@ -1,0 +1,118 @@
+import { xrStore } from '../../scene/xrStore'
+import { useRootStore } from '../../store/rootStore'
+import type { StructureToolName } from '../../input/actions'
+
+export function goLibrary() {
+  useRootStore.getState().goHome()
+}
+
+export function newBlankMap() {
+  void useRootStore.getState().newBlankProject()
+}
+
+export function duplicateMap() {
+  void useRootStore.getState().duplicateCurrentProject()
+}
+
+export function requestClearMap() {
+  useRootStore.setState({
+    confirmDialog: {
+      title: 'Clear this map',
+      message:
+        'Remove all nodes, edges, and bookmarks from the current map? The project stays; only content is cleared.',
+      onConfirm: () => useRootStore.getState().clearCurrentMap(),
+    },
+  })
+}
+
+export function exportJson() {
+  useRootStore.getState().exportProject()
+}
+
+export function exportZip() {
+  void useRootStore.getState().exportProjectZip()
+}
+
+export function enterVr() {
+  void xrStore.enterVR()
+}
+
+export function toggleTravelWorldMode() {
+  const st = useRootStore.getState()
+  const mode = st.interactionMode
+  st.dispatch({ type: 'setInteractionMode', mode: mode === 'travel' ? 'worldManip' : 'travel' })
+}
+
+export function toggleWorldAxisControls() {
+  const st = useRootStore.getState()
+  const on = st.project?.settings.worldAxisControls === true
+  st.dispatch({ type: 'patchSettings', patch: { worldAxisControls: !on } })
+}
+
+export function focusSelection() {
+  useRootStore.getState().dispatch({ type: 'focusSelection' })
+}
+
+export function resetView() {
+  useRootStore.getState().dispatch({ type: 'resetWorld' })
+}
+
+export function undo() {
+  useRootStore.getState().dispatch({ type: 'undo' })
+}
+
+export function redo() {
+  useRootStore.getState().dispatch({ type: 'redo' })
+}
+
+export function openSearch() {
+  useRootStore.getState().dispatch({ type: 'setSearchOpen', open: true })
+}
+
+export function openSettings() {
+  useRootStore.setState({ settingsOpen: true })
+}
+
+export function runStructureTool(tool: StructureToolName) {
+  useRootStore.getState().dispatch({ type: 'structureTool', tool })
+}
+
+export function promptSaveBookmark() {
+  const st = useRootStore.getState()
+  if (st.xrSessionActive) {
+    useRootStore.setState({
+      textPromptDialog: {
+        title: 'Bookmark this view',
+        defaultValue: 'Saved view',
+        onSubmit: (name) => {
+          if (name) useRootStore.getState().dispatch({ type: 'addBookmark', label: name })
+        },
+      },
+    })
+    return
+  }
+  const name = window.prompt('Bookmark this view', 'Saved view')
+  if (name?.trim()) useRootStore.getState().dispatch({ type: 'addBookmark', label: name.trim() })
+}
+
+/** Open node inspector for exactly one selected node (wrist menu in VR). */
+export function openInspect() {
+  const st = useRootStore.getState()
+  if (st.selection.nodeIds.length !== 1) return
+  const id = st.selection.nodeIds[0]
+  if (id && st.project?.graph.nodes[id]) {
+    st.dispatch({ type: 'openNodeDetail', nodeId: id })
+  }
+}
+
+export function openXrHelp() {
+  useRootStore.setState({ xrHelpOpen: true })
+}
+
+export function recallBookmark(id: string) {
+  useRootStore.getState().dispatch({ type: 'recallBookmark', id })
+}
+
+export function removeBookmark(id: string) {
+  useRootStore.getState().dispatch({ type: 'removeBookmark', id })
+}

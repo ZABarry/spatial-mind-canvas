@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { XR, NotInXR, XROrigin, useXR } from '@react-three/xr'
+import type { ReactNode } from 'react'
 import { useRef } from 'react'
 import type { Group } from 'three'
 import { WhiteVoid } from './environment/WhiteVoid'
@@ -12,7 +13,14 @@ import { useXRControllerLocomotion } from '@react-three/xr'
 import { XrSessionBridge } from './xr/XrSessionBridge'
 import { XrConfirmHud } from './xr/XrConfirmHud'
 import { XrRaycastSelect } from './xr/XrRaycastSelect'
+import { XrTwoHandLink } from './xr/XrTwoHandLink'
 import { XrWorldGrab } from './xr/XrWorldGrab'
+import { XrWristMenu } from './xr/XrWristMenu'
+import { XrNodeDetailPanel } from './xr/XrNodeDetailPanel'
+import { XrSearchPanel } from './xr/XrSearchPanel'
+import { XrSettingsPanel } from './xr/XrSettingsPanel'
+import { XrTextPromptHud } from './xr/XrTextPromptHud'
+import { XrHelpHud } from './xr/XrHelpHud'
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
@@ -28,7 +36,7 @@ function OrbitIfFlat() {
   )
 }
 
-function TravelLocomotion() {
+function TravelLocomotion({ children }: { children?: ReactNode }) {
   const mode = useRootStore((s) => s.interactionMode)
   const settings = useRootStore((s) => s.project?.settings)
   const ref = useRef<Group>(null)
@@ -49,7 +57,7 @@ function TravelLocomotion() {
     hand,
   )
 
-  return <XROrigin ref={ref} />
+  return <XROrigin ref={ref}>{children}</XROrigin>
 }
 
 export function SceneCanvas() {
@@ -63,10 +71,18 @@ export function SceneCanvas() {
         <XrSessionBridge />
         <WhiteVoid />
         <CalmParticles />
-        <TravelLocomotion />
+        <TravelLocomotion>
+          <XrNodeDetailPanel />
+          <XrSearchPanel />
+          <XrSettingsPanel />
+        </TravelLocomotion>
         <XrRaycastSelect />
+        <XrTwoHandLink />
         <XrWorldGrab />
         <XrConfirmHud />
+        <XrTextPromptHud />
+        <XrHelpHud />
+        <XrWristMenu />
         <WorldRoot />
         <NotInXR>
           <OrbitIfFlat />

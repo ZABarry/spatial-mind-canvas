@@ -40,11 +40,11 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | App state, undo stack, autosave | [`src/store/rootStore.ts`](../src/store/rootStore.ts) |
 | Semantic actions | [`src/input/actions.ts`](../src/input/actions.ts) |
 | Interaction phases helper | [`src/input/interactionPhase.ts`](../src/input/interactionPhase.ts) |
-| Graph domain, layout tools | [`src/graph/`](../src/graph/) |
+| Graph domain, layout tools, schema version | [`src/graph/`](../src/graph/), [`types.ts`](../src/graph/types.ts) |
 | IndexedDB + Zod + **ZIP** bundle | [`src/persistence/`](../src/persistence/), [`zipBundle.ts`](../src/persistence/zipBundle.ts) |
 | Media store + quota on attach | [`src/media/`](../src/media/) |
 | Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |
-| XR: session bridge, confirm HUD, ray select, locomotion | [`src/scene/xr/`](../src/scene/xr/), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx) |
+| XR: session bridge, confirm HUD, ray select, two-hand link, wrist menu (palm / Y), world-space detail/search/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrTwoHandLink`, `XrWorldGrab`, `XrWristMenu`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
 | Label budget / settings | [`NodeMeshes.tsx`](../src/scene/graph/NodeMeshes.tsx), [`SettingsPanel.tsx`](../src/ui/SettingsPanel.tsx) |
 | Bookmarks UI | [`BookmarksMenu.tsx`](../src/ui/BookmarksMenu.tsx), toolbar |
 | PDF / image in inspector | [`MediaAttachmentRow.tsx`](../src/ui/MediaAttachmentRow.tsx), [`PdfCanvas.tsx`](../src/ui/PdfCanvas.tsx) |
@@ -60,7 +60,7 @@ These amendments apply on top of the base plan:
 2. **Interaction state machine** — Mutually exclusive high-level states (e.g. idle, hovering, placingNode, draggingNode, drawingEdge, grabbingWorld, nodeDetail, travel, modalConfirm) so desktop, controllers, and hand tracking do not conflict.
 3. **Export UX** — Prefer a **single downloadable `.zip`** with `manifest.json` for portable backup; JSON-only export remains a fallback (see README **Data & export**).
 4. **Quota-aware media** — Use Storage API `estimate()` where appropriate; warn before large imports; surface quota failures clearly.
-5. **Multi-select** — Shift+click (and later lasso/box) so optional structure tools have a natural selection model on desktop.
+5. **Multi-select** — **Ctrl/Cmd+click** to add nodes to selection; **Shift+click** edges for additive edge selection (and later lasso/box) so optional structure tools have a natural selection model on desktop.
 6. **Label policy on Quest** — Prefer selected / nearby / focus; distance fade or cull; hard budget; “show all labels” non-default or debug-only.
 7. **Clear-map semantics** — Clearing the current map should also reset undo/redo, transient interaction (connection draft, placement preview), search state, detail UI, and pending modals where applicable, so the app never sits in a half-cleared state.
 8. **Performance budgets** — Define targets (e.g. max visible labels, particle cap, max texture/page resolution for media, frame-time goals for idle vs active editing) and document them; optimize for Quest from the start.
@@ -117,7 +117,7 @@ Each milestone should end with **runnable desktop build**, **lint / typecheck / 
 - [x] Core unit tests present: [`graph.test.ts`](../src/graph/graph.test.ts), [`math.test.ts`](../src/utils/math.test.ts), [`zipBundle.test.ts`](../src/persistence/zipBundle.test.ts) (`npm run test`).
 - [ ] Extended coverage for store/history/XR adapters over time.
 - [ ] Desktop smoke path (manual or automated where practical).
-- [ ] Manual XR QA: follow [README Quest checklist](../README.md#quest-testing-manual-qa); expand to full matrix (controllers + hands + desktop parity).
+- [ ] Manual XR QA: follow [README Quest checklist](../README.md#quest-testing-manual-qa); include **wrist menu** (controller Y vs hand palm-facing) and **two-hand link**; expand to full matrix (controllers + hands + desktop parity).
 
 ---
 

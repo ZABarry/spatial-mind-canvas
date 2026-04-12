@@ -127,8 +127,8 @@ export function HelpControls() {
                 <h3 id="help-vr">VR</h3>
                 <ul className="help-list">
                   <li>
-                    <strong>Enter VR</strong> — Use <strong>Enter VR</strong> in the toolbar, then confirm in the
-                    headset or browser.
+                    <strong>Enter VR</strong> — Open the <strong>View</strong> menu in the toolbar, choose{' '}
+                    <strong>Enter VR</strong>, then confirm in the headset or browser.
                   </li>
                   <li>
                     <strong>Travel vs world</strong> — <strong>Travel mode</strong> enables thumbstick movement and
@@ -139,12 +139,22 @@ export function HelpControls() {
                     vignette, and dominant hand (affects which controller drives movement/turning).
                   </li>
                   <li>
-                    <strong>Scene</strong> — Point the controller and use the trigger to select, drag nodes, and
-                    connect (same ideas as desktop; <Kbd>Shift</Kbd>-style chord may not apply on device).
+                    <strong>Scene</strong> — Point the controller or hand ray and use the trigger (or pinch) to select
+                    nodes and edges, drag nodes, and complete connections. With <strong>one node selected</strong>, pull
+                    the <strong>other</strong> controller’s trigger to <strong>start a new link</strong> (like{' '}
+                    <Kbd>Shift</Kbd>+drag on desktop).
                   </li>
                   <li>
-                    <strong>Toolbar</strong> — Exit VR to use Library, Search, Settings, and structure tools on the
-                    flat screen, or use the browser overlay if your runtime shows it.
+                    <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
+                    toggle the floating panel with the <strong>secondary face button</strong> (often Y); with{' '}
+                    <strong>hand tracking</strong>, turn your palm toward you to show it. Raycast buttons for Library,
+                    Settings, export, undo/redo, travel/world mode, axis toggle, focus, structure tools, bookmarks, and
+                    more.
+                  </li>
+                  <li>
+                    <strong>Flat toolbar</strong> — You can exit VR from <strong>View → Enter VR</strong> (or leave
+                    the session) to use the full HTML toolbar, inspector, and search on the monitor; some actions are
+                    also available from the wrist menu while immersed.
                   </li>
                 </ul>
               </section>

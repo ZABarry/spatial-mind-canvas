@@ -1,6 +1,8 @@
 import { useXR } from '@react-three/xr'
+import { SkyGradient } from './SkyGradient'
 
-const FLAT_BG = '#f4f6fa'
+/** Match horizon / fog so distance blends to white, not a flat gray. */
+const FLAT_BG = '#ffffff'
 /** Slightly cooler / dimmer in headset so the scene reads less flat-white. */
 const XR_BG = '#d6dde8'
 const FLAT_FOG_D = 0.012
@@ -15,10 +17,11 @@ export function WhiteVoid() {
     <>
       <color attach="background" args={[bg]} />
       <fogExp2 attach="fog" args={[bg, fogD]} />
+      {!inXr && <SkyGradient />}
       <hemisphereLight
         intensity={inXr ? 0.62 : 0.85}
-        color="#f2f4f8"
-        groundColor={inXr ? '#c5ccd8' : '#e8ecf2'}
+        color="#eef3fb"
+        groundColor={inXr ? '#c5ccd8' : '#ffffff'}
       />
       <directionalLight position={[8, 14, 6]} intensity={inXr ? 0.48 : 0.55} color="#fff8f0" />
       <directionalLight position={[-6, 4, -10]} intensity={inXr ? 0.26 : 0.22} color="#b8c8e8" />

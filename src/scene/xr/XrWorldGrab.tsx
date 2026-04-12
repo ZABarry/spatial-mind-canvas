@@ -5,16 +5,27 @@ import { useXRInputSourceEvent } from '@react-three/xr'
 import { useRootStore } from '../../store/rootStore'
 
 const TRANSLATE_SENS = 2.2
+const ROT_TWIST_SENS = 2.4
 const SCALE_CLAMP = { min: 0.94, max: 1.06 } as const
 
+function handednessOrder(src: XRInputSource): number {
+  if (src.handedness === 'left') return 0
+  if (src.handedness === 'right') return 1
+  return 2
+}
+
 /**
- * Squeeze (grip) on controllers to move/scale the world root in worldManip mode.
- * One hand: translate. Two hands: pinch distance scales (multiplicative per frame, clamped).
+ * Squeeze (grip) on controllers to move/scale/rotate the world root in worldManip mode.
+ * One hand: translate. Two hands: horizontal separation scales (hands apart = zoom out),
+ * and opposite motion along view forward (one hand toward you, one away) yaws the world.
  */
 export function XrWorldGrab() {
   const gl = useThree((s) => s.gl)
   const lastPos = useRef(new Map<XRInputSource, THREE.Vector3>())
   const lastPairDist = useRef<number | null>(null)
+  const da = useRef(new THREE.Vector3())
+  const db = useRef(new THREE.Vector3())
+  const forward = useRef(new THREE.Vector3())
 
   useXRInputSourceEvent(
     'all',
@@ -55,37 +66,63 @@ export function XrWorldGrab() {
     const sources = [...lastPos.current.keys()]
     if (sources.length === 0) return
 
-    const positions: THREE.Vector3[] = []
+    const pairedPos: { src: XRInputSource; pos: THREE.Vector3 }[] = []
     for (const src of sources) {
       const grip = src.gripSpace
       if (!grip) continue
       const pose = frame.getPose(grip, refSpace)
       if (!pose) continue
       const p = pose.transform.position
-      positions.push(new THREE.Vector3(p.x, p.y, p.z))
+      pairedPos.push({ src, pos: new THREE.Vector3(p.x, p.y, p.z) })
     }
 
-    if (positions.length >= 2) {
-      const a = positions[0]!
-      const b = positions[1]!
+    if (pairedPos.length >= 2) {
+      const paired = [...pairedPos].sort((x, y) => handednessOrder(x.src) - handednessOrder(y.src))
+      const left = paired[0]!
+      const right = paired[1]!
+      const a = left.pos
+      const b = right.pos
       const dist = a.distanceTo(b)
+
       if (lastPairDist.current != null && lastPairDist.current > 1e-5) {
-        let ratio = dist / lastPairDist.current
+        // Hands apart → smaller factor → zoom out; together → zoom in
+        let ratio = lastPairDist.current / dist
         ratio = Math.max(SCALE_CLAMP.min, Math.min(SCALE_CLAMP.max, ratio))
         if (Math.abs(ratio - 1) > 0.002) {
           st.dispatch({ type: 'scaleWorld', factor: ratio })
         }
       }
       lastPairDist.current = dist
-      for (let i = 0; i < sources.length && i < positions.length; i++) {
-        lastPos.current.set(sources[i]!, positions[i]!)
+
+      const oldA = lastPos.current.get(left.src)
+      const oldB = lastPos.current.get(right.src)
+      if (oldA && oldB) {
+        da.current.subVectors(a, oldA)
+        db.current.subVectors(b, oldB)
+        const vp = frame.getViewerPose(refSpace)
+        if (vp) {
+          const o = vp.transform.orientation
+          const q = new THREE.Quaternion(o.x, o.y, o.z, o.w)
+          forward.current.set(0, 0, -1).applyQuaternion(q)
+          forward.current.y = 0
+          if (forward.current.lengthSq() > 1e-8) {
+            forward.current.normalize()
+            const twist =
+              (da.current.dot(forward.current) - db.current.dot(forward.current)) * ROT_TWIST_SENS
+            if (Math.abs(twist) > 0.001) {
+              st.dispatch({ type: 'rotateWorld', axis: [0, 1, 0], radians: twist })
+            }
+          }
+        }
       }
+
+      lastPos.current.set(left.src, a.clone())
+      lastPos.current.set(right.src, b.clone())
       return
     }
 
-    if (positions.length === 1 && sources.length === 1) {
-      const src = sources[0]!
-      const newP = positions[0]!
+    if (pairedPos.length === 1) {
+      const { src, pos: newP } = pairedPos[0]!
       const old = lastPos.current.get(src)
       if (!old) return
       const d = new THREE.Vector3().subVectors(newP, old)
