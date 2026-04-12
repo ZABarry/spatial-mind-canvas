@@ -1,4 +1,4 @@
-import type { DevicePreferences, EdgeStyle, InteractionMode, NodeShape, UserSettings } from '../graph/types'
+import type { DevicePreferences, InteractionMode, NodeShape, UserSettings } from '../graph/types'
 import type { NavigationMode, ToolMode } from './tools'
 import type { Vec3, Vec4 } from '../utils/math'
 
@@ -18,9 +18,8 @@ export type AppAction =
   | { type: 'deleteSelection' }
   | { type: 'deleteNode'; id: string }
   | { type: 'deleteEdge'; id: string }
-  | { type: 'connectNodes'; fromId: string; toId: string; style: EdgeStyle; controlPoints?: Vec3[] }
-  | { type: 'startConnection'; fromNodeId: string; style: EdgeStyle; xrControllerIndex?: number }
-  | { type: 'updateConnectionDrag'; pathPoints: Vec3[] }
+  | { type: 'connectNodes'; fromId: string; toId: string }
+  | { type: 'startConnection'; fromNodeId: string; xrControllerIndex?: number }
   | { type: 'finishConnection'; targetNodeId?: string; dropPosition?: Vec3 }
   | { type: 'cancelConnection' }
   | { type: 'openNodeDetail'; nodeId: string | null }

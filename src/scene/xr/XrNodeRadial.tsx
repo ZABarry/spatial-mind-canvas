@@ -27,7 +27,7 @@ export function XrNodeRadial() {
 
   return (
     <group position={n.position as unknown as [number, number, number]}>
-      <mesh position={[0.75 * n.size, y, 0]} onPointerDown={onAct(() => useRootStore.getState().dispatch({ type: 'startConnection', fromNodeId: n.id, style: 'spline' }))}>
+      <mesh position={[0.75 * n.size, y, 0]} onPointerDown={onAct(() => useRootStore.getState().dispatch({ type: 'startConnection', fromNodeId: n.id }))}>
         <boxGeometry args={[0.22, 0.1, 0.04]} />
         <meshStandardMaterial color="#5ad4ff" />
       </mesh>

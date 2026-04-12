@@ -54,18 +54,31 @@ export const NodeEntitySchema = z.object({
   parentId: z.string().optional(),
 })
 
-export const EdgeEntitySchema = z.object({
-  id: z.string(),
-  sourceId: z.string(),
-  targetId: z.string(),
-  label: z.string(),
-  style: z.enum(['straight', 'spline']),
-  controlPoints: z.array(vec3).optional(),
-  thickness: z.number(),
-  directed: z.boolean(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
-})
+/** Accepts legacy spline data; normalizes to straight edges with no control points. */
+export const EdgeEntitySchema = z
+  .object({
+    id: z.string(),
+    sourceId: z.string(),
+    targetId: z.string(),
+    label: z.string(),
+    style: z.enum(['straight', 'spline']),
+    controlPoints: z.array(vec3).optional(),
+    thickness: z.number(),
+    directed: z.boolean(),
+    createdAt: z.number(),
+    updatedAt: z.number(),
+  })
+  .transform((e) => ({
+    id: e.id,
+    sourceId: e.sourceId,
+    targetId: e.targetId,
+    label: e.label,
+    style: 'straight' as const,
+    thickness: e.thickness,
+    directed: e.directed,
+    createdAt: e.createdAt,
+    updatedAt: e.updatedAt,
+  }))
 
 export const GraphStateSchema = z.object({
   nodes: z.record(z.string(), NodeEntitySchema),

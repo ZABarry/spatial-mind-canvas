@@ -7,14 +7,7 @@ function edgePoints(graph: GraphState, e: EdgeEntity): THREE.Vector3[] {
   const a = graph.nodes[e.sourceId]?.position
   const b = graph.nodes[e.targetId]?.position
   if (!a || !b) return []
-  const start = new THREE.Vector3(...a)
-  const end = new THREE.Vector3(...b)
-  if (e.style === 'straight' || !e.controlPoints?.length) {
-    return [start, end]
-  }
-  const mids = e.controlPoints.map((p) => new THREE.Vector3(...p))
-  const curve = new THREE.CatmullRomCurve3([start, ...mids, end], false, 'catmullrom', 0.35)
-  return curve.getPoints(Math.min(48, 12 + mids.length * 8))
+  return [new THREE.Vector3(...a), new THREE.Vector3(...b)]
 }
 
 export function EdgeMeshes() {

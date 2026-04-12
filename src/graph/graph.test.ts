@@ -11,7 +11,7 @@ describe('graph mutations', () => {
     g = a.graph
     const b = addNode(g, createNodeDefaults(v3(2, 0, 0)))
     g = b.graph
-    const e = addEdge(g, { sourceId: a.node.id, targetId: b.node.id, style: 'straight' })
+    const e = addEdge(g, { sourceId: a.node.id, targetId: b.node.id })
     g = e.graph
     expect(Object.keys(g.nodes)).toHaveLength(2)
     expect(Object.keys(g.edges)).toHaveLength(1)
@@ -38,7 +38,7 @@ describe('neighbors', () => {
     g = a.graph
     const b = addNode(g, createNodeDefaults(v3(2, 0, 0)))
     g = b.graph
-    const e = addEdge(g, { sourceId: a.node.id, targetId: b.node.id, style: 'straight' })
+    const e = addEdge(g, { sourceId: a.node.id, targetId: b.node.id })
     g = e.graph
     const n = neighborIdsByEdges(g, [a.node.id], 1)
     expect(n.has(b.node.id)).toBe(true)

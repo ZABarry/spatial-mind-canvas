@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import type { EdgeEntity, EdgeStyle, GraphState, NodeEntity, NodeShape } from './types'
+import type { EdgeEntity, GraphState, NodeEntity, NodeShape } from './types'
 import type { Vec3 } from '../utils/math'
 
 const now = () => Date.now()
@@ -68,8 +68,6 @@ export function addEdge(
     sourceId: string
     targetId: string
     label?: string
-    style: EdgeStyle
-    controlPoints?: Vec3[]
     thickness?: number
     directed?: boolean
   },
@@ -80,8 +78,7 @@ export function addEdge(
     sourceId: opts.sourceId,
     targetId: opts.targetId,
     label: opts.label ?? '',
-    style: opts.style,
-    controlPoints: opts.controlPoints,
+    style: 'straight',
     thickness: opts.thickness ?? 1,
     directed: opts.directed ?? false,
     createdAt: t,

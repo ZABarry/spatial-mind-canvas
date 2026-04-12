@@ -137,14 +137,14 @@ export function HelpControls() {
                 <h3 id="help-vr">VR</h3>
                 <ul className="help-list">
                   <li>
-                    <strong>Enter VR</strong> — Open the <strong>View</strong> menu in the toolbar, choose{' '}
-                    <strong>Enter VR</strong>, then confirm in the headset or browser.
+                    <strong>Enter VR</strong> — Use the primary <strong>Enter VR</strong> button in the bottom toolbar,
+                    then confirm in the headset or browser.
                   </li>
                   <li>
                     <strong>Travel vs world</strong> — <strong>Travel mode</strong> enables thumbstick movement and
                     turning. <strong>World mode</strong> turns off locomotion so you stay put for fine adjustments.
-                    This is separate from <strong>camera passthrough</strong> (mixed reality), which you toggle from the
-                    wrist menu or when entering XR (Settings).
+                    This is separate from <strong>camera passthrough</strong> (mixed reality), which you can prefer when
+                    entering XR and adjust under <strong>Device &amp; VR</strong> in Settings.
                   </li>
                   <li>
                     <strong>Locomotion options</strong> — Under <strong>Device &amp; VR</strong> in Settings (stored for
@@ -153,18 +153,23 @@ export function HelpControls() {
                   </li>
                   <li>
                     <strong>Scene</strong> — Point the controller ray and use the trigger to select nodes and complete
-                    links. Use the <strong>node radial</strong> (Link / Inspect chips) for contextual actions.
+                    links.
                   </li>
                   <li>
                     <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
                     toggle the panel with the <strong>secondary face button</strong> (often Y); with{' '}
-                    <strong>hand tracking</strong>, turn your palm toward you. Global actions only: Library, Search,
-                    Settings, Undo/Redo, Reset view, Travel/World toggle, Exit VR.
+                    <strong>hand tracking</strong>, turn your palm toward you. Commands: Library, Search, Settings,
+                    Undo, Redo, Reset view, Travel/World toggle, Help, Exit VR. <strong>Layout</strong>,{' '}
+                    <strong>bookmarks</strong>, and <strong>export</strong> are on the flat toolbar (exit VR to use them).
                   </li>
                   <li>
-                    <strong>Flat toolbar</strong> — You can exit VR from <strong>View → Enter VR</strong> (or leave
-                    the session) to use the full HTML toolbar, inspector, and search on the monitor; some actions are
-                    also available from the wrist menu while immersed.
+                    <strong>Node radial</strong> — When a node is selected, <strong>Link</strong> and{' '}
+                    <strong>Inspect</strong> appear beside it in the scene.
+                  </li>
+                  <li>
+                    <strong>Flat toolbar</strong> — Exit the XR session (or use <strong>Exit VR</strong> in the wrist
+                    menu) to use the full HTML toolbar, inspector, and search on the monitor; some actions are also
+                    available from the wrist menu while immersed.
                   </li>
                 </ul>
               </section>

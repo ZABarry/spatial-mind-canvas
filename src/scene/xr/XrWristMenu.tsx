@@ -34,6 +34,7 @@ function buildMainMenuDefs(modeLabel: string): MenuDef[] {
     { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
     { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
     { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
+    { label: 'Help', hit: { kind: 'cmd', cmd: 'help' } },
     { label: 'Exit VR', hit: { kind: 'cmd', cmd: 'exitVr' } },
   ]
 }
@@ -51,7 +52,8 @@ function MenuButton({
   col: number
   rowsTop: number
 }) {
-  const x = (col + 0.5) * CELL_W - PANEL_W / 2 + CELL_W / 2
+  /** Cell centers from left edge of the panel: -PANEL_W/2 + (col + 0.5) * CELL_W */
+  const x = -PANEL_W / 2 + (col + 0.5) * CELL_W
   const y = rowsTop - row * (BTN_H + GAP) - BTN_H / 2
   const z = 0.002
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
@@ -125,7 +127,7 @@ export function XrWristMenu() {
       if (wristSpace) {
         const wristPose = frame.getJointPose?.(wristSpace, refSpace)
         if (wristPose) {
-          const score = palmFacingHeadScore(frame, refSpace, leftHand.hand)
+          const score = palmFacingHeadScore(frame, refSpace, leftHand.hand, leftHand.handedness)
           visible = updatePalmMenuVisibility(score, palmHyst.current)
           const t = wristPose.transform
           const p = new THREE.Vector3(t.position.x, t.position.y, t.position.z)
@@ -154,9 +156,10 @@ export function XrWristMenu() {
       }
       visible = controllerMenuOpen.current
       if (visible) {
-        const ctrl = sources.find((s) => s.handedness === 'left' && s.targetRaySpace && !s.hand)
-        if (ctrl?.targetRaySpace) {
-          const pose = frame.getPose(ctrl.targetRaySpace, refSpace)
+        const ctrl = sources.find((s) => s.handedness === 'left' && !s.hand)
+        const anchorSpace = ctrl?.gripSpace ?? ctrl?.targetRaySpace
+        if (ctrl && anchorSpace) {
+          const pose = frame.getPose(anchorSpace, refSpace)
           if (pose) {
             const t = pose.transform
             const p = new THREE.Vector3(t.position.x, t.position.y, t.position.z)
@@ -167,7 +170,10 @@ export function XrWristMenu() {
               t.orientation.w,
             )
             base.compose(p, q, new THREE.Vector3(1, 1, 1))
-            const ctrlOff = new THREE.Matrix4().makeTranslation(0.14, 0.04, -0.12)
+            // Local offset from grip (stable) vs aim ray (drifts with pointing)
+            const ctrlOff = ctrl.gripSpace
+              ? new THREE.Matrix4().makeTranslation(0, 0.02, -0.1)
+              : new THREE.Matrix4().makeTranslation(0.14, 0.04, -0.12)
             base.multiply(ctrlOff)
           }
         }

@@ -1,12 +1,10 @@
-import type { EdgeStyle, Project } from '../graph/types'
+import type { Project } from '../graph/types'
 import type { Vec3 } from '../utils/math'
 import type { HitTarget } from './hitTargets'
 import { idleSession, type InteractionSession } from './sessionTypes'
 
 type ConnectionDraftLike = {
   fromNodeId: string
-  style: EdgeStyle
-  pathPoints: Vec3[]
   xrControllerIndex?: number
 } | null
 
@@ -41,7 +39,6 @@ export function deriveInteractionSession(input: {
       kind: 'link',
       pointerId,
       fromNodeId: connectionDraft.fromNodeId,
-      path: connectionDraft.pathPoints,
     }
   }
 

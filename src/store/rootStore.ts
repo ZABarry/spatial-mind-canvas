@@ -9,7 +9,7 @@ import {
   type NavigationMode,
   type ToolMode,
 } from '../input/tools'
-import type { Bookmark, DevicePreferences, EdgeStyle, InteractionMode, Project, SelectionState } from '../graph/types'
+import type { Bookmark, DevicePreferences, InteractionMode, Project, SelectionState } from '../graph/types'
 import {
   createBlankProject,
   defaultDevicePreferences,
@@ -66,8 +66,6 @@ export interface RootState {
   devicePreferences: DevicePreferences
   connectionDraft: {
     fromNodeId: string
-    style: EdgeStyle
-    pathPoints: Vec3[]
     /** WebXR: controller index from the hand that started the gesture (see `xrControllerIndexFromRayOrigin`). */
     xrControllerIndex?: number
   } | null
@@ -293,7 +291,6 @@ export const useRootStore = create<RootState>((set, get) => {
             const e = addEdge(p.graph, {
               sourceId: a.connectFromId,
               targetId: node.id,
-              style: 'straight',
             })
             p.graph = e.graph
           }
@@ -343,8 +340,6 @@ export const useRootStore = create<RootState>((set, get) => {
           const res = addEdge(p.graph, {
             sourceId: a.fromId,
             targetId: a.toId,
-            style: a.style,
-            controlPoints: a.controlPoints,
           })
           p.graph = res.graph
         })
@@ -354,18 +349,9 @@ export const useRootStore = create<RootState>((set, get) => {
         set({
           connectionDraft: {
             fromNodeId: a.fromNodeId,
-            style: a.style,
-            pathPoints: [],
             ...(a.xrControllerIndex !== undefined ? { xrControllerIndex: a.xrControllerIndex } : {}),
           },
         })
-        break
-      case 'updateConnectionDrag':
-        set((s) =>
-          s.connectionDraft
-            ? { connectionDraft: { ...s.connectionDraft, pathPoints: a.pathPoints } }
-            : {},
-        )
         break
       case 'finishConnection': {
         const draft = get().connectionDraft
@@ -374,16 +360,11 @@ export const useRootStore = create<RootState>((set, get) => {
           break
         }
         const fromId = draft.fromNodeId
-        /** Interior control points (excluding endpoints) */
-        const mids = draft.pathPoints
-        const style: EdgeStyle = mids.length >= 1 ? 'spline' : 'straight'
         if (a.targetNodeId) {
           dispatch({
             type: 'connectNodes',
             fromId,
             toId: a.targetNodeId,
-            style,
-            controlPoints: style === 'spline' ? mids : undefined,
           })
         } else if (a.dropPosition) {
           commit('connect+node', (p) => {
@@ -393,8 +374,6 @@ export const useRootStore = create<RootState>((set, get) => {
             const e = addEdge(p.graph, {
               sourceId: fromId,
               targetId: node.id,
-              style,
-              controlPoints: style === 'spline' ? mids : undefined,
             })
             p.graph = e.graph
           })

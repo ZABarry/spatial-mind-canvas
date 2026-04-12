@@ -79,6 +79,10 @@ export function MainToolbar() {
         </button>
       </div>
 
+      <button type="button" className="primary" onClick={() => void tb.enterVr()}>
+        Enter VR
+      </button>
+
       <ToolbarMenu menuId="map" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Map">
         <button type="button" onClick={() => void tb.newBlankMap()}>
           New map
@@ -100,9 +104,6 @@ export function MainToolbar() {
       <BookmarksDropdown openMenu={openMenu} setOpenMenu={setOpenMenu} />
 
       <ToolbarMenu menuId="view" openMenu={openMenu} setOpenMenu={setOpenMenu} label="View">
-        <button type="button" className="primary" onClick={() => void tb.enterVr()}>
-          Enter VR
-        </button>
         <button type="button" onClick={() => tb.toggleTravelWorldMode()}>
           {mode === 'travel' ? 'Toggle: switch to world' : 'Toggle: switch to travel'}
         </button>

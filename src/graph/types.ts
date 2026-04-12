@@ -22,7 +22,8 @@ export const NODE_SHAPES = [
   'pill',
 ] as const satisfies readonly NodeShape[]
 
-export type EdgeStyle = 'straight' | 'spline'
+/** Edges are straight segments between connected node centers. */
+export type EdgeStyle = 'straight'
 
 /** Legacy combined mode; prefer `NavigationMode` + `ToolMode` in new input code. */
 export type InteractionMode = 'worldManip' | 'travel'
@@ -64,8 +65,6 @@ export interface EdgeEntity {
   targetId: string
   label: string
   style: EdgeStyle
-  /** Graph-local control points for spline edges (excluding endpoints); same frame as node positions */
-  controlPoints?: Vec3[]
   thickness: number
   directed: boolean
   createdAt: number
@@ -155,10 +154,7 @@ export interface SelectionState {
 
 export interface ConnectionDraftState {
   fromNodeId: string
-  style: EdgeStyle
-  /** Sampled world points along drag for expressive spline */
-  pathPoints: Vec3[]
-  /** WebXR: controller index for the ray that is drawing this connection */
+  /** WebXR: controller index for the ray that started this connection */
   xrControllerIndex?: number
 }
 

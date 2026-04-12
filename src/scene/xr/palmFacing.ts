@@ -4,47 +4,93 @@ import * as THREE from 'three'
  * Palm “open” thresholds — tune on Quest Browser if the menu is hard to trigger or flickers.
  * Raise OPEN / CLOSE together if the panel appears too often; lower if it rarely appears.
  */
-/** Palm normal · direction-to-head above this → transition to visible (hysteresis open). */
-export const PALM_FACE_OPEN_THRESHOLD = 0.42
+/** Combined score above this → transition to visible (hysteresis open). */
+export const PALM_FACE_OPEN_THRESHOLD = 0.38
 /** Below this → transition to hidden (hysteresis close). */
-export const PALM_FACE_CLOSE_THRESHOLD = 0.26
+export const PALM_FACE_CLOSE_THRESHOLD = 0.24
 
 export type PalmFacingHysteresis = {
   visible: boolean
 }
 
+const tmpQ = new THREE.Quaternion()
+const tmpHeadUp = new THREE.Vector3()
+
 /**
- * True when the left palm plane faces the viewer (head). Uses wrist + metacarpal joints
- * to build a stable palm normal; axis handedness can vary by runtime — tune thresholds above on device.
+ * Palmar outward normal (out of the skin), without flipping toward the head — flipping hid
+ * dorsal vs palmar and let a wrist tilt look like “palm toward eyes”.
+ *
+ * Uses index & pinky metacarpals with wrist so the normal is perpendicular to the palm plane;
+ * handedness fixes OpenXR chirality.
+ */
+function palmarNormalFromJoints(
+  wrist: THREE.Vector3,
+  indexPos: THREE.Vector3,
+  pinkyPos: THREE.Vector3,
+  handedness: XRHandedness,
+): THREE.Vector3 | null {
+  const toIndex = new THREE.Vector3().subVectors(indexPos, wrist)
+  const toPinky = new THREE.Vector3().subVectors(pinkyPos, wrist)
+  if (toIndex.lengthSq() < 1e-8 || toPinky.lengthSq() < 1e-8) return null
+
+  const n = new THREE.Vector3().crossVectors(toIndex, toPinky)
+  if (n.lengthSq() < 1e-8) return null
+  n.normalize()
+  if (handedness === 'right') n.negate()
+  return n
+}
+
+/**
+ * Hand-tracking wrist menu: palm must face the viewer (true palmar side) and present with an
+ * upward tilt toward the eyes — not merely wrist extension with the back/side of the hand
+ * toward the headset.
+ *
+ * Score blends “toward eyes” and “up in head space” so both are required at threshold time.
  */
 export function palmFacingHeadScore(
   frame: XRFrame,
   refSpace: XRReferenceSpace,
   hand: XRHand,
+  handedness: XRHandedness,
 ): number | null {
   const wristSpace = hand.get('wrist')
-  const midSpace = hand.get('middle-finger-metacarpal')
   const indexSpace = hand.get('index-finger-metacarpal')
-  if (!wristSpace || !midSpace || !indexSpace) return null
+  const pinkySpace = hand.get('pinky-finger-metacarpal')
+  const midSpace = hand.get('middle-finger-metacarpal')
+  if (!wristSpace || !indexSpace || !midSpace) return null
 
   const getJointPose = frame.getJointPose
   if (!getJointPose) return null
   const wristPose = getJointPose.call(frame, wristSpace, refSpace)
-  const midPose = getJointPose.call(frame, midSpace, refSpace)
   const indexPose = getJointPose.call(frame, indexSpace, refSpace)
-  if (!wristPose || !midPose || !indexPose) return null
+  const midPose = getJointPose.call(frame, midSpace, refSpace)
+  const pinkyPose = pinkySpace ? getJointPose.call(frame, pinkySpace, refSpace) : null
+  if (!wristPose || !indexPose || !midPose) return null
 
   const wp = wristPose.transform.position
-  const mp = midPose.transform.position
-  const ip = indexPose.transform.position
   const wrist = new THREE.Vector3(wp.x, wp.y, wp.z)
 
-  const toMid = new THREE.Vector3(mp.x - wp.x, mp.y - wp.y, mp.z - wp.z)
-  const toIndex = new THREE.Vector3(ip.x - wp.x, ip.y - wp.y, ip.z - wp.z)
-  if (toMid.lengthSq() < 1e-8 || toIndex.lengthSq() < 1e-8) return null
+  const ip = indexPose.transform.position
+  const indexPos = new THREE.Vector3(ip.x, ip.y, ip.z)
 
-  const palmNormal = new THREE.Vector3().crossVectors(toMid, toIndex).normalize()
-  if (palmNormal.lengthSq() < 1e-8) return null
+  let palmar: THREE.Vector3 | null = null
+  if (pinkyPose) {
+    const pp = pinkyPose.transform.position
+    const pinkyPos = new THREE.Vector3(pp.x, pp.y, pp.z)
+    palmar = palmarNormalFromJoints(wrist, indexPos, pinkyPos, handedness)
+  }
+  if (!palmar) {
+    const mp = midPose.transform.position
+    const midPos = new THREE.Vector3(mp.x, mp.y, mp.z)
+    const toMid = new THREE.Vector3().subVectors(midPos, wrist)
+    const toIndex = new THREE.Vector3().subVectors(indexPos, wrist)
+    if (toMid.lengthSq() < 1e-8 || toIndex.lengthSq() < 1e-8) return null
+    const n = new THREE.Vector3().crossVectors(toMid, toIndex)
+    if (n.lengthSq() < 1e-8) return null
+    n.normalize()
+    if (handedness === 'right') n.negate()
+    palmar = n
+  }
 
   const vp = frame.getViewerPose(refSpace)
   if (!vp) return null
@@ -53,8 +99,22 @@ export function palmFacingHeadScore(
   const toHead = new THREE.Vector3().subVectors(head, wrist).normalize()
   if (toHead.lengthSq() < 1e-8) return null
 
-  if (palmNormal.dot(toHead) < 0) palmNormal.negate()
-  return Math.max(0, Math.min(1, palmNormal.dot(toHead)))
+  const o = vp.transform.orientation
+  tmpQ.set(o.x, o.y, o.z, o.w)
+  tmpHeadUp.set(0, 1, 0).applyQuaternion(tmpQ).normalize()
+
+  const towardEyes = palmar.dot(toHead)
+  if (towardEyes <= 0) return null
+
+  const towardUp = palmar.dot(tmpHeadUp)
+
+  /**
+   * Require a clear upward component of the palmar normal (open “showing the palm” pose).
+   * Slightly negative values still fail the blend so pure wrist-curl / back-of-hand poses drop out.
+   */
+  const upWeight = THREE.MathUtils.clamp((towardUp + 0.08) / 0.55, 0, 1)
+  const score = towardEyes * (0.22 + 0.78 * upWeight)
+  return Math.max(0, Math.min(1, score))
 }
 
 export function updatePalmMenuVisibility(

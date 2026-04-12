@@ -27,7 +27,6 @@ export function NodeHandles() {
             useRootStore.getState().dispatch({
               type: 'startConnection',
               fromNodeId: n.id,
-              style: 'spline',
             })
           }}
         >

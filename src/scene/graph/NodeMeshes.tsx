@@ -202,7 +202,6 @@ function NodeItem({
             useRootStore.getState().dispatch({
               type: 'startConnection',
               fromNodeId: n.id,
-              style: 'spline',
               ...(gl.xr.isPresenting && xrDragControllerIdx.current !== null
                 ? { xrControllerIndex: xrDragControllerIdx.current }
                 : {}),
