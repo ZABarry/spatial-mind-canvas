@@ -160,7 +160,7 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
             dispatch({ type: 'patchDevicePreferences', patch: { audioEnabled: e.target.checked } })
           }
         />
-        <span style={checkboxLabel}>Ambient audio</span>
+        <span style={checkboxLabel}>Sound — ambient bed and subtle interaction cues</span>
       </label>
       <label style={{ ...row, marginBottom: 12 }}>
         Dominant hand
@@ -172,11 +172,15 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
               patch: { dominantHand: e.target.value as 'left' | 'right' },
             })
           }
+          aria-describedby="dominant-hand-hint"
         >
           <option value="right">Right</option>
           <option value="left">Left</option>
         </select>
       </label>
+      <p id="dominant-hand-hint" style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b', lineHeight: 1.4 }}>
+        Used to bias which controller ray is preferred for selection. Travel sticks stay left move / right turn.
+      </p>
       <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
         Move speed{' '}
         <input

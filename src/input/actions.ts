@@ -14,6 +14,8 @@ export type AppAction =
   | { type: 'setInteractionMode'; mode: InteractionMode }
   | { type: 'setNavigationMode'; mode: NavigationMode }
   | { type: 'createNodeAt'; position: Vec3; parentId?: string; connectFromId?: string; shape?: NodeShape }
+  /** Desktop: add several child nodes in one undo step (quick branch). */
+  | { type: 'spawnChildBranches'; parentId: string; count: number }
   | { type: 'moveNode'; nodeId: string; position: Vec3 }
   | { type: 'deleteSelection' }
   | { type: 'deleteNode'; id: string }
@@ -58,7 +60,9 @@ export type AppAction =
   | { type: 'patchSettings'; patch: Partial<UserSettings> }
   | { type: 'patchDevicePreferences'; patch: Partial<DevicePreferences> }
   /** Desktop: disable orbit rotation while dragging nodes so the camera does not spin. */
-  | { type: 'setNodeDragActive'; active: boolean; nodeId?: string }
+  | { type: 'setNodeDragActive'; active: boolean; nodeId?: string; pointerId?: string }
+  /** VR: wrist panel or node radial — blocks world grab; does not replace link/drag/worldGrab. */
+  | { type: 'setMenuSession'; menu: 'global' | 'node' | null }
   /** Desktop: disable orbit rotation while dragging world origin axis handles. */
   | { type: 'setWorldAxisDragActive'; active: boolean }
 

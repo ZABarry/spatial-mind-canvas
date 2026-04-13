@@ -134,6 +134,15 @@ describe('getInteractionPhase', () => {
     expect(getInteractionPhase({ ...basePhase, detailNodeId: 'n' })).toBe('nodeDetail')
   })
 
+  it('xrMenu when menu session', () => {
+    expect(
+      getInteractionPhase({
+        ...basePhase,
+        interactionSession: { kind: 'menu', menu: 'global' },
+      }),
+    ).toBe('xrMenu')
+  })
+
   it('grabbingWorld when session is worldGrab', () => {
     expect(
       getInteractionPhase({

@@ -1,9 +1,17 @@
+import { useEffect } from 'react'
+import { confirmAcceptCueKind, playInteractionCue } from '../audio/interactionCues'
 import { useRootStore } from '../store/rootStore'
 
 export function ConfirmModal() {
   const dialog = useRootStore((s) => s.confirmDialog)
   const xrSession = useRootStore((s) => s.xrSessionActive)
   const setDialog = (v: typeof dialog) => useRootStore.setState({ confirmDialog: v })
+
+  useEffect(() => {
+    if (!dialog || xrSession) return
+    const a = useRootStore.getState().devicePreferences.audioEnabled
+    if (a) playInteractionCue('confirmOpen', true)
+  }, [dialog, xrSession])
 
   if (!dialog || xrSession) return null
 
@@ -37,6 +45,8 @@ export function ConfirmModal() {
               cursor: 'pointer',
             }}
             onClick={() => {
+              const a = useRootStore.getState().devicePreferences.audioEnabled
+              playInteractionCue(confirmAcceptCueKind(dialog.title, dialog.message), a)
               dialog.onConfirm()
               setDialog(null)
             }}

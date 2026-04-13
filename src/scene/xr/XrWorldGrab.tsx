@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useXRInputSourceEvent } from '@react-three/xr'
+import { canBeginWorldGrab } from '../../input/xr/xrSessionGuards'
 import { useRootStore } from '../../store/rootStore'
 
 const TRANSLATE_SENS = 2.2
@@ -33,7 +34,7 @@ export function XrWorldGrab() {
     (e: XRInputSourceEvent) => {
       const st = useRootStore.getState()
       const ik = st.interactionSession.kind
-      if (ik === 'link' || ik === 'nodeDrag' || st.navigationMode !== 'world') return
+      if (ik !== 'worldGrab' && !canBeginWorldGrab(st)) return
       const frame = e.frame
       const refSpace = gl.xr.getReferenceSpace()
       const grip = e.inputSource.gripSpace
@@ -64,8 +65,7 @@ export function XrWorldGrab() {
   useFrame(() => {
     const st = useRootStore.getState()
     const ik = st.interactionSession.kind
-    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || ik === 'link' || ik === 'nodeDrag')
-      return
+    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || ik !== 'worldGrab') return
     const frame = gl.xr.getFrame()
     const refSpace = gl.xr.getReferenceSpace()
     if (!frame || !refSpace) return

@@ -12,6 +12,7 @@ import {
   worldPointToGraphLocal,
   XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
+import { linkLineAppearance } from '../visual/interactionTokens'
 
 const _ray = new THREE.Raycaster()
 const _hit = new THREE.Vector3()
@@ -121,6 +122,12 @@ export function LinkPreview() {
       if (previewTarget) break
     }
     st.dispatch({ type: 'setLinkPreviewTarget', target: previewTarget })
+
+    const mergedSession = { ...sess, previewTarget }
+    const appearance = linkLineAppearance(mergedSession, sess.fromNodeId)
+    const mat = lineObject.material as THREE.LineBasicMaterial
+    mat.color.set(appearance.color)
+    mat.opacity = appearance.opacity
 
     const arr = posAttr.array as Float32Array
     arr[0] = from[0]

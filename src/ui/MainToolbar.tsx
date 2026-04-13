@@ -4,9 +4,12 @@ import * as tb from './toolbar/sceneToolbarCommands'
 import { BookmarksDropdown } from './BookmarksMenu'
 import { StructureMenuContent } from './StructureMenu'
 import { ToolbarMenu, type ToolbarMenuId } from './ToolbarMenu'
+import { MapHistoryModal } from './MapHistoryModal'
+import { TemplatePickerModal } from './TemplatePickerModal'
 
 export function MainToolbar() {
   const [openMenu, setOpenMenu] = useState<ToolbarMenuId | null>(null)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
   const xrSession = useRootStore((s) => s.xrSessionActive)
   const mode = useRootStore((s) => s.interactionMode)
   const navMode = useRootStore((s) => s.navigationMode)
@@ -17,6 +20,9 @@ export function MainToolbar() {
   if (xrSession) return null
 
   return (
+    <>
+    <MapHistoryModal />
+    <TemplatePickerModal open={templatePickerOpen} onClose={() => setTemplatePickerOpen(false)} />
     <div className="toolbar panel">
       <button
         type="button"
@@ -54,16 +60,42 @@ export function MainToolbar() {
         <button type="button" onClick={() => void tb.newBlankMap()}>
           New map
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setOpenMenu(null)
+            setTemplatePickerOpen(true)
+          }}
+        >
+          New from template…
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setOpenMenu(null)
+            tb.openMapHistory()
+          }}
+        >
+          Version history…
+        </button>
         <button type="button" onClick={() => void tb.duplicateMap()}>
           Duplicate map
         </button>
         <button type="button" className="toolbar-menu-danger" onClick={() => tb.requestClearMap()}>
           Clear map…
         </button>
-        <button type="button" onClick={() => tb.exportJson()}>
+        <button
+          type="button"
+          onClick={() => tb.exportJson()}
+          title="Current map only. Local snapshots are not included."
+        >
           Export JSON
         </button>
-        <button type="button" onClick={() => void tb.exportZip()}>
+        <button
+          type="button"
+          onClick={() => void tb.exportZip()}
+          title="Current map and media. Local snapshots are not included."
+        >
           Export ZIP
         </button>
       </ToolbarMenu>
@@ -89,7 +121,7 @@ export function MainToolbar() {
           {floorGridOn ? 'Floor grid on' : 'Floor grid off'}
         </button>
         <button type="button" onClick={() => tb.focusSelection()}>
-          Focus selection
+          Focus neighborhood (F)
         </button>
         <button type="button" onClick={() => tb.resetView()}>
           Reset view
@@ -125,5 +157,6 @@ export function MainToolbar() {
 
       <span className="toolbar-project-name">{project?.name ?? ''}</span>
     </div>
+    </>
   )
 }

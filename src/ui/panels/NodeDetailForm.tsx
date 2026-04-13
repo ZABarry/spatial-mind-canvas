@@ -79,7 +79,12 @@ export function NodeDetailForm({
           Close
         </button>
       )}
-      <h3 style={{ marginTop: 0 }}>Node</h3>
+      <h3 style={{ marginTop: 0 }}>Node detail</h3>
+      {variant === 'desktop' ? (
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
+          Notes, media, and appearance — quick actions on the canvas cover rename, link, and delete.
+        </p>
+      ) : null}
       <p style={{ fontSize: 12, fontWeight: 600, margin: '8px 0 6px', color: '#374151' }}>Appearance</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
         <label style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Color</label>

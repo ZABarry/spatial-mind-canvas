@@ -1,47 +1,19 @@
 import { useEffect, useRef } from 'react'
+import { startAmbientBed } from '../audio/ambientBed'
 import { useRootStore } from '../store/rootStore'
 
-/** Very soft ambient bed — disabled when audio off in settings. */
+/** Soft ambient bed + shared Web Audio graph for interaction cues (see `interactionCues.ts`). */
 export function AudioAmbience() {
   const enabled = useRootStore((s) => s.devicePreferences.audioEnabled)
-  const ctxRef = useRef<AudioContext | null>(null)
+  const bedRef = useRef<{ stop: () => void } | null>(null)
 
   useEffect(() => {
     if (!enabled) return
-    const ctx = new AudioContext()
-    ctxRef.current = ctx
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.type = 'sine'
-    osc.frequency.value = 110
-    gain.gain.value = 0.012
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    let oscStarted = false
-    const start = () => {
-      void ctx.resume()
-      try {
-        osc.start()
-        oscStarted = true
-      } catch {
-        /* already started */
-      }
-    }
-    const onFirst = () => {
-      start()
-      window.removeEventListener('pointerdown', onFirst)
-    }
-    window.addEventListener('pointerdown', onFirst, { once: true })
+    const h = startAmbientBed()
+    bedRef.current = h
     return () => {
-      window.removeEventListener('pointerdown', onFirst)
-      if (oscStarted) {
-        try {
-          osc.stop()
-        } catch {
-          /* already stopped */
-        }
-      }
-      void ctx.close()
+      h.stop()
+      bedRef.current = null
     }
   }, [enabled])
 

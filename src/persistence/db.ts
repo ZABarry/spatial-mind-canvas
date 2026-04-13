@@ -1,7 +1,8 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import type { MapSnapshotRecord } from './snapshotPayload'
 
 const DB_NAME = 'spatial-mind-canvas'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export interface SpatialMindDB extends DBSchema {
   projects: {
@@ -16,6 +17,12 @@ export interface SpatialMindDB extends DBSchema {
     key: string
     value: unknown
   }
+  /** Local version history per project; excluded from JSON/ZIP export. */
+  mapSnapshots: {
+    key: string
+    value: MapSnapshotRecord
+    indexes: { byProject: string }
+  }
 }
 
 let dbPromise: Promise<IDBPDatabase<SpatialMindDB>> | null = null
@@ -23,7 +30,7 @@ let dbPromise: Promise<IDBPDatabase<SpatialMindDB>> | null = null
 export function getDb(): Promise<IDBPDatabase<SpatialMindDB>> {
   if (!dbPromise) {
     dbPromise = openDB<SpatialMindDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains('projects')) {
           db.createObjectStore('projects')
         }
@@ -33,6 +40,10 @@ export function getDb(): Promise<IDBPDatabase<SpatialMindDB>> {
         if (!db.objectStoreNames.contains('meta')) {
           db.createObjectStore('meta')
         }
+        if (oldVersion < 2 && !db.objectStoreNames.contains('mapSnapshots')) {
+          const snap = db.createObjectStore('mapSnapshots', { keyPath: 'id' })
+          snap.createIndex('byProject', 'projectId')
+        }
       },
     })
   }
@@ -40,8 +51,17 @@ export function getDb(): Promise<IDBPDatabase<SpatialMindDB>> {
 }
 
 export const META_LAST_PROJECT = 'lastProjectId'
-export const META_ONBOARDING = 'onboardingDone'
 export const META_DEVICE_PREFS = 'devicePreferences'
+
+/** User hid the onboarding strip (persistent). */
+export const META_ONBOARDING_DISMISSED = 'onboardingDismissed'
+/** Core guided path finished (persistent). */
+export const META_ONBOARDING_CORE_COMPLETE = 'onboardingCoreComplete'
+/** User reached “select a node” once (persistent). */
+export const META_ONBOARDING_SEEN_SELECTION = 'onboardingSeenSelection'
+
+/** @deprecated Legacy key — still read in bootstrap for migration. */
+export const META_ONBOARDING_LEGACY_DONE = 'onboardingDone'
 
 export async function getMeta(key: string): Promise<unknown> {
   const db = await getDb()

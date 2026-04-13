@@ -1,9 +1,12 @@
 import { Text } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import * as React from 'react'
 import * as THREE from 'three'
+import { playInteractionCue } from '../../audio/interactionCues'
 import { useRootStore } from '../../store/rootStore'
+import type { WristButtonKind } from '../visual/interactionTokens'
+import { wristMenuButtonColors } from '../visual/interactionTokens'
 import { tryHandleXrMenuObject, type XrMenuHit } from './xrMenuActions'
 import {
   palmFacingHeadScore,
@@ -48,32 +51,64 @@ function MenuButton({
   row,
   col,
   rowsTop,
+  buttonKind = 'default',
 }: {
   label: string
   hit: XrMenuHit
   row: number
   col: number
   rowsTop: number
+  buttonKind?: WristButtonKind
 }) {
+  const [hover, setHover] = React.useState(false)
+  const [pressed, setPressed] = React.useState(false)
   /** Cell centers from left edge of the panel: -PANEL_W/2 + (col + 0.5) * CELL_W */
   const x = -PANEL_W / 2 + (col + 0.5) * CELL_W
   const y = rowsTop - row * (BTN_H + GAP) - BTN_H / 2
   const z = 0.002
+  const pal = wristMenuButtonColors(buttonKind)
+  const face = pressed ? pal.bgPress : hover ? pal.bgHover : pal.bg
+
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
+    setPressed(true)
     tryHandleXrMenuObject(e.object)
   }
+  const onPointerUp = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation()
+    setPressed(false)
+  }
 
+  const hitW = (CELL_W - GAP * 2) * 1.35
+  const hitH = BTN_H * 1.4
   return (
     <group position={[x, y, z]} userData={{ xrMenuHit: hit }}>
-      <mesh userData={{ xrMenuHit: hit }} onPointerDown={onPointerDown}>
+      <mesh
+        userData={{ xrMenuHit: hit }}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHover(true)
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHover(false)
+          setPressed(false)
+        }}
+      >
+        <planeGeometry args={[hitW, hitH]} />
+        <meshBasicMaterial color="#e8eef8" transparent opacity={0.002} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, 0.001]} raycast={() => null}>
         <planeGeometry args={[CELL_W - GAP * 2, BTN_H]} />
-        <meshBasicMaterial color="#e8eef8" side={THREE.DoubleSide} />
+        <meshBasicMaterial color={face} side={THREE.DoubleSide} />
       </mesh>
       <Text
         position={[0, 0, 0.001]}
         fontSize={0.014}
-        color="#1c2330"
+        color={pal.text}
         anchorX="center"
         anchorY="middle"
         maxWidth={CELL_W - GAP * 4}
@@ -87,27 +122,35 @@ function MenuButton({
 
 export function XrWristMenu() {
   const gl = useThree((s) => s.gl)
-  const groupRef = useRef<THREE.Group>(null)
-  const palmHyst = useRef<PalmFacingHysteresis>({ visible: false })
-  const controllerMenuOpen = useRef(false)
-  const lastMenuButton = useRef(false)
+  const groupRef = React.useRef<THREE.Group>(null)
+  const palmHyst = React.useRef<PalmFacingHysteresis>({ visible: false })
+  const controllerMenuOpen = React.useRef(false)
+  const lastMenuButton = React.useRef(false)
+  const prevWristVisible = React.useRef(false)
+  const panelInnerRef = React.useRef<THREE.Group>(null)
+  const openT = React.useRef(0)
 
   const mode = useRootStore((s) => s.interactionMode)
 
-  const modeLabel = mode === 'travel' ? 'World mode' : 'Travel mode'
+  const modeLabel = mode === 'travel' ? 'Switch to World' : 'Switch to Travel'
 
-  const mainDefs = useMemo(() => buildMainMenuDefs(modeLabel), [modeLabel])
+  const mainDefs = React.useMemo(() => buildMainMenuDefs(modeLabel), [modeLabel])
 
   const mainRows = Math.ceil(mainDefs.length / COLS)
   const totalRows = mainRows
   const panelH = totalRows * (BTN_H + GAP) + GAP * 2
   const rowsTop = panelH / 2 - GAP
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const g = groupRef.current
     if (!g) return
     if (!gl.xr.isPresenting) {
       g.visible = false
+      prevWristVisible.current = false
+      const st0 = useRootStore.getState()
+      if (st0.interactionSession.kind === 'menu' && st0.interactionSession.menu === 'global') {
+        st0.dispatch({ type: 'setMenuSession', menu: null })
+      }
       return
     }
     const frame = gl.xr.getFrame()
@@ -184,7 +227,28 @@ export function XrWristMenu() {
     }
 
     g.visible = visible
+    if (visible !== prevWristVisible.current) {
+      const audio = useRootStore.getState().devicePreferences.audioEnabled
+      playInteractionCue('menuToggle', audio)
+      if (visible) openT.current = 0
+      prevWristVisible.current = visible
+      const st = useRootStore.getState()
+      if (visible) {
+        if (st.interactionSession.kind === 'idle' || st.interactionSession.kind === 'menu') {
+          st.dispatch({ type: 'setMenuSession', menu: 'global' })
+        }
+      } else if (st.interactionSession.kind === 'menu' && st.interactionSession.menu === 'global') {
+        st.dispatch({ type: 'setMenuSession', menu: null })
+      }
+    }
     if (!visible) return
+
+    openT.current = Math.min(1, openT.current + delta * 8)
+    const inner = panelInnerRef.current
+    if (inner) {
+      const s = THREE.MathUtils.lerp(0.94, 1, openT.current)
+      inner.scale.setScalar(s)
+    }
 
     g.matrixAutoUpdate = false
     g.matrix.copy(base)
@@ -193,21 +257,24 @@ export function XrWristMenu() {
 
   return (
     <group ref={groupRef} renderOrder={10}>
-      <mesh position={[0, 0, -0.003]} raycast={() => null}>
-        <planeGeometry args={[PANEL_W + 0.02, panelH + 0.02]} />
-        <meshBasicMaterial color="#f4f6fb" transparent opacity={0.92} side={THREE.DoubleSide} />
-      </mesh>
+      <group ref={panelInnerRef}>
+        <mesh position={[0, 0, -0.003]} raycast={() => null}>
+          <planeGeometry args={[PANEL_W + 0.02, panelH + 0.02]} />
+          <meshBasicMaterial color="#f4f6fb" transparent opacity={0.92} side={THREE.DoubleSide} />
+        </mesh>
 
-      {mainDefs.map((def, i) => (
-        <MenuButton
-          key={`m-${i}`}
-          label={def.label}
-          hit={def.hit}
-          row={Math.floor(i / COLS)}
-          col={i % COLS}
-          rowsTop={rowsTop}
-        />
-      ))}
+        {mainDefs.map((def, i) => (
+          <MenuButton
+            key={`m-${i}`}
+            label={def.label}
+            hit={def.hit}
+            row={Math.floor(i / COLS)}
+            col={i % COLS}
+            rowsTop={rowsTop}
+            buttonKind={def.label === 'Cancel' || def.label === 'Exit VR' ? 'danger' : 'default'}
+          />
+        ))}
+      </group>
     </group>
   )
 }

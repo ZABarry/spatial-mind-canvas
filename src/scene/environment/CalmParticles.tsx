@@ -34,7 +34,7 @@ export function CalmParticles() {
         size={0.06}
         color="#c5d2e3"
         transparent
-        opacity={0.35}
+        opacity={0.3}
         depthWrite={false}
         sizeAttenuation
       />

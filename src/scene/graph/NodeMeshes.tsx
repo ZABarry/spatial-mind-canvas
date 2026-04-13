@@ -17,7 +17,12 @@ import {
   worldPointToGraphLocal,
   XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
-import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
+import {
+  xrControllerIndexFromPointerId,
+  xrControllerIndexFromRayOrigin,
+  xrPointerIdFromControllerIndex,
+} from '../../utils/xrController'
+import { nodeMeshEmissive } from '../visual/interactionTokens'
 import { xrLastNodeSelectControllerIndex } from '../xr/xrSelectionRefs'
 
 function NodeItem({
@@ -48,6 +53,8 @@ function NodeItem({
   const xrDragControllerIdx = useRef<number | null>(null)
   const geom = useNodeGeometry(n.shape, n.size)
   const color = useMemo(() => new THREE.Color(n.color), [n.color])
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null)
+  const emissiveScratch = useRef(new THREE.Color())
 
   const opacity = useMemo(() => {
     if (!dim || !focusSet) return 1
@@ -55,7 +62,28 @@ function NodeItem({
     return 0.12
   }, [dim, focusSet, n.id])
 
-  const emissive = hovered || selected ? 0.35 : 0.12
+  useFrame(() => {
+    const m = materialRef.current
+    if (!m) return
+    const sess = useRootStore.getState().interactionSession
+    const props = nodeMeshEmissive({
+      nodeId: n.id,
+      selected,
+      hovered,
+      session: sess,
+    })
+    const ec = emissiveScratch.current
+    ec.copy(color)
+    if (props.emissiveBlendHex != null && props.blendAmount != null) {
+      ec.lerp(new THREE.Color(props.emissiveBlendHex), props.blendAmount)
+    }
+    m.emissive.copy(ec)
+    let int = props.intensity
+    if (sess.kind === 'link' && sess.fromNodeId === n.id) {
+      int += Math.sin(performance.now() / 320) * 0.042
+    }
+    m.emissiveIntensity = int
+  })
 
   const onMove = useCallback(
     (ev: PointerEvent) => {
@@ -114,10 +142,13 @@ function NodeItem({
     const st = useRootStore.getState()
     const proj = st.project
     if (!proj) return
+    const sess = st.interactionSession
+    if (sess.kind !== 'nodeDrag' || sess.nodeId !== n.id) return
     const wt = proj.worldTransform
     const node = proj.graph.nodes[n.id]
     if (!node) return
     const idx =
+      xrControllerIndexFromPointerId(sess.pointerId) ??
       xrDragControllerIdx.current ??
       (() => {
         const dominant = useRootStore.getState().devicePreferences.dominantHand
@@ -183,7 +214,16 @@ function NodeItem({
           }
           if (e.button === 0 && !n.pinned) {
             setDragging(true)
-            useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: true, nodeId: n.id })
+            const dragPointerId =
+              gl.xr.isPresenting && e.ray
+                ? xrPointerIdFromControllerIndex(xrControllerIndexFromRayOrigin(gl, e.ray.origin))
+                : undefined
+            useRootStore.getState().dispatch({
+              type: 'setNodeDragActive',
+              active: true,
+              nodeId: n.id,
+              ...(dragPointerId ? { pointerId: dragPointerId } : {}),
+            })
           }
         }}
         onPointerUp={(e) => {
@@ -191,8 +231,13 @@ function NodeItem({
           setDragging(false)
           useRootStore.getState().dispatch({ type: 'setNodeDragActive', active: false })
           xrDragControllerIdx.current = null
-          const sess = useRootStore.getState().interactionSession
-          if (sess.kind === 'link') {
+          const st0 = useRootStore.getState()
+          const sess = st0.interactionSession
+          /* Controllers: link completion uses `select` in useXrControllerInputBridge. Hand-tracking still uses pointer up. */
+          const linkViaPointerUp =
+            sess.kind === 'link' &&
+            (!gl.xr.isPresenting || st0.xrHandTrackingPrimary)
+          if (linkViaPointerUp) {
             if (sess.fromNodeId === n.id) {
               useRootStore.getState().dispatch({ type: 'cancelConnection' })
             } else {
@@ -205,9 +250,10 @@ function NodeItem({
         }}
       >
         <meshStandardMaterial
+          ref={materialRef}
           color={color}
           emissive={color}
-          emissiveIntensity={emissive}
+          emissiveIntensity={0.12}
           roughness={0.45}
           metalness={0.08}
           transparent={opacity < 1}

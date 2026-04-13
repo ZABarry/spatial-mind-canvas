@@ -8,6 +8,7 @@ import { MainToolbar } from '../ui/MainToolbar'
 import { SearchPalette } from '../ui/SearchPalette'
 import { NodeInspector } from '../ui/NodeInspector'
 import { OnboardingBanner } from '../ui/OnboardingBanner'
+import { OnboardingProgressRoot } from '../ui/onboarding/OnboardingProgressRoot'
 import { SettingsPanel } from '../ui/SettingsPanel'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { AudioAmbience } from '../ui/AudioAmbience'
@@ -45,6 +46,7 @@ export function App() {
         <>
           <AudioAmbience />
           <div className="scene-wrap">
+            <OnboardingProgressRoot />
             <CanvasMountGate>
               <SceneCanvas />
             </CanvasMountGate>

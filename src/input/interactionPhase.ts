@@ -21,6 +21,8 @@ export type InteractionPhase =
   | 'travel'
   | 'modalConfirm'
   | 'searchPalette'
+  /** VR wrist or node radial — blocks world grab; not a graph edit mode. */
+  | 'xrMenu'
 
 export function getInteractionPhase(s: {
   confirmDialog: unknown
@@ -34,6 +36,7 @@ export function getInteractionPhase(s: {
   if (s.confirmDialog) return 'modalConfirm'
   if (s.searchOpen) return 'searchPalette'
   if (s.detailNodeId) return 'nodeDetail'
+  if (s.interactionSession.kind === 'menu') return 'xrMenu'
   if (s.interactionSession.kind === 'worldGrab') return 'grabbingWorld'
   if (s.interactionSession.kind === 'link') return 'drawingEdge'
   if (s.placementPreview) return 'placingNode'

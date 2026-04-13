@@ -1,40 +1,42 @@
+import {
+  getOnboardingCue,
+  getOnboardingMilestone,
+  shouldShowOnboarding,
+} from './onboarding/onboardingModel'
+import { META_ONBOARDING_DISMISSED, setMeta } from '../persistence/db'
 import { useRootStore } from '../store/rootStore'
-import { setMeta } from '../persistence/db'
-
-const steps = [
-  'Double-click empty ground to place a node (a cyan connection handle appears on the selection).',
-  'Drag from the cyan handle on a node to connect; release on another node or on empty ground for a new linked node.',
-  'Drag nodes to move. Right-click or double-click a node to open the inspector, or press Enter with a node selected.',
-  'Enter VR from the toolbar on HTTPS. Toggle World mode (move the graph) vs Travel mode (walk the space). Alt+arrows nudges the world on desktop.',
-  'Search with Ctrl+K or /; Focus (F) dims unrelated nodes; Home or . centers the orbit on your selection. Undo/redo: Ctrl/Cmd+Z or the toolbar.',
-  'Ctrl+Shift+N creates a new blank map. Clear map clears only this canvas (confirmed). Library lists all local projects.',
-]
 
 export function OnboardingBanner() {
-  const done = useRootStore((s) => s.onboardingDismissed)
-  const step = useRootStore((s) => s.onboardingStep)
+  const dismissed = useRootStore((s) => s.onboardingDismissed)
+  const coreComplete = useRootStore((s) => s.onboardingCoreComplete)
+  const seenSelection = useRootStore((s) => s.onboardingSeenSelection)
+  const project = useRootStore((s) => s.project)
+  const primary = useRootStore((s) => s.selection.primaryNodeId)
+  const detailNodeId = useRootStore((s) => s.detailNodeId)
 
-  if (done) return null
+  const active = shouldShowOnboarding(dismissed, coreComplete)
+  const milestone = getOnboardingMilestone({
+    project,
+    primaryNodeId: primary ?? null,
+    detailNodeId,
+    seenSelection,
+  })
+  const cue = active ? getOnboardingCue(milestone, 'desktop') : null
+
+  if (!active || !cue || milestone === 'complete') return null
 
   return (
     <div className="onboarding panel">
-      <strong style={{ display: 'block', marginBottom: 6 }}>Welcome</strong>
-      {steps[step]}
+      <strong style={{ display: 'block', marginBottom: 6 }}>Start here</strong>
+      <p style={{ margin: '0 0 6px', lineHeight: 1.45 }}>{cue.headline}</p>
+      {cue.subline ? (
+        <p style={{ margin: 0, fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>{cue.subline}</p>
+      ) : null}
       <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
         <button
           type="button"
-          onClick={() =>
-            useRootStore.setState({
-              onboardingStep: Math.min(step + 1, steps.length - 1),
-            })
-          }
-        >
-          Next
-        </button>
-        <button
-          type="button"
           onClick={() => {
-            void setMeta('onboardingDismissed', true)
+            void setMeta(META_ONBOARDING_DISMISSED, true)
             useRootStore.setState({ onboardingDismissed: true })
           }}
         >

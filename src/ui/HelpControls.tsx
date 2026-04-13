@@ -78,18 +78,30 @@ export function HelpControls() {
                 <h3 id="help-desktop">Desktop</h3>
                 <ul className="help-list">
                   <li>
+                    <strong>Getting started</strong> — A compact <strong>Start here</strong> strip guides place →
+                    select → link or child → rename or Inspect; dismiss anytime. It stays out of the way once you finish
+                    or dismiss.
+                  </li>
+                  <li>
                     <strong>Navigate</strong> — Drag to orbit, scroll to zoom.
                   </li>
                   <li>
                     <strong>New node</strong> — Double-click empty ground.
                   </li>
                   <li>
-                    <strong>Quick actions</strong> — With a node selected, use the floating strip (Rename, Add child,
-                    Link, Inspect, Delete) without opening the full inspector.
+                    <strong>Quick actions</strong> — With a node selected, use the top-left strip (Rename, Add child,
+                    Link, Inspect, Delete) for the common loop; <strong>node detail</strong> is for notes, media, and
+                    fine edits.
                   </li>
                   <li>
-                    <strong>Connect</strong> — Drag from the cyan link handle on a selected node; release on another node
-                    or empty ground for a ghost preview line.
+                    <strong>Link</strong> — Drag from the cyan link handle on a selected node. The preview line turns
+                    teal when aimed at a valid target node, soft cyan toward empty ground, and warm amber if you aim back
+                    at the source (release on the source to cancel).
+                  </li>
+                  <li>
+                    <strong>Sound</strong> — When enabled under <strong>Device &amp; VR</strong>, you get a very soft
+                    ambient bed plus short cues for select, link, undo, menus, and confirms (after your first click so
+                    the browser allows audio).
                   </li>
                   <li>
                     <strong>Select</strong> — Click a node or edge. <Kbd>Ctrl</Kbd>/<Kbd>⌘</Kbd> + click to add nodes;
@@ -99,15 +111,16 @@ export function HelpControls() {
                     <strong>Move</strong> — Drag a node (if not pinned).
                   </li>
                   <li>
-                    <strong>Node detail</strong> — Right-click or double-click a node, or select one and press{' '}
-                    <Kbd>Enter</Kbd>.
+                    <strong>Inspect (node detail)</strong> — Right-click or double-click a node, or select one and
+                    press <Kbd>Enter</Kbd>.
                   </li>
                   <li>
-                    <strong>Focus</strong> — <Kbd>F</Kbd> (dim to neighborhood)
+                    <strong>Focus neighborhood</strong> — <Kbd>F</Kbd> dims the graph to neighbors (not the same as
+                    Recenter).
                   </li>
                   <li>
-                    <strong>Center view on selection</strong> — <Kbd>Home</Kbd> or <Kbd>.</Kbd> (primary
-                    node moves to the orbit pivot)
+                    <strong>Recenter</strong> — <Kbd>Home</Kbd> or <Kbd>.</Kbd> pans so the primary node sits at the
+                    orbit pivot (different from <strong>Reset view</strong> in the toolbar).
                   </li>
                   <li>
                     <strong>Delete</strong> — <Kbd>Delete</Kbd> or <Kbd>Backspace</Kbd>
@@ -148,29 +161,38 @@ export function HelpControls() {
                   <li>
                     <strong>Locomotion options</strong> — Under <strong>Device &amp; VR</strong> in Settings (stored for
                     this browser, not inside map files): smooth or snap turning, move speed, comfort vignette, and
-                    dominant hand.
+                    dominant hand (biases controller aim; travel sticks stay left move / right turn).
                   </li>
                   <li>
-                    <strong>Scene</strong> — Point the controller ray and use the trigger to select nodes and complete
-                    links.
+                    <strong>Sound</strong> — Optional ambient bed and soft interaction cues (same toggle as desktop),
+                    after a click or trigger so the browser unlocks audio.
                   </li>
                   <li>
-                    <strong>Wrist menu</strong> — On the <strong>left</strong> side: with <strong>controllers</strong>,
-                    toggle the panel with the <strong>secondary face button</strong> (often Y); with{' '}
-                    <strong>hand tracking</strong>, turn your palm toward you. Global commands include Library, Search,
-                    Settings, Undo, Redo, Reset view, <strong>Recenter</strong> (on selection), <strong>Reset scale</strong>,{' '}
-                    <strong>Cancel</strong> (close drafts/panels), Travel/World, Help, Exit VR.{' '}
+                    <strong>Scene</strong> — Point the controller ray and use the trigger to select nodes; in{' '}
+                    <strong>World</strong> tool mode, trigger completes or cancels links as described in the in-headset
+                    status HUD.
+                  </li>
+                  <li>
+                    <strong>Wrist menu (global)</strong> — On the <strong>left</strong>: with <strong>controllers</strong>,
+                    toggle with the <strong>secondary face button</strong> (often Y); with <strong>hand tracking</strong>,
+                    turn your palm toward you. Includes Library, Search, Settings, Undo, Redo, <strong>Reset view</strong>,{' '}
+                    <strong>Recenter</strong> (same as Home on desktop), <strong>Reset scale</strong>,{' '}
+                    <strong>Cancel</strong>, <strong>Switch to Travel / Switch to World</strong>, Help, Exit VR. The{' '}
+                    <strong>node radial</strong> holds Child, Link, Inspect, Delete, Focus, and Recenter.{' '}
                     <strong>Layout</strong>, <strong>bookmarks</strong>, and <strong>export</strong> stay on the flat
                     toolbar (exit VR to use them).
                   </li>
                   <li>
-                    <strong>Status HUD</strong> — Shows navigation mode, selection, and hints in front of you.
+                    <strong>Status HUD</strong> — Shows tool mode, navigation mode, selection, active gesture, and
+                    recovery hints in front of you. While linking, the hint text shifts toward teal when you aim at a
+                    valid target node.
                   </li>
                   <li>
-                    <strong>Node radial</strong> — When a node is selected, a compact menu appears beside it:{' '}
-                    <strong>Child</strong> (add connected child), <strong>Inspect</strong>, <strong>Delete</strong>,{' '}
-                    <strong>Focus</strong>, <strong>Recenter</strong>, and with controllers <strong>Link</strong>.
-                    Hand-tracking-only sessions hide Link for reliability.
+                    <strong>Node radial</strong> — When a node is selected, an arc appears beside it:{' '}
+                    <strong>Child</strong>, <strong>Link</strong> (controllers), <strong>Inspect</strong>,{' '}
+                    <strong>Delete</strong>, <strong>Focus neighborhood</strong>, <strong>Recenter</strong>.{' '}
+                    <strong>Hand-tracking–lite</strong> sessions intentionally disable Link on the radial; use
+                    controllers for full Link authoring.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — Exit the XR session (or use <strong>Exit VR</strong> in the wrist

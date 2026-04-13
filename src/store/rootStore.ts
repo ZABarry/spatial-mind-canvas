@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid'
 import type { AppAction } from '../input/actions'
 import { withLinkPreviewTarget } from '../input/sessionMachine'
 import { idleSession, type InteractionSession } from '../input/sessionTypes'
+import { canBeginWorldGrab } from '../input/xr/xrSessionGuards'
 import {
   interactionModeFromNavigationMode,
   navigationModeFromInteractionMode,
@@ -18,6 +19,8 @@ import {
 } from '../graph/defaults'
 import { addEdge, addNode, createNodeDefaults, patchNode, removeEdge, removeNode } from '../graph/mutations'
 import { neighborIdsByEdges } from '../graph/selectors'
+import { spawnChildBranchPositions } from '../graph/branching'
+import { getTemplate, type TemplateId } from '../graph/templates'
 import * as layoutTools from '../graph/layout/tools'
 import type { Vec3, Vec4 } from '../utils/math'
 import { vec3Add, v3 } from '../utils/math'
@@ -26,12 +29,23 @@ import {
   type ProjectRepository,
 } from '../persistence/projectRepository'
 import { ProjectSchema } from '../persistence/schemas'
+import { mapSnapshots } from '../persistence/mapSnapshotRepository'
+import { applyMapSnapshotPayload, buildMapSnapshotPayload } from '../persistence/snapshotPayload'
 import { buildProjectZip, estimateZipUncompressedSize, parseProjectZip } from '../persistence/zipBundle'
 import { checkSpaceForBytes, warnIfStorageAlmostFull } from '../media/quota'
 import { buildImageThumbnailJpeg } from '../media/imageThumbnail'
 import { createLocalMediaStore } from '../media/localMediaStore'
 import type { MediaStore } from '../media/types'
-import { getMeta, META_DEVICE_PREFS, META_LAST_PROJECT, setMeta } from '../persistence/db'
+import {
+  getMeta,
+  META_DEVICE_PREFS,
+  META_LAST_PROJECT,
+  META_ONBOARDING_CORE_COMPLETE,
+  META_ONBOARDING_DISMISSED,
+  META_ONBOARDING_LEGACY_DONE,
+  META_ONBOARDING_SEEN_SELECTION,
+  setMeta,
+} from '../persistence/db'
 import type { MediaAttachment } from '../graph/types'
 import {
   appendPast,
@@ -39,6 +53,7 @@ import {
   type HistoryEntry,
 } from '../input/historyTransactions'
 import Fuse from 'fuse.js'
+import { playInteractionCue } from '../audio/interactionCues'
 
 export type AppView = 'home' | 'scene'
 
@@ -71,8 +86,11 @@ export interface RootState {
   searchHighlight: Set<string>
   detailNodeId: string | null
   onboardingDismissed: boolean
-  onboardingStep: number
+  onboardingCoreComplete: boolean
+  onboardingSeenSelection: boolean
   settingsOpen: boolean
+  /** Desktop: version history modal (local snapshots). */
+  mapHistoryOpen: boolean
   confirmDialog: { title: string; message: string; onConfirm: () => void } | null
   /** Text prompt for VR (e.g. bookmark name); replaces `window.prompt` while immersive. */
   textPromptDialog: { title: string; defaultValue: string; onSubmit: (value: string) => void } | null
@@ -100,6 +118,7 @@ export interface RootState {
   openProject: (id: string) => Promise<void>
   goHome: () => void
   newBlankProject: () => Promise<void>
+  newProjectFromTemplate: (templateId: TemplateId) => Promise<void>
   duplicateCurrentProject: () => Promise<void>
   renameProject: (id: string, name: string) => Promise<void>
   deleteProject: (id: string) => Promise<void>
@@ -108,6 +127,9 @@ export interface RootState {
   exportProjectZip: () => Promise<void>
   importProject: (file: File) => Promise<void>
   saveNow: () => Promise<void>
+  setMapHistoryOpen: (open: boolean) => void
+  createMapSnapshot: (label?: string) => Promise<void>
+  restoreMapSnapshot: (snapshotId: string, options: { saveBeforeRestore: boolean }) => Promise<void>
 }
 
 function cloneProject(p: Project): Project {
@@ -164,6 +186,7 @@ function rebuildSearchIndex(project: Project) {
 function shouldRebuildSearchIndex(a: AppAction): boolean {
   switch (a.type) {
     case 'createNodeAt':
+    case 'spawnChildBranches':
     case 'deleteNode':
     case 'deleteSelection':
     case 'updateNodeProps':
@@ -203,7 +226,8 @@ export const useRootStore = create<RootState>((set, get) => {
         a.type === 'redo' ||
         a.type === 'setHover' ||
         a.type === 'setSearchOpen' ||
-        a.type === 'patchDevicePreferences'
+        a.type === 'patchDevicePreferences' ||
+        a.type === 'setMenuSession'
       ) {
         /* allow */
       } else return
@@ -216,22 +240,32 @@ export const useRootStore = create<RootState>((set, get) => {
         const past = get().historyPast
         const last = past[past.length - 1]
         if (!last) break
+        const audio = get().devicePreferences.audioEnabled
         last.undo()
         set({ historyPast: past.slice(0, -1), historyFuture: [last, ...get().historyFuture] })
+        if (audio) playInteractionCue('undo', true)
         break
       }
       case 'redo': {
         const fut = get().historyFuture
         const first = fut[0]
         if (!first) break
+        const audio = get().devicePreferences.audioEnabled
         first.redo()
         set({ historyFuture: fut.slice(1), historyPast: [...get().historyPast, first] })
+        if (audio) playInteractionCue('redo', true)
         break
       }
       case 'selectNodes': {
         const sel = get().selection
+        const prevPrimary = sel.primaryNodeId
+        const audio = get().devicePreferences.audioEnabled
         const next = a.additive ? { ...sel, nodeIds: [...new Set([...sel.nodeIds, ...a.ids])] } : { ...sel, nodeIds: a.ids, edgeIds: [] }
         set({ selection: { ...next, primaryNodeId: a.ids[0] ?? next.primaryNodeId } })
+        const newPrimary = get().selection.primaryNodeId
+        if (audio && newPrimary && newPrimary !== prevPrimary) {
+          playInteractionCue('select', true)
+        }
         break
       }
       case 'selectEdges': {
@@ -276,6 +310,35 @@ export const useRootStore = create<RootState>((set, get) => {
             p.graph = e.graph
           }
         })
+        break
+      }
+      case 'spawnChildBranches': {
+        const p0 = get().project
+        if (!p0) break
+        const parent = p0.graph.nodes[a.parentId]
+        if (!parent || a.count < 1) break
+        let lastId: string | undefined
+        commit('spawnChildBranches', (p) => {
+          const par = p.graph.nodes[a.parentId]
+          if (!par) return
+          const posList = spawnChildBranchPositions(p.graph, par, a.count)
+          for (const pos of posList) {
+            const base = createNodeDefaults(pos)
+            const { graph, node } = addNode(p.graph, {
+              ...base,
+              parentId: par.id,
+            })
+            p.graph = graph
+            const e = addEdge(p.graph, { sourceId: par.id, targetId: node.id })
+            p.graph = e.graph
+            lastId = node.id
+          }
+        })
+        if (lastId) {
+          set({
+            selection: { nodeIds: [lastId], edgeIds: [], primaryNodeId: lastId },
+          })
+        }
         break
       }
       case 'moveNode': {
@@ -336,6 +399,7 @@ export const useRootStore = create<RootState>((set, get) => {
       case 'startConnection': {
         const pointerId =
           a.xrControllerIndex !== undefined ? `xr-controller-${a.xrControllerIndex}` : 'mouse'
+        const audio = get().devicePreferences.audioEnabled
         set({
           interactionSession: {
             kind: 'link',
@@ -344,6 +408,7 @@ export const useRootStore = create<RootState>((set, get) => {
             ...(a.xrControllerIndex !== undefined ? { xrControllerIndex: a.xrControllerIndex } : {}),
           },
         })
+        if (audio) playInteractionCue('linkStart', true)
         break
       }
       case 'finishConnection': {
@@ -353,12 +418,15 @@ export const useRootStore = create<RootState>((set, get) => {
           break
         }
         const fromId = sess.fromNodeId
+        const audio = get().devicePreferences.audioEnabled
+        let completed = false
         if (a.targetNodeId) {
           dispatch({
             type: 'connectNodes',
             fromId,
             toId: a.targetNodeId,
           })
+          completed = true
         } else if (a.dropPosition) {
           commit('connect+node', (p) => {
             const base = createNodeDefaults(a.dropPosition!)
@@ -370,13 +438,17 @@ export const useRootStore = create<RootState>((set, get) => {
             })
             p.graph = e.graph
           })
+          completed = true
         }
         set({ interactionSession: idleSession })
+        if (completed && audio) playInteractionCue('linkComplete', true)
         break
       }
       case 'cancelConnection':
         if (get().interactionSession.kind === 'link') {
+          const audio = get().devicePreferences.audioEnabled
           set({ interactionSession: idleSession })
+          if (audio) playInteractionCue('cancel', true)
         }
         break
       case 'setLinkPreviewTarget': {
@@ -387,8 +459,14 @@ export const useRootStore = create<RootState>((set, get) => {
       }
       case 'cancelActiveInteraction': {
         const sess = get().interactionSession
-        if (sess.kind === 'link') {
+        if (sess.kind === 'menu') {
           set({ interactionSession: idleSession })
+          break
+        }
+        if (sess.kind === 'link') {
+          const audio = get().devicePreferences.audioEnabled
+          set({ interactionSession: idleSession })
+          if (audio) playInteractionCue('cancel', true)
           break
         }
         if (sess.kind === 'nodeDrag') {
@@ -415,6 +493,18 @@ export const useRootStore = create<RootState>((set, get) => {
           } else {
             set({ interactionSession: idleSession, worldGrabBefore: null })
           }
+          break
+        }
+        break
+      }
+      case 'setMenuSession': {
+        const cur = get().interactionSession
+        if (a.menu === null) {
+          if (cur.kind === 'menu') set({ interactionSession: idleSession })
+          break
+        }
+        if (cur.kind === 'idle' || cur.kind === 'menu') {
+          set({ interactionSession: { kind: 'menu', menu: a.menu } })
         }
         break
       }
@@ -554,10 +644,7 @@ export const useRootStore = create<RootState>((set, get) => {
       case 'beginWorldGrab': {
         const st = get()
         if (!st.project || st.worldGrabBefore) break
-        if (st.navigationMode !== 'world') break
-        const k = st.interactionSession.kind
-        if (k === 'link' || k === 'nodeDrag') break
-        if (k === 'worldGrab') break
+        if (!canBeginWorldGrab(st)) break
         const wt = { ...st.project.worldTransform }
         set({
           worldGrabBefore: cloneProject(st.project),
@@ -867,7 +954,7 @@ export const useRootStore = create<RootState>((set, get) => {
         set({
           interactionSession: {
             kind: 'nodeDrag',
-            pointerId: 'primary',
+            pointerId: a.pointerId ?? 'primary',
             nodeId,
             start: [p0[0], p0[1], p0[2]],
             current: [p0[0], p0[1], p0[2]],
@@ -916,8 +1003,10 @@ export const useRootStore = create<RootState>((set, get) => {
     searchHighlight: new Set(),
     detailNodeId: null,
     onboardingDismissed: false,
-    onboardingStep: 0,
+    onboardingCoreComplete: false,
+    onboardingSeenSelection: false,
     settingsOpen: false,
+    mapHistoryOpen: false,
     confirmDialog: null,
     textPromptDialog: null,
     xrHelpOpen: false,
@@ -949,7 +1038,11 @@ export const useRootStore = create<RootState>((set, get) => {
       }
       index.sort((a, b) => b.lastOpenedAt - a.lastOpenedAt)
       const lastId = (await getMeta(META_LAST_PROJECT)) as string | undefined
-      const onboard = (await getMeta('onboardingDismissed')) as boolean | undefined
+      const dismissed =
+        ((await getMeta(META_ONBOARDING_DISMISSED)) as boolean | undefined) ??
+        ((await getMeta(META_ONBOARDING_LEGACY_DONE)) as boolean | undefined)
+      const coreDone = (await getMeta(META_ONBOARDING_CORE_COMPLETE)) as boolean | undefined
+      const seenSel = (await getMeta(META_ONBOARDING_SEEN_SELECTION)) as boolean | undefined
       const rawDev = (await getMeta(META_DEVICE_PREFS)) as Partial<DevicePreferences> | undefined
       const devicePreferences = { ...defaultDevicePreferences(), ...rawDev }
       set({
@@ -957,8 +1050,9 @@ export const useRootStore = create<RootState>((set, get) => {
         media,
         projectIndex: index,
         ready: true,
-        onboardingDismissed: !!onboard,
-        onboardingStep: 0,
+        onboardingDismissed: !!dismissed,
+        onboardingCoreComplete: !!coreDone,
+        onboardingSeenSelection: !!seenSel,
         devicePreferences,
       })
       if (lastId && ids.includes(lastId)) {
@@ -997,6 +1091,7 @@ export const useRootStore = create<RootState>((set, get) => {
         project: null,
         textPromptDialog: null,
         xrHelpOpen: false,
+        mapHistoryOpen: false,
         interactionSession: idleSession,
         worldAxisDragActive: false,
         pendingNodeDrag: null,
@@ -1016,6 +1111,58 @@ export const useRootStore = create<RootState>((set, get) => {
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: await buildIndex(repo),
       })
+    },
+    newProjectFromTemplate: async (templateId) => {
+      const repo = get().repo
+      const t = getTemplate(templateId)
+      if (!repo || !t) return
+      const pr = t.build()
+      await repo.save(pr)
+      await setMeta(META_LAST_PROJECT, pr.id)
+      rebuildSearchIndex(pr)
+      set({
+        project: pr,
+        view: 'scene',
+        selection: { nodeIds: [], edgeIds: [] },
+        projectIndex: await buildIndex(repo),
+        interactionSession: idleSession,
+      })
+    },
+    setMapHistoryOpen: (open) => set({ mapHistoryOpen: open }),
+    createMapSnapshot: async (label) => {
+      const p = get().project
+      if (!p) return
+      const payload = buildMapSnapshotPayload(p)
+      try {
+        await mapSnapshots.create(p.id, payload, label)
+      } catch {
+        window.alert('Could not save snapshot.')
+      }
+    },
+    restoreMapSnapshot: async (snapshotId, options) => {
+      const repo = get().repo
+      let cur = get().project
+      if (!repo || !cur) return
+      const rec = await mapSnapshots.get(snapshotId)
+      if (!rec || rec.projectId !== cur.id) return
+      if (options.saveBeforeRestore) {
+        await mapSnapshots.create(cur.id, buildMapSnapshotPayload(cur), 'Before restore')
+      }
+      cur = get().project
+      if (!cur) return
+      const next = applyMapSnapshotPayload(cur, rec.payload)
+      rebuildSearchIndex(next)
+      set({
+        project: next,
+        selection: { nodeIds: [], edgeIds: [] },
+        detailNodeId: null,
+        historyPast: [],
+        historyFuture: [],
+        placementPreview: null,
+        mapHistoryOpen: false,
+      })
+      await repo.save(next)
+      set({ projectIndex: await buildIndex(repo) })
     },
     duplicateCurrentProject: async () => {
       const repo = get().repo
@@ -1053,6 +1200,7 @@ export const useRootStore = create<RootState>((set, get) => {
     deleteProject: async (id) => {
       const repo = get().repo
       if (!repo) return
+      await mapSnapshots.deleteAllForProject(id)
       await repo.delete(id)
       const cur = get().project
       if (cur?.id === id) {

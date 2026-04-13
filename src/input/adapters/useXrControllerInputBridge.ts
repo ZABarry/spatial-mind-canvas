@@ -8,9 +8,23 @@ import {
   worldPointToGraphLocal,
   XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
+import { shouldIgnoreXrGraphSelect } from '../xr/xrSessionGuards'
 import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
 import { tryHandleXrMenuObject } from '../../scene/xr/xrMenuActions'
 import { xrLastNodeSelectControllerIndex } from '../../scene/xr/xrSelectionRefs'
+
+function linkHitRank(obj: THREE.Object3D): number {
+  let o: THREE.Object3D | null = obj
+  while (o) {
+    if (o.userData?.xrMenuHit) return -2
+    if (o.userData?.xrNodeRadial) return -1
+    if (o.userData?.hitKind === 'node-link-handle') return 0
+    if (o.userData?.nodeId && !o.userData?.edgeId) return 1
+    if (o.userData?.edgeId) return 10
+    o = o.parent
+  }
+  return 50
+}
 
 /**
  * Maps XR controller `select` to the same semantic store actions as desktop (selection, link completion).
@@ -28,6 +42,8 @@ export function useXrControllerInputBridge() {
       const input = event.inputSource
       const refSpace = gl.xr.getReferenceSpace()
       if (!refSpace || !input.targetRaySpace) return
+      const st0 = useRootStore.getState()
+      if (shouldIgnoreXrGraphSelect(st0)) return
       const pose = frame.getPose(input.targetRaySpace, refSpace)
       if (!pose) return
       const t = pose.transform
@@ -42,13 +58,28 @@ export function useXrControllerInputBridge() {
       const raycaster = new THREE.Raycaster(origin, direction)
       raycaster.near = 0.05
       raycaster.far = 500
-      const hits = raycaster.intersectObjects(scene.children, true)
+      const rawHits = raycaster.intersectObjects(scene.children, true)
+      const stForSort = useRootStore.getState()
+      const hits =
+        stForSort.interactionSession.kind === 'link'
+          ? [...rawHits].sort((a, b) => linkHitRank(a.object) - linkHitRank(b.object))
+          : rawHits
       for (const h of hits) {
         if (tryHandleXrMenuObject(h.object)) return
+        let skipGraph = false
+        let q: THREE.Object3D | null = h.object
+        while (q) {
+          if (q.userData?.xrNodeRadial) {
+            skipGraph = true
+            break
+          }
+          q = q.parent
+        }
+        if (skipGraph) return
         let o: THREE.Object3D | null = h.object
         while (o) {
           const id = o.userData?.nodeId as string | undefined
-          if (id) {
+          if (id && !o.userData?.edgeId) {
             const st = useRootStore.getState()
             const sess = st.interactionSession
             if (sess.kind === 'link') {

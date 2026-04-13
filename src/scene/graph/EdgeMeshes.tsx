@@ -19,7 +19,9 @@ export function EdgeMeshes() {
   const selE = useRootStore((s) => s.selection.edgeIds)
   const hoverE = useRootStore((s) => s.hover.edgeId)
   /** While drafting a link, thick screen-space edges often win the raycast over node meshes — block hits so pointerup reaches nodes. */
-  const linkDraft = useRootStore((s) => s.interactionSession.kind === 'link')
+  const interactionSession = useRootStore((s) => s.interactionSession)
+  const linkDraft = interactionSession.kind === 'link'
+  const linkFromId = linkDraft ? interactionSession.fromNodeId : null
 
   if (!project) return null
   const graph = project.graph
@@ -42,7 +44,10 @@ export function EdgeMeshes() {
           focusDim && focusSet && focusSet.size > 0
             ? !focusSet.has(e.sourceId) && !focusSet.has(e.targetId)
             : false
-        const lineOpacity = dim ? 0.08 : selE.includes(e.id) || hoverE === e.id ? 1 : 0.75
+        const baseOpacity = dim ? 0.08 : selE.includes(e.id) || hoverE === e.id ? 1 : 0.75
+        const linkingBackdrop =
+          linkDraft && linkFromId && e.sourceId !== linkFromId && e.targetId !== linkFromId
+        const lineOpacity = linkingBackdrop ? baseOpacity * 0.22 : baseOpacity
         /** Drei `Line` uses Line2/LineSegments2; screen-space raycast needs `raycaster.camera`, which is often null in XR — use world units there instead. */
         const lineWidth = inXr
           ? Math.max(0.008, e.thickness * 0.012)

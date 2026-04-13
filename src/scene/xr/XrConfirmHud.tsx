@@ -1,11 +1,19 @@
 import { Html } from '@react-three/drei'
+import { useEffect } from 'react'
 import { useXR } from '@react-three/xr'
+import { confirmAcceptCueKind, playInteractionCue } from '../../audio/interactionCues'
 import { useRootStore } from '../../store/rootStore'
 
 /** Confirmation UI visible inside immersive XR (DOM overlay is not always available). */
 export function XrConfirmHud() {
   const session = useXR((s) => s.session)
   const dialog = useRootStore((s) => s.confirmDialog)
+
+  useEffect(() => {
+    if (!session || !dialog) return
+    const a = useRootStore.getState().devicePreferences.audioEnabled
+    if (a) playInteractionCue('confirmOpen', true)
+  }, [session, dialog])
 
   if (!session || !dialog) return null
 
@@ -46,6 +54,8 @@ export function XrConfirmHud() {
               className="primary"
               onClick={() => {
                 const fn = dialog.onConfirm
+                const a = useRootStore.getState().devicePreferences.audioEnabled
+                playInteractionCue(confirmAcceptCueKind(dialog.title, dialog.message), a)
                 useRootStore.setState({ confirmDialog: null })
                 fn()
               }}

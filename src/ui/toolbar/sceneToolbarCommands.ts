@@ -11,6 +11,10 @@ export function newBlankMap() {
   void useRootStore.getState().newBlankProject()
 }
 
+export function openMapHistory() {
+  useRootStore.getState().setMapHistoryOpen(true)
+}
+
 export function duplicateMap() {
   void useRootStore.getState().duplicateCurrentProject()
 }
@@ -133,6 +137,8 @@ export function cancelInteraction() {
   st.dispatch({ type: 'openNodeDetail', nodeId: null })
   st.dispatch({ type: 'setPlacementPreview', preview: null })
   st.dispatch({ type: 'setSearchOpen', open: false })
+  st.dispatch({ type: 'setMenuSession', menu: null })
+  useRootStore.setState({ settingsOpen: false, xrHelpOpen: false, textPromptDialog: null })
 }
 
 export function undo() {

@@ -50,7 +50,8 @@ function TravelLocomotion({ children }: { children?: ReactNode }) {
   const nav = useRootStore((s) => s.navigationMode)
   const dev = useRootStore((s) => s.devicePreferences)
   const ref = useRef<Group>(null)
-  const hand = dev.dominantHand === 'left' ? 'right' : 'left'
+  /** @react-three/xr: left controller thumbstick translates; rotation uses the other controller. Dominant hand in Settings affects selection/ray bias only. */
+  const translationControllerHand = 'left' as const
 
   useXRControllerLocomotion(
     ref,
@@ -64,7 +65,7 @@ function TravelLocomotion({ children }: { children?: ReactNode }) {
         ? { type: 'smooth', speed: dev.smoothTurnSpeed }
         : { type: 'snap', degrees: dev.snapTurnDegrees }
       : false,
-    hand,
+    translationControllerHand,
   )
 
   return <XROrigin ref={ref}>{children}</XROrigin>
