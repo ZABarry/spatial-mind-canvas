@@ -10,7 +10,6 @@ export function MainToolbar() {
   const xrSession = useRootStore((s) => s.xrSessionActive)
   const mode = useRootStore((s) => s.interactionMode)
   const navMode = useRootStore((s) => s.navigationMode)
-  const toolMode = useRootStore((s) => s.toolMode)
   const project = useRootStore((s) => s.project)
   const worldAxisControls = project?.settings.worldAxisControls === true
   const floorGridOn = project?.settings.floorGrid !== false
@@ -28,38 +27,6 @@ export function MainToolbar() {
       >
         Library
       </button>
-
-      <div className="toolbar-tools" aria-label="Authoring tools">
-        <span className="toolbar-tools-label">Tools</span>
-        <button
-          type="button"
-          className={toolMode === 'select' ? 'toggle-on' : undefined}
-          onClick={() => tb.setToolMode('select')}
-        >
-          Select
-        </button>
-        <button
-          type="button"
-          className={toolMode === 'create' ? 'toggle-on' : undefined}
-          onClick={() => tb.setToolMode('create')}
-        >
-          Create
-        </button>
-        <button
-          type="button"
-          className={toolMode === 'link' ? 'toggle-on' : undefined}
-          onClick={() => tb.setToolMode('link')}
-        >
-          Link
-        </button>
-        <button
-          type="button"
-          className={toolMode === 'inspect' ? 'toggle-on' : undefined}
-          onClick={() => tb.setToolMode('inspect')}
-        >
-          Inspect
-        </button>
-      </div>
 
       <div className="toolbar-tools" aria-label="Navigation mode">
         <span className="toolbar-tools-label">Nav</span>

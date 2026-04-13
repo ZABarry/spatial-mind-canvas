@@ -1,7 +1,7 @@
 import { xrStore } from '../../scene/xrStore'
 import { useRootStore } from '../../store/rootStore'
 import type { StructureToolName } from '../../input/actions'
-import type { NavigationMode, ToolMode } from '../../input/tools'
+import type { NavigationMode } from '../../input/tools'
 
 export function goLibrary() {
   useRootStore.getState().goHome()
@@ -88,10 +88,6 @@ export function toggleTravelWorldMode() {
   st.dispatch({ type: 'setInteractionMode', mode: mode === 'travel' ? 'worldManip' : 'travel' })
 }
 
-export function setToolMode(mode: ToolMode) {
-  useRootStore.getState().dispatch({ type: 'setToolMode', mode })
-}
-
 export function setNavigationMode(mode: NavigationMode) {
   useRootStore.getState().dispatch({ type: 'setNavigationMode', mode })
 }
@@ -137,7 +133,6 @@ export function cancelInteraction() {
   st.dispatch({ type: 'openNodeDetail', nodeId: null })
   st.dispatch({ type: 'setPlacementPreview', preview: null })
   st.dispatch({ type: 'setSearchOpen', open: false })
-  st.dispatch({ type: 'setToolMode', mode: 'select' })
 }
 
 export function undo() {

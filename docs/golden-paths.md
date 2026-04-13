@@ -6,9 +6,9 @@ These five flows define the core product. Verify after meaningful interaction ch
 
 **Expected**
 
-1. **Create** — Set tool to Create, double-click empty ground; a new node appears.
-2. **Link** — Set tool to Link (or use the cyan link handle on a selected node), start from one node, complete on a second node or on empty ground (creates a connected node).
-3. **Inspect** — Select a node, open Inspect (toolbar, quick actions, or Enter); the inspector shows fields and closes without corrupting the graph.
+1. **Create** — Double-click empty ground; a new node appears.
+2. **Link** — Drag from the cyan link handle on a selected node; complete on a second node or on empty ground (creates a connected node).
+3. **Inspect** — Right-click or double-click a node, or select one and press Enter (quick actions also open the inspector); fields show and close without corrupting the graph.
 
 **Checklist**
 

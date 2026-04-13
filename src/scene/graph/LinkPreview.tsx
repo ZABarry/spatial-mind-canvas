@@ -35,6 +35,8 @@ function createLinkPreviewLine(): THREE.Line {
   line.frustumCulled = false
   line.renderOrder = 500
   line.visible = false
+  /** Do not steal pointer events — nodes/ground must receive pointerup to finish the link. */
+  line.raycast = () => {}
   return line
 }
 

@@ -50,7 +50,6 @@ export function runNodeStartLink() {
   const id = st.selection.primaryNodeId
   if (!id) return
   const idx = xrLastNodeSelectControllerIndex.current
-  st.dispatch({ type: 'setToolMode', mode: 'link' })
   st.dispatch({
     type: 'startConnection',
     fromNodeId: id,

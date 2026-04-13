@@ -45,27 +45,6 @@ export function useDesktopShortcuts() {
         dispatch({ type: 'clearSelection' })
         dispatch({ type: 'openNodeDetail', nodeId: null })
         dispatch({ type: 'setSearchOpen', open: false })
-        dispatch({ type: 'setToolMode', mode: 'select' })
-        return
-      }
-      if (!mod && (e.key === 'v' || e.key === 'V')) {
-        e.preventDefault()
-        dispatch({ type: 'setToolMode', mode: 'select' })
-        return
-      }
-      if (!mod && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault()
-        dispatch({ type: 'setToolMode', mode: 'create' })
-        return
-      }
-      if (!mod && (e.key === 'l' || e.key === 'L')) {
-        e.preventDefault()
-        dispatch({ type: 'setToolMode', mode: 'link' })
-        return
-      }
-      if (!mod && (e.key === 'i' || e.key === 'I')) {
-        e.preventDefault()
-        dispatch({ type: 'setToolMode', mode: 'inspect' })
         return
       }
       if (e.key === 'Enter') {

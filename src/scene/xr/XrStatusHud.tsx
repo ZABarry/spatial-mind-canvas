@@ -11,12 +11,11 @@ const _dir = new Vector3()
 const _up = new Vector3()
 
 /**
- * In-VR status: mode, tool, selection, and recovery hints.
+ * In-VR status: navigation mode, selection, and recovery hints.
  */
 export function XrStatusHud() {
   const session = useXR((s) => s.session)
   const nav = useRootStore((s) => s.navigationMode)
-  const tool = useRootStore((s) => s.toolMode)
   const primary = useRootStore((s) => s.selection.primaryNodeId)
   const project = useRootStore((s) => s.project)
   const xrDebugHud = useRootStore((s) => s.xrDebugHud)
@@ -26,7 +25,7 @@ export function XrStatusHud() {
   const { camera } = useThree()
 
   const title = primary && project?.graph.nodes[primary]?.title
-  const line1 = `Tool: ${tool} · Nav: ${nav}`
+  const line1 = `Nav: ${nav}`
   const line2 = primary
     ? `Selected: ${title?.trim() || 'Untitled'}`
     : 'Nothing selected'

@@ -6,14 +6,14 @@ Quest-first, local-only 3D mind mapping in the browser: an infinite calm white s
 
 | Area | What you get |
 | --- | --- |
-| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **Link** tool or link handle (Shift+drag optional expert shortcut), node collapse/expand, graph focus (dim non-neighbors); optional **parent/child** links with **Add child** quick placement (desktop). |
+| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **cyan link handle** to connect nodes, node collapse/expand, graph focus (dim non-neighbors); optional **parent/child** links with **Add child** quick placement (desktop). |
 | **Library & projects** | Create / rename / duplicate / delete projects; new blank map; import **JSON** or **ZIP**; export JSON or **ZIP** (full round-trip with media). |
 | **Persistence** | IndexedDB autosave, debounced saves, manual **Ctrl/Cmd+S** save; Zod-validated schemas; portable `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. |
 | **Media** | Attach images, PDFs, text, and generic files per node; storage **quota** checks before large writes; thumbnails for images; **PDF.js** first page in the inspector (**PdfCanvas**); markdown-style notes. |
 | **Search & navigation** | Fuse.js search palette (**Ctrl/Cmd+K** or **/**), focus selection (**F**), **center on selection** (**Home** or **.** moves the primary node to the orbit pivot), bookmarks (save/recall view + optional focus node), **Reset view** (toolbar — full camera reset), **Alt+arrows** to nudge the world. |
 | **Layout (optional)** | Toolbar **Layout** actions on **selection**: align (X/Y/Z), distribute (X/Y/Z), radial, flatten plane, normalize spacing, center cluster — **Undo** reverts; ghost preview before commit is not implemented. |
 | **World & guides** | **World mode** vs **Travel mode**; **Axis controls** toggle for graph-local X/Y/Z handles at the origin and on nodes (`AxisGuides` — drag an axis to translate the world root or a node along that axis); **WhiteVoid** environment (desktop: **SkyGradient** at the horizon + fog; headset: tuned background/fog), **CalmParticles**. |
-| **VR / WebXR** | Enter VR; **XrControllerInputBridge** / **XrRaycastSelect** — trigger ray → select nodes, finish connections (target node or ground plane). **XrWorldGrab** — squeeze grips for world move and two-hand scale (world mode). **Hand-primary sessions** (hands only, no controllers) set `xrHandTrackingPrimary` on the store; link handles and other advanced authoring are hidden for reliability. **XrWristMenu** — **hand tracking**: show when the **left palm faces you** (hysteresis); **controllers**: toggle with the **left secondary face button** (Y on typical Quest). Global wrist actions route through **xrGlobalMenuActions** (Library, Search, Settings, Undo, Redo, view resets, Help, Exit VR, etc.). **XrNodeRadial** — contextual chips on the selected node (Add child, Link, Inspect, Delete, Focus, Recenter; Link hidden when hand-primary). **XrStatusHud** — tool, nav, selection, and in-progress gesture hints. Dedicated world-space panels: **XrNodeDetailPanel**, **XrSearchPanel**, **XrSettingsPanel**, **XrHelpHud**; **XrTextPromptHud** for in-VR text (e.g. bookmark names). **XrConfirmHud** for destructive confirms; **XrSessionBridge**; locomotion / vignette / smooth movement in Settings. Layout, bookmarks, and ZIP/JSON export stay on the **desktop toolbar** (exit VR). |
+| **VR / WebXR** | Enter VR; **XrControllerInputBridge** / **XrRaycastSelect** — trigger ray → select nodes, finish connections (target node or ground plane). **XrWorldGrab** — squeeze grips for world move and two-hand scale (world mode). **Hand-primary sessions** (hands only, no controllers) set `xrHandTrackingPrimary` on the store; link handles and other advanced authoring are hidden for reliability. **XrWristMenu** — **hand tracking**: show when the **left palm faces you** (hysteresis); **controllers**: toggle with the **left secondary face button** (Y on typical Quest). Global wrist actions route through **xrGlobalMenuActions** (Library, Search, Settings, Undo, Redo, view resets, Help, Exit VR, etc.). **XrNodeRadial** — contextual chips on the selected node (Add child, Link, Inspect, Delete, Focus, Recenter; Link hidden when hand-primary). **XrStatusHud** — navigation mode, selection, and in-progress gesture hints. Dedicated world-space panels: **XrNodeDetailPanel**, **XrSearchPanel**, **XrSettingsPanel**, **XrHelpHud**; **XrTextPromptHud** for in-VR text (e.g. bookmark names). **XrConfirmHud** for destructive confirms; **XrSessionBridge**; locomotion / vignette / smooth movement in Settings. Layout, bookmarks, and ZIP/JSON export stay on the **desktop toolbar** (exit VR). |
 | **UX** | Onboarding banner, **Help** overlay (desktop + VR controls), Settings (labels, locomotion, audio, comfort), **ConfirmModal** for destructive actions on desktop; **Node quick actions** (desktop, flat UI) on the primary selection — Rename (inline popover), Add child, Link (starts connection), Inspect, Delete without opening Help. |
 
 ## Prerequisites
@@ -63,11 +63,11 @@ Use a **HTTPS** deployment URL on Quest.
 ## Desktop testing (quick)
 
 - **Library**: create / rename / duplicate / delete projects; import **JSON or ZIP**.
-- **Tools**: toolbar **Select / Create / Link / Inspect** or shortcuts **V / N / L / I**. **Scene**: choose **Create** (or press **N**), then double-click the ground to place a node.
-- **Select**: click node (Ctrl/Cmd+click to add to selection).
-- **Connect**: choose **Link** in the toolbar (or **L**), use the **link handle** on a selected node, or with **Select** active use **Shift**+drag from a node (expert shortcut); release on another node or on the ground for a new connected node.
+- **Create**: double-click the ground to place a node.
+- **Select**: click a node (Ctrl/Cmd+click to add to selection).
+- **Connect**: drag from the **cyan link handle** on a selected node; release on another node or on the ground for a new connected node.
 - **Move**: drag a node (horizontal plane).
-- **Detail**: double-click a node or press **Enter** with selection; attach files and notes in the inspector. With one node selected, use **Node quick actions** (panel) to rename, add a connected child, jump to **Link**, open **Inspect**, or delete.
+- **Detail**: right-click or double-click a node, or press **Enter** with selection; attach files and notes in the inspector. With one node selected, use **Node quick actions** (panel) to rename, add a connected child, start **Link**, open **Inspect**, or delete.
 - **Search**: **Ctrl/Cmd+K** or **/** — pick a result to focus.
 - **Focus**: **F** dims non-neighbors (toggle intensity via graph focus state).
 - **Center on selection**: **Home** or **.** — moves the primary selected node to the current orbit pivot (pan the world; different from **Reset view**, which restores the default camera framing).
@@ -136,6 +136,8 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - `src/store/rootStore.ts` — app state, graph edits, undo stack, autosave, search index.
 - `src/graph/types.ts` — domain types (`NodeEntity`, edges, bookmarks, `APP_SCHEMA_VERSION`, etc.); `src/graph/defaults.ts` — blank projects and default settings; `src/graph/selectors.ts` — graph queries and **Add child** placement (`nextChildPosition`).
 - `src/input/actions.ts` — semantic action union consumed by the store.
+- `src/input/tools.ts` — navigation vs travel mode helpers (`NavigationMode` ↔ `InteractionMode`).
+- `src/hooks/useDesktopShortcuts.ts` — global desktop keyboard shortcuts (undo/redo, save, search, focus, center on selection, world nudge, etc.).
 - `src/input/adapters/useDesktopInputBridge.ts` — desktop input coordination hook (extend for centralized pointer routing).
 - `src/input/adapters/useXrHandInputBridge.ts` — **XrHandInputStub** in the canvas sets hand-primary XR mode on the store.
 - `src/input/xr/handGestures.ts` — hand-tracking UX policy (e.g. when to hide advanced authoring).

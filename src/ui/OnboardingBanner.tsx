@@ -2,9 +2,9 @@ import { useRootStore } from '../store/rootStore'
 import { setMeta } from '../persistence/db'
 
 const steps = [
-  'Toolbar tools: Select, Create, Link, Inspect — or press V, N, L, I. Choose Create (or N), then double-click the ground to place a node.',
-  'Shift-drag from a node to connect; release on another node or on empty ground for a new linked node. Link mode or the cyan link handle works too.',
-  'Drag nodes to move. Press Enter to open the inspector; add notes and files there.',
+  'Double-click empty ground to place a node (a cyan connection handle appears on the selection).',
+  'Drag from the cyan handle on a node to connect; release on another node or on empty ground for a new linked node.',
+  'Drag nodes to move. Right-click or double-click a node to open the inspector, or press Enter with a node selected.',
   'Enter VR from the toolbar on HTTPS. Toggle World mode (move the graph) vs Travel mode (walk the space). Alt+arrows nudges the world on desktop.',
   'Search with Ctrl+K or /; Focus (F) dims unrelated nodes; Home or . centers the orbit on your selection. Undo/redo: Ctrl/Cmd+Z or the toolbar.',
   'Ctrl+Shift+N creates a new blank map. Clear map clears only this canvas (confirmed). Library lists all local projects.',

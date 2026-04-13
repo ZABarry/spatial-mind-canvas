@@ -8,7 +8,6 @@ import { useRootStore } from '../../store/rootStore'
 export function NodeHandles() {
   const project = useRootStore((s) => s.project)
   const primary = useRootStore((s) => s.selection.primaryNodeId)
-  const toolMode = useRootStore((s) => s.toolMode)
   const handLite = useRootStore((s) => s.xrHandTrackingPrimary)
   const inXr = useXR((s) => !!s.session)
   const hideLink = inXr && hideAdvancedAuthoringForHandTracking(handLite)
@@ -17,7 +16,7 @@ export function NodeHandles() {
   const n = project.graph.nodes[primary]
   if (!n) return null
 
-  const showLinkHandle = !hideLink && (toolMode === 'link' || toolMode === 'select')
+  const showLinkHandle = !hideLink
 
   const r = 0.14 * n.size
 

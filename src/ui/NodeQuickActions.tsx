@@ -34,7 +34,6 @@ export function NodeQuickActions() {
   }
 
   const startLinkFromSelection = () => {
-    dispatch({ type: 'setToolMode', mode: 'link' })
     dispatch({ type: 'startConnection', fromNodeId: primary })
   }
 

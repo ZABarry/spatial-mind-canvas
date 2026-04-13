@@ -18,6 +18,8 @@ export function EdgeMeshes() {
   const focusSet = useRootStore((s) => s.focusSet)
   const selE = useRootStore((s) => s.selection.edgeIds)
   const hoverE = useRootStore((s) => s.hover.edgeId)
+  /** While drafting a link, thick screen-space edges often win the raycast over node meshes — block hits so pointerup reaches nodes. */
+  const linkDraft = useRootStore((s) => s.interactionSession.kind === 'link')
 
   if (!project) return null
   const graph = project.graph
@@ -55,6 +57,7 @@ export function EdgeMeshes() {
               transparent
               opacity={lineOpacity}
               depthWrite={false}
+              {...(linkDraft ? { raycast: () => {} } : {})}
               onPointerOver={(ev) => {
                 ev.stopPropagation()
                 useRootStore.getState().dispatch({ type: 'setHover', edgeId: e.id })

@@ -25,7 +25,7 @@ export const NODE_SHAPES = [
 /** Edges are straight segments between connected node centers. */
 export type EdgeStyle = 'straight'
 
-/** Legacy combined mode; prefer `NavigationMode` + `ToolMode` in new input code. */
+/** Legacy combined mode; prefer `NavigationMode` for new input code. */
 export type InteractionMode = 'worldManip' | 'travel'
 
 export interface MediaAttachment {

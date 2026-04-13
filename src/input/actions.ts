@@ -1,6 +1,6 @@
 import type { DevicePreferences, InteractionMode, NodeShape, UserSettings } from '../graph/types'
 import type { HitTarget } from './hitTargets'
-import type { NavigationMode, ToolMode } from './tools'
+import type { NavigationMode } from './tools'
 import type { Vec3, Vec4 } from '../utils/math'
 
 export type AppAction =
@@ -12,7 +12,6 @@ export type AppAction =
   | { type: 'clearSelection' }
   | { type: 'setHover'; nodeId?: string; edgeId?: string }
   | { type: 'setInteractionMode'; mode: InteractionMode }
-  | { type: 'setToolMode'; mode: ToolMode }
   | { type: 'setNavigationMode'; mode: NavigationMode }
   | { type: 'createNodeAt'; position: Vec3; parentId?: string; connectFromId?: string; shape?: NodeShape }
   | { type: 'moveNode'; nodeId: string; position: Vec3 }

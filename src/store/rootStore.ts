@@ -7,7 +7,6 @@ import {
   interactionModeFromNavigationMode,
   navigationModeFromInteractionMode,
   type NavigationMode,
-  type ToolMode,
 } from '../input/tools'
 import type { Bookmark, DevicePreferences, InteractionMode, Project, SelectionState } from '../graph/types'
 import {
@@ -51,9 +50,7 @@ export interface RootState {
   selection: SelectionState
   hover: { nodeId?: string; edgeId?: string }
   interactionMode: InteractionMode
-  /** Split navigation (travel vs world manip) from authoring tools — see `ToolMode`. */
   navigationMode: NavigationMode
-  toolMode: ToolMode
   /** Authoritative live gesture state (link, node drag, world grab). */
   interactionSession: InteractionSession
   /** Snapshot at pointer-down for one undo step on drag release. */
@@ -262,9 +259,6 @@ export const useRootStore = create<RootState>((set, get) => {
           navigationMode: a.mode,
           interactionMode: interactionModeFromNavigationMode(a.mode),
         })
-        break
-      case 'setToolMode':
-        set({ toolMode: a.mode })
         break
       case 'createNodeAt': {
         commit('createNode', (p) => {
@@ -856,10 +850,11 @@ export const useRootStore = create<RootState>((set, get) => {
               ...appendPast(s.historyPast, entry),
             }))
           } else {
-            set({
-              interactionSession: idleSession,
+            // Do not clear `link` / `worldGrab` — node meshes always dispatch `setNodeDragActive(false)` on pointerup.
+            set((s) => ({
+              ...(s.interactionSession.kind === 'nodeDrag' ? { interactionSession: idleSession } : {}),
               pendingNodeDrag: null,
-            })
+            }))
           }
           break
         }
@@ -909,7 +904,6 @@ export const useRootStore = create<RootState>((set, get) => {
     hover: {},
     interactionMode: 'worldManip',
     navigationMode: 'world',
-    toolMode: 'select',
     interactionSession: idleSession,
     pendingNodeDrag: null,
     worldGrabBefore: null,
@@ -1097,7 +1091,6 @@ export const useRootStore = create<RootState>((set, get) => {
         xrHelpOpen: false,
         hover: {},
         navigationMode: 'world',
-        toolMode: 'select',
         interactionSession: idleSession,
         pendingNodeDrag: null,
         worldGrabBefore: null,

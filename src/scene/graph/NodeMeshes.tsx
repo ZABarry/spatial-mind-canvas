@@ -157,26 +157,19 @@ function NodeItem({
           e.stopPropagation()
           useRootStore.getState().dispatch({ type: 'openNodeDetail', nodeId: n.id })
         }}
+        onContextMenu={(e) => {
+          if (gl.xr.isPresenting) return
+          e.stopPropagation()
+          e.nativeEvent.preventDefault()
+          useRootStore.getState().dispatch({ type: 'openNodeDetail', nodeId: n.id })
+        }}
         onPointerDown={(e) => {
           e.stopPropagation()
+          if (e.button !== 0) return
           if (gl.xr.isPresenting && e.ray) {
             xrDragControllerIdx.current = xrControllerIndexFromRayOrigin(gl, e.ray.origin)
           } else {
             xrDragControllerIdx.current = null
-          }
-          const toolMode = useRootStore.getState().toolMode
-          const expertShiftLink = e.shiftKey && toolMode === 'select'
-          const handLite = useRootStore.getState().xrHandTrackingPrimary
-          const allowLink = (toolMode === 'link' || expertShiftLink) && !(gl.xr.isPresenting && handLite)
-          if (allowLink) {
-            useRootStore.getState().dispatch({
-              type: 'startConnection',
-              fromNodeId: n.id,
-              ...(gl.xr.isPresenting && xrDragControllerIdx.current !== null
-                ? { xrControllerIndex: xrDragControllerIdx.current }
-                : {}),
-            })
-            return
           }
           const ev = e.nativeEvent as PointerEvent
           const additive = ev.ctrlKey || ev.metaKey
@@ -245,6 +238,7 @@ function NodeItem({
             maxWidth={3}
             outlineWidth={0.02}
             outlineColor="#ffffff"
+            raycast={() => null}
           >
             {n.title || 'Untitled'}
           </Text>

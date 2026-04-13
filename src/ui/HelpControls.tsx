@@ -81,21 +81,15 @@ export function HelpControls() {
                     <strong>Navigate</strong> — Drag to orbit, scroll to zoom.
                   </li>
                   <li>
-                    <strong>Tools</strong> — Toolbar: <strong>Select</strong>, <strong>Create</strong>,{' '}
-                    <strong>Link</strong>, <strong>Inspect</strong>. Shortcuts: <Kbd>V</Kbd> / <Kbd>N</Kbd> / <Kbd>L</Kbd> /{' '}
-                    <Kbd>I</Kbd>.
-                  </li>
-                  <li>
-                    <strong>New node</strong> — Choose <strong>Create</strong>, then double-click empty ground.
+                    <strong>New node</strong> — Double-click empty ground.
                   </li>
                   <li>
                     <strong>Quick actions</strong> — With a node selected, use the floating strip (Rename, Add child,
                     Link, Inspect, Delete) without opening the full inspector.
                   </li>
                   <li>
-                    <strong>Connect</strong> — Choose <strong>Link</strong> (or the cyan link handle on a selected
-                    node); release on another node or empty ground for a ghost preview line. With <strong>Select</strong>{' '}
-                    active, <Kbd>Shift</Kbd> + drag from a node is an expert shortcut to start linking.
+                    <strong>Connect</strong> — Drag from the cyan link handle on a selected node; release on another node
+                    or empty ground for a ghost preview line.
                   </li>
                   <li>
                     <strong>Select</strong> — Click a node or edge. <Kbd>Ctrl</Kbd>/<Kbd>⌘</Kbd> + click to add nodes;
@@ -105,7 +99,8 @@ export function HelpControls() {
                     <strong>Move</strong> — Drag a node (if not pinned).
                   </li>
                   <li>
-                    <strong>Node detail</strong> — Double-click a node, or select one and press <Kbd>Enter</Kbd>.
+                    <strong>Node detail</strong> — Right-click or double-click a node, or select one and press{' '}
+                    <Kbd>Enter</Kbd>.
                   </li>
                   <li>
                     <strong>Focus</strong> — <Kbd>F</Kbd> (dim to neighborhood)
@@ -169,7 +164,7 @@ export function HelpControls() {
                     toolbar (exit VR to use them).
                   </li>
                   <li>
-                    <strong>Status HUD</strong> — Shows tool, navigation mode, selection, and hints in front of you.
+                    <strong>Status HUD</strong> — Shows navigation mode, selection, and hints in front of you.
                   </li>
                   <li>
                     <strong>Node radial</strong> — When a node is selected, a compact menu appears beside it:{' '}
