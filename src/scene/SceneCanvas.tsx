@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { Environment, OrbitControls, useTexture } from '@react-three/drei'
 import { XR, NotInXR, XROrigin, useXR } from '@react-three/xr'
 import type { ReactNode } from 'react'
-import { useMemo, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { EquirectangularReflectionMapping, LinearSRGBColorSpace } from 'three'
 import type { Group } from 'three'
 import { WhiteVoid } from './environment/WhiteVoid'
@@ -94,11 +94,20 @@ function TravelLocomotion({ children }: { children?: ReactNode }) {
 }
 
 export function SceneCanvas() {
+  const onPointerMissed = useCallback((e: MouseEvent) => {
+    if (e.button !== 0) return
+    const st = useRootStore.getState()
+    if (st.interactionSession.kind !== 'idle') return
+    if (st.selection.nodeIds.length === 0 && st.selection.edgeIds.length === 0) return
+    st.dispatch({ type: 'clearSelection' })
+  }, [])
+
   return (
     <Canvas
       camera={{ position: DESKTOP_INITIAL_CAMERA_POSITION, fov: 50 }}
       gl={{ antialias: true, localClippingEnabled: true }}
       dpr={[1, 2]}
+      onPointerMissed={onPointerMissed}
     >
       <XR store={xrStore}>
         <XrSessionBridge />

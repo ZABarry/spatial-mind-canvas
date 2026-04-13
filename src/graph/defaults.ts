@@ -6,14 +6,15 @@ import { qIdentity, v3 } from '../utils/math'
 /** Defaults for `UserSettings` flat-view sky; kept in sync with `SkyGradient`. */
 export const DEFAULT_WORLD_BACKGROUND_HORIZON = '#ffffff'
 export const DEFAULT_WORLD_BACKGROUND_ZENITH = '#b8cfe8'
-export const DEFAULT_WORLD_BACKGROUND_EXPONENT = 0.72
+export const DEFAULT_WORLD_BACKGROUND_EXPONENT = 0.42
 
 /** Defaults for `CalmParticles` — keep in sync with shader tuning. */
 export const DEFAULT_PARTICLES_COUNT = 560
-export const DEFAULT_PARTICLES_SIZE = 5.4
-export const DEFAULT_PARTICLES_COLOR = '#c5d2e3'
-export const DEFAULT_PARTICLES_OPACITY = 1
-export const DEFAULT_PARTICLES_SPEED = 1
+export const DEFAULT_PARTICLES_SIZE = 1.8
+/** Match zenith by default so particles read as part of the sky. */
+export const DEFAULT_PARTICLES_COLOR = DEFAULT_WORLD_BACKGROUND_ZENITH
+export const DEFAULT_PARTICLES_OPACITY = 0.72
+export const DEFAULT_PARTICLES_SPEED = 0.6
 
 export function defaultDevicePreferences(): DevicePreferences {
   return {

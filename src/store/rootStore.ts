@@ -57,6 +57,16 @@ import { playInteractionCue } from '../audio/interactionCues'
 
 export type AppView = 'home' | 'scene'
 
+/** In-flight / failed node file attach — drives detail-panel upload UI. */
+export type MediaAttachState =
+  | null
+  | {
+      nodeId: string
+      filename: string
+      phase: 'reading' | 'processing' | 'error'
+      errorMessage?: string
+    }
+
 export interface RootState {
   ready: boolean
   view: AppView
@@ -113,6 +123,8 @@ export interface RootState {
   /** XR + app */
   repo: ProjectRepository | null
   media: MediaStore | null
+  /** Set while a file is being attached to a node, or after a failed attach. */
+  mediaAttach: MediaAttachState
   dispatch: (a: AppAction) => void
   bootstrap: () => Promise<void>
   openProject: (id: string) => Promise<void>
@@ -518,7 +530,7 @@ export const useRootStore = create<RootState>((set, get) => {
         break
       }
       case 'openNodeDetail':
-        set({ detailNodeId: a.nodeId })
+        set({ detailNodeId: a.nodeId, ...(a.nodeId === null ? { mediaAttach: null } : {}) })
         break
       case 'updateNodeProps': {
         commit('editNode', (p) => {
@@ -733,6 +745,7 @@ export const useRootStore = create<RootState>((set, get) => {
               }
             : get().selection,
           detailNodeId: null,
+          mediaAttach: null,
         })
         break
       }
@@ -869,48 +882,60 @@ export const useRootStore = create<RootState>((set, get) => {
         const mediaStore = get().media
         const proj = get().project
         if (!mediaStore || !proj) break
+        const { nodeId, file } = a
+        const filename = file.name
         void (async () => {
-          const buf = await a.file.arrayBuffer()
-          const space = await checkSpaceForBytes(buf.byteLength)
-          if (!space.ok) {
-            window.alert(space.message)
-            return
-          }
-          const blobId = nanoid()
-          await mediaStore.put(blobId, buf, { mime: a.file.type || 'application/octet-stream', name: a.file.name })
-          const kind: MediaAttachment['kind'] = a.file.type.startsWith('image/')
-            ? 'image'
-            : a.file.type === 'application/pdf'
-              ? 'pdf'
-              : a.file.type.startsWith('text/')
-                ? 'text'
-                : 'generic'
-          let thumbnailBlobId: string | undefined
-          if (kind === 'image') {
-            const thumb = await buildImageThumbnailJpeg(buf, a.file.type || 'image/jpeg')
-            if (thumb) {
-              const tid = nanoid()
-              await mediaStore.put(tid, thumb, { mime: 'image/jpeg', name: `${a.file.name}.thumb.jpg` })
-              thumbnailBlobId = tid
+          set({ mediaAttach: { nodeId, filename, phase: 'reading' } })
+          try {
+            const buf = await file.arrayBuffer()
+            set({ mediaAttach: { nodeId, filename, phase: 'processing' } })
+            const space = await checkSpaceForBytes(buf.byteLength)
+            if (!space.ok) {
+              set({
+                mediaAttach: { nodeId, filename, phase: 'error', errorMessage: space.message },
+              })
+              return
             }
-          }
-          const att: MediaAttachment = {
-            id: nanoid(),
-            kind,
-            filename: a.file.name,
-            mimeType: a.file.type || 'application/octet-stream',
-            byteSize: buf.byteLength,
-            blobId,
-            createdAt: Date.now(),
-            thumbnailBlobId,
-          }
-          commit('media', (p) => {
-            p.mediaManifest = { ...p.mediaManifest, [att.id]: att }
-            const n = p.graph.nodes[a.nodeId]
-            if (n) {
-              p.graph = patchNode(p.graph, a.nodeId, { mediaIds: [...n.mediaIds, att.id] })
+            const blobId = nanoid()
+            await mediaStore.put(blobId, buf, { mime: file.type || 'application/octet-stream', name: filename })
+            const kind: MediaAttachment['kind'] = file.type.startsWith('image/')
+              ? 'image'
+              : file.type === 'application/pdf'
+                ? 'pdf'
+                : file.type.startsWith('text/')
+                  ? 'text'
+                  : 'generic'
+            let thumbnailBlobId: string | undefined
+            if (kind === 'image') {
+              const thumb = await buildImageThumbnailJpeg(buf, file.type || 'image/jpeg')
+              if (thumb) {
+                const tid = nanoid()
+                await mediaStore.put(tid, thumb, { mime: 'image/jpeg', name: `${filename}.thumb.jpg` })
+                thumbnailBlobId = tid
+              }
             }
-          })
+            const att: MediaAttachment = {
+              id: nanoid(),
+              kind,
+              filename,
+              mimeType: file.type || 'application/octet-stream',
+              byteSize: buf.byteLength,
+              blobId,
+              createdAt: Date.now(),
+              thumbnailBlobId,
+            }
+            set({ mediaAttach: null })
+            commit('media', (p) => {
+              p.mediaManifest = { ...p.mediaManifest, [att.id]: att }
+              const n = p.graph.nodes[nodeId]
+              if (n) {
+                p.graph = patchNode(p.graph, nodeId, { mediaIds: [...n.mediaIds, att.id] })
+              }
+            })
+          } catch (e) {
+            const errorMessage = e instanceof Error ? e.message : 'Failed to attach file'
+            set({ mediaAttach: { nodeId, filename, phase: 'error', errorMessage } })
+          }
         })()
         break
       }
@@ -1029,6 +1054,7 @@ export const useRootStore = create<RootState>((set, get) => {
     historyFuture: [],
     repo: null,
     media: null,
+    mediaAttach: null,
     dispatch,
     bootstrap: async () => {
       const repo = createIndexedDbProjectRepository()
@@ -1091,6 +1117,7 @@ export const useRootStore = create<RootState>((set, get) => {
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: (await buildIndex(repo)),
         interactionSession: idleSession,
+        mediaAttach: null,
       })
     },
     goHome: () => {
@@ -1098,6 +1125,7 @@ export const useRootStore = create<RootState>((set, get) => {
       set({
         view: 'home',
         project: null,
+        mediaAttach: null,
         textPromptDialog: null,
         xrHelpOpen: false,
         mapHistoryOpen: false,
@@ -1119,6 +1147,7 @@ export const useRootStore = create<RootState>((set, get) => {
         view: 'scene',
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: await buildIndex(repo),
+        mediaAttach: null,
       })
     },
     newProjectFromTemplate: async (templateId) => {
@@ -1135,6 +1164,7 @@ export const useRootStore = create<RootState>((set, get) => {
         selection: { nodeIds: [], edgeIds: [] },
         projectIndex: await buildIndex(repo),
         interactionSession: idleSession,
+        mediaAttach: null,
       })
     },
     setMapHistoryOpen: (open) => set({ mapHistoryOpen: open }),
@@ -1165,6 +1195,7 @@ export const useRootStore = create<RootState>((set, get) => {
         project: next,
         selection: { nodeIds: [], edgeIds: [] },
         detailNodeId: null,
+        mediaAttach: null,
         historyPast: [],
         historyFuture: [],
         placementPreview: null,
@@ -1191,6 +1222,7 @@ export const useRootStore = create<RootState>((set, get) => {
         project: copy,
         projectIndex: await buildIndex(repo),
         interactionSession: idleSession,
+        mediaAttach: null,
       })
     },
     renameProject: async (id, name) => {
@@ -1213,7 +1245,7 @@ export const useRootStore = create<RootState>((set, get) => {
       await repo.delete(id)
       const cur = get().project
       if (cur?.id === id) {
-        set({ project: null, view: 'home' })
+        set({ project: null, view: 'home', mediaAttach: null })
         await setMeta(META_LAST_PROJECT, '')
       }
       set({ projectIndex: await buildIndex(repo) })
@@ -1235,6 +1267,7 @@ export const useRootStore = create<RootState>((set, get) => {
         project: cleared,
         selection: { nodeIds: [], edgeIds: [] },
         detailNodeId: null,
+        mediaAttach: null,
         focusSet: null,
         focusDim: false,
         placementPreview: null,
@@ -1321,6 +1354,7 @@ export const useRootStore = create<RootState>((set, get) => {
           view: 'scene',
           projectIndex: await buildIndex(repo),
           interactionSession: idleSession,
+          mediaAttach: null,
         })
         return
       }
@@ -1341,6 +1375,7 @@ export const useRootStore = create<RootState>((set, get) => {
         view: 'scene',
         projectIndex: await buildIndex(repo),
         interactionSession: idleSession,
+        mediaAttach: null,
       })
     },
     saveNow: async () => {

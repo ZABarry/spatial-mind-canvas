@@ -29,6 +29,17 @@ export function InteractionPlane() {
     [dispatch, gl],
   )
 
+  const onClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      const st = useRootStore.getState()
+      if (st.interactionSession.kind !== 'idle') return
+      if (st.selection.nodeIds.length === 0 && st.selection.edgeIds.length === 0) return
+      e.stopPropagation()
+      dispatch({ type: 'clearSelection' })
+    },
+    [dispatch],
+  )
+
   const onDoubleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation()
@@ -52,6 +63,7 @@ export function InteractionPlane() {
         position={[0, -0.02, 0]}
         userData={{ hitKind: 'ground' }}
         onPointerUp={onPointerUp}
+        onClick={onClick}
         onDoubleClick={onDoubleClick}
       >
         <planeGeometry args={[400, 400]} />

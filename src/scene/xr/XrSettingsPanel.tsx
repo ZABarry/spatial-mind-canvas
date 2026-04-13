@@ -13,7 +13,14 @@ export function XrSettingsPanel() {
   return (
     <group position={[0.44, 1.38, -0.62]}>
       <Html transform occlude={false} style={{ pointerEvents: 'auto' }}>
-        <SettingsFormBody variant="xr" />
+        <div
+          className="settings-form-xr"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-dialog-title"
+        >
+          <SettingsFormBody variant="xr" />
+        </div>
       </Html>
     </group>
   )

@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { nextChildPosition } from '../../graph/selectors'
 import {
@@ -35,9 +36,9 @@ const panelStyle = (variant: PanelVariant): CSSProperties =>
   variant === 'xr'
     ? {
         width: 400,
-        maxHeight: '72vh',
+        maxHeight: '85vh',
         overflow: 'auto',
-        padding: 16,
+        padding: 12,
         background: '#fff',
         borderRadius: 12,
         boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
@@ -47,8 +48,8 @@ const panelStyle = (variant: PanelVariant): CSSProperties =>
     : {}
 
 const colorSwatchStyle: CSSProperties = {
-  width: 40,
-  height: 32,
+  width: '100%',
+  height: 28,
   padding: 0,
   border: '1px solid #d8e0ec',
   borderRadius: 6,
@@ -56,13 +57,20 @@ const colorSwatchStyle: CSSProperties = {
   flexShrink: 0,
 }
 
-const colorLabelStyle: CSSProperties = {
-  fontSize: 12,
+const fieldLabelStyle: CSSProperties = {
+  fontSize: 11,
   color: '#6b7280',
-  margin: 0,
-  justifySelf: 'end',
-  textAlign: 'right',
-  paddingRight: 2,
+  display: 'block',
+  marginBottom: 4,
+  fontWeight: 500,
+}
+
+const compactInputStyle: CSSProperties = {
+  width: '100%',
+  padding: '6px 8px',
+  borderRadius: 8,
+  border: '1px solid #d8e0ec',
+  boxSizing: 'border-box',
 }
 
 export function NodeDetailForm({
@@ -77,6 +85,26 @@ export function NodeDetailForm({
   variant?: PanelVariant
 }) {
   const dispatch = useRootStore((s) => s.dispatch)
+  const mediaAttach = useRootStore((s) => s.mediaAttach)
+  const attachmentsRef = useRef<HTMLDivElement>(null)
+  const prevMediaAttach = useRef(useRootStore.getState().mediaAttach)
+
+  const attachForNode = mediaAttach?.nodeId === id ? mediaAttach : null
+  const attaching =
+    !!attachForNode && (attachForNode.phase === 'reading' || attachForNode.phase === 'processing')
+  const attachError = attachForNode?.phase === 'error' ? attachForNode.errorMessage : null
+
+  useEffect(() => {
+    const prev = prevMediaAttach.current
+    prevMediaAttach.current = mediaAttach
+    if (
+      prev?.nodeId === id &&
+      (prev.phase === 'reading' || prev.phase === 'processing') &&
+      mediaAttach === null
+    ) {
+      attachmentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [mediaAttach, id])
 
   return (
     <div style={panelStyle(variant)}>
@@ -107,106 +135,134 @@ export function NodeDetailForm({
       )}
       <h3 style={{ marginTop: 0 }}>Node detail</h3>
       {variant === 'desktop' ? (
-        <p style={{ margin: '0 0 12px', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
-          Notes, media, and appearance — quick actions on the canvas cover rename, link, and delete.
+        <p style={{ margin: '0 0 8px', fontSize: 11, color: '#64748b', lineHeight: 1.35 }}>
+          Notes, media, and appearance. Rename, link, and delete stay on the canvas.
         </p>
       ) : null}
-      <p style={{ fontSize: 12, fontWeight: 600, margin: '8px 0 6px', color: '#374151' }}>Appearance</p>
+      <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 6px', color: '#374151' }}>Appearance</p>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(4.75rem, max-content) 40px',
-          columnGap: 10,
-          rowGap: 8,
-          alignItems: 'center',
-          marginBottom: 10,
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 8,
+          marginBottom: 8,
         }}
       >
-        <label htmlFor={`${id}-color-node`} style={colorLabelStyle}>
-          Color
-        </label>
-        <input
-          id={`${id}-color-node`}
-          type="color"
-          value={colorInputHex(node.color)}
-          onChange={(e) =>
-            dispatch({
-              type: 'updateNodeProps',
-              nodeId: id,
-              patch: { color: e.target.value },
-            })
-          }
-          aria-label="Node color"
-          style={colorSwatchStyle}
-        />
-        <label htmlFor={`${id}-color-text`} style={colorLabelStyle}>
-          Text
-        </label>
-        <input
-          id={`${id}-color-text`}
-          type="color"
-          value={colorInputHex(node.labelTextColor || NODE_LABEL_TEXT_DEFAULT)}
-          onChange={(e) =>
-            dispatch({
-              type: 'updateNodeProps',
-              nodeId: id,
-              patch: { labelTextColor: e.target.value },
-            })
-          }
-          aria-label="Node title text color"
-          style={colorSwatchStyle}
-        />
-        <label htmlFor={`${id}-color-outline`} style={colorLabelStyle}>
-          Outline
-        </label>
-        <input
-          id={`${id}-color-outline`}
-          type="color"
-          value={colorInputHex(node.labelOutlineColor || NODE_LABEL_OUTLINE_DEFAULT)}
-          onChange={(e) =>
-            dispatch({
-              type: 'updateNodeProps',
-              nodeId: id,
-              patch: { labelOutlineColor: e.target.value },
-            })
-          }
-          aria-label="Node title outline color"
-          style={colorSwatchStyle}
-        />
+        <div>
+          <label htmlFor={`${id}-color-node`} style={fieldLabelStyle}>
+            Color
+          </label>
+          <input
+            id={`${id}-color-node`}
+            type="color"
+            value={colorInputHex(node.color)}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateNodeProps',
+                nodeId: id,
+                patch: { color: e.target.value },
+              })
+            }
+            aria-label="Node color"
+            style={colorSwatchStyle}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${id}-color-text`} style={fieldLabelStyle}>
+            Text
+          </label>
+          <input
+            id={`${id}-color-text`}
+            type="color"
+            value={colorInputHex(node.labelTextColor || NODE_LABEL_TEXT_DEFAULT)}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateNodeProps',
+                nodeId: id,
+                patch: { labelTextColor: e.target.value },
+              })
+            }
+            aria-label="Node title text color"
+            style={colorSwatchStyle}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${id}-color-outline`} style={fieldLabelStyle}>
+            Outline
+          </label>
+          <input
+            id={`${id}-color-outline`}
+            type="color"
+            value={colorInputHex(node.labelOutlineColor || NODE_LABEL_OUTLINE_DEFAULT)}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateNodeProps',
+                nodeId: id,
+                patch: { labelOutlineColor: e.target.value },
+              })
+            }
+            aria-label="Node title outline color"
+            style={colorSwatchStyle}
+          />
+        </div>
       </div>
-      <label style={{ fontSize: 12, color: '#6b7280' }}>Shape</label>
-      <select
-        value={node.shape}
-        onChange={(e) =>
-          dispatch({
-            type: 'updateNodeProps',
-            nodeId: id,
-            patch: { shape: e.target.value as NodeShape },
-          })
-        }
-        style={{ width: '100%', marginBottom: 10, padding: 8, borderRadius: 8, border: '1px solid #d8e0ec', background: '#fff' }}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 0.95fr) minmax(0, 1.15fr)',
+          gap: 8,
+          marginBottom: 8,
+          alignItems: 'end',
+        }}
       >
-        {NODE_SHAPES.map((s) => (
-          <option key={s} value={s}>
-            {shapeLabel(s)}
-          </option>
-        ))}
-      </select>
-      <label style={{ fontSize: 12, color: '#6b7280' }}>Title</label>
-      <input
-        key={`t-${id}`}
-        defaultValue={node.title}
-        style={{ width: '100%', marginBottom: 8, padding: 8, borderRadius: 8, border: '1px solid #d8e0ec', boxSizing: 'border-box' }}
-        onBlur={(e) =>
-          dispatch({
-            type: 'updateNodeProps',
-            nodeId: id,
-            patch: { title: e.target.value },
-          })
-        }
-      />
-      <label style={{ fontSize: 12, color: '#6b7280' }}>Note (markdown)</label>
+        <div>
+          <label htmlFor={`${id}-shape`} style={fieldLabelStyle}>
+            Shape
+          </label>
+          <select
+            id={`${id}-shape`}
+            value={node.shape}
+            onChange={(e) =>
+              dispatch({
+                type: 'updateNodeProps',
+                nodeId: id,
+                patch: { shape: e.target.value as NodeShape },
+              })
+            }
+            style={{ ...compactInputStyle, marginBottom: 0, background: '#fff' }}
+          >
+            {NODE_SHAPES.map((s) => (
+              <option key={s} value={s}>
+                {shapeLabel(s)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor={`${id}-title`} style={fieldLabelStyle}>
+            Title
+          </label>
+          <input
+            id={`${id}-title`}
+            key={`t-${id}`}
+            defaultValue={node.title}
+            style={{ ...compactInputStyle, marginBottom: 0 }}
+            onBlur={(e) =>
+              dispatch({
+                type: 'updateNodeProps',
+                nodeId: id,
+                patch: { title: e.target.value },
+              })
+            }
+          />
+        </div>
+      </div>
+      <label htmlFor={`${id}-note`} style={{ ...fieldLabelStyle, marginBottom: 4 }}>
+        Note (markdown)
+      </label>
       <textarea
+        id={`${id}-note`}
+        className="node-detail-field-textarea"
         key={`n-${id}`}
         defaultValue={node.note}
         onBlur={(e) =>
@@ -216,12 +272,14 @@ export function NodeDetailForm({
             patch: { note: e.target.value },
           })
         }
-        style={{ width: '100%', minHeight: variant === 'xr' ? 100 : undefined, boxSizing: 'border-box' }}
+        style={variant === 'xr' ? { minHeight: 72 } : undefined}
       />
-      <div style={{ marginTop: 12, fontSize: 14 }}>
-        <ReactMarkdown>{node.note || '*No note*'}</ReactMarkdown>
-      </div>
-      <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {node.note.trim() ? (
+        <div className="node-detail-note-preview">
+          <ReactMarkdown>{node.note}</ReactMarkdown>
+        </div>
+      ) : null}
+      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         <button
           type="button"
           onClick={() =>
@@ -247,27 +305,56 @@ export function NodeDetailForm({
         >
           Delete
         </button>
-        <label style={{ cursor: 'pointer' }}>
+        <label
+          style={{ cursor: attaching ? 'not-allowed' : 'pointer', opacity: attaching ? 0.65 : 1 }}
+          aria-disabled={attaching || undefined}
+        >
           Add file
           <input
+            id={`${id}-attach-file`}
             type="file"
+            disabled={attaching}
             style={{ display: 'none' }}
             onChange={(e) => {
               const f = e.target.files?.[0]
-              if (f) dispatch({ type: 'attachMedia', nodeId: id, file: f })
+              if (f && !attaching) dispatch({ type: 'attachMedia', nodeId: id, file: f })
               e.target.value = ''
             }}
           />
         </label>
       </div>
-      {node.mediaIds.length > 0 && (
-        <ul style={{ fontSize: 13, marginTop: 12, paddingLeft: 0 }}>
-          {node.mediaIds.map((mid) => {
-            const m = project.mediaManifest[mid]
-            return m ? <MediaAttachmentRow key={mid} att={m} /> : null
-          })}
-        </ul>
-      )}
+      <div
+        aria-busy={attaching || undefined}
+        aria-live="polite"
+        style={{ marginTop: 8, minHeight: attachForNode ? undefined : 0 }}
+      >
+        {attachForNode && attachForNode.phase !== 'error' ? (
+          <p style={{ margin: 0, fontSize: 12, color: '#475569', display: 'flex', alignItems: 'center' }}>
+            <span className="node-detail-media-spinner" aria-hidden />
+            {attachForNode.phase === 'reading'
+              ? `Reading ${attachForNode.filename}…`
+              : `Saving ${attachForNode.filename}…`}
+          </p>
+        ) : null}
+        {attachError ? (
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: '#b91c1c' }} role="alert">
+            {attachError}
+          </p>
+        ) : null}
+      </div>
+      <div ref={attachmentsRef}>
+        <p style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 4px', color: '#374151' }}>Attached files</p>
+        {node.mediaIds.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>None yet — use Add file above.</p>
+        ) : (
+          <ul style={{ fontSize: 13, marginTop: 6, paddingLeft: 0 }}>
+            {node.mediaIds.map((mid) => {
+              const m = project.mediaManifest[mid]
+              return m ? <MediaAttachmentRow key={mid} att={m} /> : null
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   )
 }

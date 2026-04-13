@@ -40,6 +40,17 @@ This document is the **authoritative** reference for input, recovery actions, an
 - **New from template** — Creates a **new** saved project from a starter layout.
 - **Export JSON / ZIP** — **Current map** (and media for ZIP) only. **Snapshots are not included.**
 
+### Settings
+
+Opened from the toolbar (desktop) or the **wrist menu** in VR. Tabs: **General**, **Appearance**, **VR**, **Audio**. Settings are stored on the **current project**.
+
+- **General** — Show all labels / label budget, world axis drag handles, floor grid, focus hop depth.
+- **Appearance** — **Desktop canvas only:** horizon/zenith colours and gradient falloff for the sky (`SkyGradient`), plus ambient **CalmParticles** (count, size, colour, opacity, speed; count **0** turns particles off). Advanced controls are grouped under **Advanced appearance**.
+- **VR** — Locomotion (smooth vs snap turn, move speed, etc.), comfort (vignette), dominant hand, optional passthrough preference, optional XR debug HUD in dev.
+- **Audio** — Enable ambient/interaction audio and levels where exposed.
+
+In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused.
+
 ## XR controllers
 
 - **Enter VR** — Toolbar primary button; confirm in headset/browser.

@@ -146,6 +146,7 @@ export function MainToolbar() {
       </ToolbarMenu>
 
       <button
+        id="toolbar-settings-button"
         type="button"
         onClick={() => {
           setOpenMenu(null)

@@ -1,5 +1,10 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
+import {
+  DEFAULT_WORLD_BACKGROUND_EXPONENT,
+  DEFAULT_WORLD_BACKGROUND_HORIZON,
+  DEFAULT_WORLD_BACKGROUND_ZENITH,
+} from '../../graph/defaults'
 
 const vertexShader = /* glsl */ `
 varying vec3 vWorldPosition;
@@ -36,9 +41,9 @@ type SkyGradientProps = {
 }
 
 export function SkyGradient({
-  horizon = '#ffffff',
-  zenith = '#b8cfe8',
-  exponent = 0.72,
+  horizon = DEFAULT_WORLD_BACKGROUND_HORIZON,
+  zenith = DEFAULT_WORLD_BACKGROUND_ZENITH,
+  exponent = DEFAULT_WORLD_BACKGROUND_EXPONENT,
 }: SkyGradientProps) {
   const uniforms = useMemo(
     () => ({
@@ -66,7 +71,12 @@ export function SkyGradient({
   useEffect(() => () => material.dispose(), [material])
 
   return (
-    <mesh renderOrder={-1000} frustumCulled={false} material={material}>
+    <mesh
+      renderOrder={-1000}
+      frustumCulled={false}
+      material={material}
+      raycast={() => null}
+    >
       <sphereGeometry args={[520, 48, 32]} />
     </mesh>
   )

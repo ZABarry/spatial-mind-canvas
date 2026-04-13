@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import {
   DEFAULT_PARTICLES_COLOR,
   DEFAULT_PARTICLES_COUNT,
@@ -14,17 +14,26 @@ import { useRootStore } from '../../store/rootStore'
 
 type Variant = 'desktop' | 'xr'
 
-const modalStyle = (variant: Variant): CSSProperties =>
-  variant === 'xr'
-    ? {
-        width: 400,
-        maxWidth: '90vw',
-        padding: '20px 24px',
-        background: '#fff',
-        borderRadius: 12,
-        boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
-      }
-    : {}
+const TABS = ['general', 'appearance', 'vr', 'audio'] as const
+type TabId = (typeof TABS)[number]
+
+function tabLabel(id: TabId): string {
+  switch (id) {
+    case 'general':
+      return 'General'
+    case 'appearance':
+      return 'Appearance'
+    case 'vr':
+      return 'VR'
+    case 'audio':
+      return 'Audio'
+  }
+}
+
+function nextTab(current: TabId, delta: number): TabId {
+  const i = TABS.indexOf(current)
+  return TABS[(i + delta + TABS.length) % TABS.length]!
+}
 
 export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant }) {
   const project = useRootStore((s) => s.project)
@@ -32,504 +41,539 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
   const devicePreferences = useRootStore((s) => s.devicePreferences)
   const xrDebugHud = useRootStore((s) => s.xrDebugHud)
 
+  const [tab, setTab] = useState<TabId>('general')
+
+  const close = () => useRootStore.setState({ settingsOpen: false })
+
+  useEffect(() => {
+    if (variant !== 'xr') return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        close()
+      }
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [variant])
+
+  useLayoutEffect(() => {
+    requestAnimationFrame(() => {
+      document.getElementById('settings-tab-general')?.focus()
+    })
+  }, [])
+
   if (!project) return null
 
   const s: UserSettings = project.settings
 
-  const row: CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-    flexWrap: 'wrap',
+  const onTabKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>, currentId: TabId) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      const n = nextTab(currentId, 1)
+      setTab(n)
+      document.getElementById(`settings-tab-${n}`)?.focus()
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      const n = nextTab(currentId, -1)
+      setTab(n)
+      document.getElementById(`settings-tab-${n}`)?.focus()
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      setTab('general')
+      document.getElementById('settings-tab-general')?.focus()
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      setTab('audio')
+      document.getElementById('settings-tab-audio')?.focus()
+    }
   }
-
-  const checkboxRow: CSSProperties = {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: 8,
-    marginBottom: 8,
-  }
-  const checkboxLabel: CSSProperties = {
-    flex: 1,
-    minWidth: 0,
-    lineHeight: 1.45,
-  }
-
-  const sectionTitle = (label: string) => (
-    <h3 style={{ margin: '16px 0 8px', fontSize: 14, fontWeight: 600, color: '#374151' }}>{label}</h3>
-  )
 
   return (
-    <div style={modalStyle(variant)}>
-      <h2 style={{ marginTop: variant === 'xr' ? 0 : undefined }}>Settings</h2>
-
-      {sectionTitle('Map')}
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.showAllLabels ?? false}
-          onChange={(e) => dispatch({ type: 'patchSettings', patch: { showAllLabels: e.target.checked } })}
-        />
-        <span style={checkboxLabel}>Show all node labels (heavy on Quest)</span>
-      </label>
-      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
-        Label budget (when not showing all){' '}
-        <input
-          type="number"
-          min={8}
-          max={200}
-          value={s.labelBudget ?? 32}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchSettings',
-              patch: { labelBudget: Math.max(8, Math.min(200, Number(e.target.value) || 32)) },
-            })
-          }
-          style={{ width: 64, marginLeft: 8 }}
-        />
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.worldAxisControls === true}
-          onChange={(e) => dispatch({ type: 'patchSettings', patch: { worldAxisControls: e.target.checked } })}
-        />
-        <span style={checkboxLabel}>World axis drag handles</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={s.floorGrid !== false}
-          onChange={(e) => dispatch({ type: 'patchSettings', patch: { floorGrid: e.target.checked } })}
-        />
-        <span style={checkboxLabel}>Floor grid</span>
-      </label>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6, color: '#374151' }}>
-          World background (desktop)
-        </div>
-        <div style={{ ...row, marginBottom: 6 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            Horizon
-            <input
-              type="color"
-              value={s.worldBackgroundHorizon ?? DEFAULT_WORLD_BACKGROUND_HORIZON}
-              onChange={(e) =>
-                dispatch({ type: 'patchSettings', patch: { worldBackgroundHorizon: e.target.value } })
-              }
-              aria-label="Sky horizon color"
-            />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            Zenith
-            <input
-              type="color"
-              value={s.worldBackgroundZenith ?? DEFAULT_WORLD_BACKGROUND_ZENITH}
-              onChange={(e) =>
-                dispatch({ type: 'patchSettings', patch: { worldBackgroundZenith: e.target.value } })
-              }
-              aria-label="Sky zenith color"
-            />
-          </label>
-        </div>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
-          Gradient falloff{' '}
-          <input
-            type="range"
-            min={0.35}
-            max={2.2}
-            step={0.01}
-            value={s.worldBackgroundExponent ?? DEFAULT_WORLD_BACKGROUND_EXPONENT}
-            onChange={(e) =>
-              dispatch({
-                type: 'patchSettings',
-                patch: {
-                  worldBackgroundExponent: Math.round(Number(e.target.value) * 100) / 100,
-                },
-              })
-            }
-            style={{ verticalAlign: 'middle', marginLeft: 8, width: 140 }}
-          />{' '}
-          <span style={{ color: '#6b7280', fontSize: 12 }}>
-            {(s.worldBackgroundExponent ?? DEFAULT_WORLD_BACKGROUND_EXPONENT).toFixed(2)}
-          </span>
-        </label>
+    <>
+      <header className="settings-modal-header">
+        <h2 id="settings-dialog-title">Settings</h2>
         <button
           type="button"
-          onClick={() =>
-            dispatch({
-              type: 'patchSettings',
-              patch: {
-                worldBackgroundHorizon: DEFAULT_WORLD_BACKGROUND_HORIZON,
-                worldBackgroundZenith: DEFAULT_WORLD_BACKGROUND_ZENITH,
-                worldBackgroundExponent: DEFAULT_WORLD_BACKGROUND_EXPONENT,
-              },
-            })
-          }
-          style={{
-            padding: '4px 10px',
-            fontSize: 13,
-            borderRadius: 6,
-            border: '1px solid #d1d5db',
-            background: '#f9fafb',
-            cursor: 'pointer',
-          }}
+          className="settings-modal-header-close"
+          aria-label="Close settings"
+          onClick={close}
         >
-          Reset background to default
+          ×
         </button>
+      </header>
+
+      <div className="settings-tablist" role="tablist" aria-label="Settings sections">
+        {TABS.map((id) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            id={`settings-tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls={`settings-panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
+            className="settings-tab"
+            onKeyDown={(e) => onTabKeyDown(e, id)}
+            onClick={() => {
+              setTab(id)
+              document.getElementById(`settings-tab-${id}`)?.focus()
+            }}
+          >
+            {tabLabel(id)}
+          </button>
+        ))}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6, color: '#374151' }}>Ambient particles</div>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
-          Count (0 = off){' '}
-          <input
-            type="number"
-            min={0}
-            max={3000}
-            step={20}
-            value={s.particlesCount ?? DEFAULT_PARTICLES_COUNT}
-            onChange={(e) =>
-              dispatch({
-                type: 'patchSettings',
-                patch: {
-                  particlesCount: Math.max(0, Math.min(3000, Number(e.target.value) || 0)),
-                },
-              })
-            }
-            style={{ width: 72, marginLeft: 8 }}
-          />
-        </label>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
-          Size{' '}
-          <input
-            type="range"
-            min={1}
-            max={16}
-            step={0.1}
-            value={s.particlesSize ?? DEFAULT_PARTICLES_SIZE}
-            onChange={(e) =>
-              dispatch({
-                type: 'patchSettings',
-                patch: { particlesSize: Math.round(Number(e.target.value) * 10) / 10 },
-              })
-            }
-            style={{ verticalAlign: 'middle', marginLeft: 8, width: 140 }}
-          />{' '}
-          <span style={{ color: '#6b7280', fontSize: 12 }}>
-            {(s.particlesSize ?? DEFAULT_PARTICLES_SIZE).toFixed(1)}
-          </span>
-        </label>
-        <div style={{ ...row, marginBottom: 6 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            Colour
+      <div className="settings-modal-scroll">
+        <section
+          role="tabpanel"
+          id="settings-panel-general"
+          aria-labelledby="settings-tab-general"
+          hidden={tab !== 'general'}
+        >
+          <h3 className="settings-section-title">Map</h3>
+          <label className="settings-checkbox-row">
             <input
-              type="color"
-              value={s.particlesColor ?? DEFAULT_PARTICLES_COLOR}
-              onChange={(e) => dispatch({ type: 'patchSettings', patch: { particlesColor: e.target.value } })}
-              aria-label="Particle colour"
+              type="checkbox"
+              checked={s.showAllLabels ?? false}
+              onChange={(e) => dispatch({ type: 'patchSettings', patch: { showAllLabels: e.target.checked } })}
+            />
+            <span className="settings-checkbox-label">Show all node labels (heavy on Quest)</span>
+          </label>
+          <label className="settings-field">
+            Label budget (when not showing all){' '}
+            <input
+              type="number"
+              className="settings-input-narrow"
+              min={8}
+              max={200}
+              value={s.labelBudget ?? 32}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchSettings',
+                  patch: { labelBudget: Math.max(8, Math.min(200, Number(e.target.value) || 32)) },
+                })
+              }
             />
           </label>
-        </div>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
-          Opacity{' '}
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.02}
-            value={s.particlesOpacity ?? DEFAULT_PARTICLES_OPACITY}
-            onChange={(e) =>
-              dispatch({
-                type: 'patchSettings',
-                patch: { particlesOpacity: Math.round(Number(e.target.value) * 100) / 100 },
-              })
-            }
-            style={{ verticalAlign: 'middle', marginLeft: 8, width: 140 }}
-          />{' '}
-          <span style={{ color: '#6b7280', fontSize: 12 }}>
-            {(s.particlesOpacity ?? DEFAULT_PARTICLES_OPACITY).toFixed(2)}
-          </span>
-        </label>
-        <label style={{ display: 'block', marginBottom: 6, fontSize: 14 }}>
-          Speed{' '}
-          <input
-            type="range"
-            min={0}
-            max={3}
-            step={0.05}
-            value={s.particlesSpeed ?? DEFAULT_PARTICLES_SPEED}
-            onChange={(e) =>
-              dispatch({
-                type: 'patchSettings',
-                patch: { particlesSpeed: Math.round(Number(e.target.value) * 100) / 100 },
-              })
-            }
-            style={{ verticalAlign: 'middle', marginLeft: 8, width: 140 }}
-          />{' '}
-          <span style={{ color: '#6b7280', fontSize: 12 }}>
-            {(s.particlesSpeed ?? DEFAULT_PARTICLES_SPEED).toFixed(2)}×
-          </span>
-        </label>
-        <button
-          type="button"
-          onClick={() =>
-            dispatch({
-              type: 'patchSettings',
-              patch: {
-                particlesCount: DEFAULT_PARTICLES_COUNT,
-                particlesSize: DEFAULT_PARTICLES_SIZE,
-                particlesColor: DEFAULT_PARTICLES_COLOR,
-                particlesOpacity: DEFAULT_PARTICLES_OPACITY,
-                particlesSpeed: DEFAULT_PARTICLES_SPEED,
-              },
-            })
-          }
-          style={{
-            padding: '4px 10px',
-            fontSize: 13,
-            borderRadius: 6,
-            border: '1px solid #d1d5db',
-            background: '#f9fafb',
-            cursor: 'pointer',
-          }}
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={s.worldAxisControls === true}
+              onChange={(e) => dispatch({ type: 'patchSettings', patch: { worldAxisControls: e.target.checked } })}
+            />
+            <span className="settings-checkbox-label">World axis drag handles</span>
+          </label>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={s.floorGrid !== false}
+              onChange={(e) => dispatch({ type: 'patchSettings', patch: { floorGrid: e.target.checked } })}
+            />
+            <span className="settings-checkbox-label">Floor grid</span>
+          </label>
+          <label className="settings-field">
+            Focus hop depth{' '}
+            <input
+              type="number"
+              className="settings-input-tiny"
+              min={0}
+              max={4}
+              step={1}
+              value={s.focusHopDepth}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchSettings',
+                  patch: { focusHopDepth: Math.max(0, Math.min(4, Number(e.target.value) || 1)) },
+                })
+              }
+            />
+          </label>
+          <p className="settings-section-hint">Map options are stored in this project file.</p>
+        </section>
+
+        <section
+          role="tabpanel"
+          id="settings-panel-appearance"
+          aria-labelledby="settings-tab-appearance"
+          hidden={tab !== 'appearance'}
         >
-          Reset particles to default
-        </button>
-      </div>
+          <p className="settings-section-hint" style={{ marginTop: 0 }}>
+            Sky and particles affect the desktop canvas view.
+          </p>
 
-      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
-        Focus hop depth{' '}
-        <input
-          type="number"
-          min={0}
-          max={4}
-          step={1}
-          value={s.focusHopDepth}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchSettings',
-              patch: { focusHopDepth: Math.max(0, Math.min(4, Number(e.target.value) || 1)) },
-            })
-          }
-          style={{ width: 48, marginLeft: 8 }}
-        />
-      </label>
-      <p style={{ fontSize: 12, color: '#6b7280' }}>Map options are stored in this project file.</p>
+          <details className="settings-advanced-details">
+            <summary className="settings-advanced-summary">Advanced appearance</summary>
 
-      {sectionTitle('Device & VR')}
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={devicePreferences.locomotionSmooth}
-          onChange={(e) =>
-            dispatch({ type: 'patchDevicePreferences', patch: { locomotionSmooth: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Smooth locomotion (VR)</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={devicePreferences.comfortVignette}
-          onChange={(e) =>
-            dispatch({ type: 'patchDevicePreferences', patch: { comfortVignette: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Comfort vignette</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={devicePreferences.preferXrPassthrough ?? false}
-          onChange={(e) =>
-            dispatch({ type: 'patchDevicePreferences', patch: { preferXrPassthrough: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Prefer camera passthrough when entering XR (if supported)</span>
-      </label>
-      <label style={checkboxRow}>
-        <input
-          type="checkbox"
-          style={{ flexShrink: 0, marginTop: 2 }}
-          checked={devicePreferences.audioEnabled}
-          onChange={(e) =>
-            dispatch({ type: 'patchDevicePreferences', patch: { audioEnabled: e.target.checked } })
-          }
-        />
-        <span style={checkboxLabel}>Sound — ambient bed and subtle interaction cues</span>
-      </label>
-      <label
-        style={{
-          display: 'block',
-          marginBottom: 8,
-          fontSize: 14,
-          opacity: devicePreferences.audioEnabled ? 1 : 0.45,
-          pointerEvents: devicePreferences.audioEnabled ? 'auto' : 'none',
-        }}
-      >
-        Ambient bed volume{' '}
-        <span style={{ color: '#64748b', fontSize: 13 }}>
-          {Math.round(devicePreferences.ambientVolume * 100)}%
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={devicePreferences.ambientVolume}
-          disabled={!devicePreferences.audioEnabled}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: { ambientVolume: Math.max(0, Math.min(1, Number(e.target.value) || 0)) },
-            })
-          }
-          style={{ display: 'block', width: '100%', maxWidth: 320, marginTop: 6 }}
-        />
-      </label>
-      <label
-        style={{
-          display: 'block',
-          marginBottom: 12,
-          fontSize: 14,
-          opacity: devicePreferences.audioEnabled ? 1 : 0.45,
-          pointerEvents: devicePreferences.audioEnabled ? 'auto' : 'none',
-        }}
-      >
-        Ambient bed pitch{' '}
-        <span style={{ color: '#64748b', fontSize: 13 }}>{devicePreferences.ambientPitch.toFixed(2)}×</span>
-        <input
-          type="range"
-          min={0.5}
-          max={2}
-          step={0.01}
-          value={devicePreferences.ambientPitch}
-          disabled={!devicePreferences.audioEnabled}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: {
-                ambientPitch: Math.max(0.5, Math.min(2, Number(e.target.value) || 1)),
-              },
-            })
-          }
-          style={{ display: 'block', width: '100%', maxWidth: 320, marginTop: 6 }}
-        />
-      </label>
-      <label style={{ ...row, marginBottom: 12 }}>
-        Dominant hand
-        <select
-          value={devicePreferences.dominantHand}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: { dominantHand: e.target.value as 'left' | 'right' },
-            })
-          }
-          aria-describedby="dominant-hand-hint"
-        >
-          <option value="right">Right</option>
-          <option value="left">Left</option>
-        </select>
-      </label>
-      <p id="dominant-hand-hint" style={{ margin: '0 0 12px', fontSize: 13, color: '#64748b', lineHeight: 1.4 }}>
-        Used to bias which controller ray is preferred for selection. Travel sticks stay left move / right turn.
-      </p>
-      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
-        Move speed{' '}
-        <input
-          type="number"
-          min={0.5}
-          max={8}
-          step={0.25}
-          value={devicePreferences.moveSpeed}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: { moveSpeed: Math.max(0.5, Math.min(8, Number(e.target.value) || 2)) },
-            })
-          }
-          style={{ width: 72, marginLeft: 8 }}
-        />
-      </label>
-      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
-        Smooth turn speed{' '}
-        <input
-          type="number"
-          min={0.5}
-          max={6}
-          step={0.1}
-          value={devicePreferences.smoothTurnSpeed}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: { smoothTurnSpeed: Math.max(0.5, Math.min(6, Number(e.target.value) || 2)) },
-            })
-          }
-          style={{ width: 72, marginLeft: 8 }}
-        />
-      </label>
-      <label style={{ display: 'block', marginBottom: 8, fontSize: 14 }}>
-        Snap turn (°){' '}
-        <input
-          type="number"
-          min={15}
-          max={90}
-          step={5}
-          value={devicePreferences.snapTurnDegrees}
-          onChange={(e) =>
-            dispatch({
-              type: 'patchDevicePreferences',
-              patch: { snapTurnDegrees: Math.max(15, Math.min(90, Number(e.target.value) || 45)) },
-            })
-          }
-          style={{ width: 64, marginLeft: 8 }}
-        />
-      </label>
-      <p style={{ fontSize: 12, color: '#6b7280' }}>Device preferences apply to this browser only and are not embedded in map exports.</p>
-
-      {import.meta.env.DEV ? (
-        <label style={checkboxRow}>
-          <input
-            type="checkbox"
-            style={{ flexShrink: 0, marginTop: 2 }}
-            checked={xrDebugHud}
-            onChange={(e) => useRootStore.setState({ xrDebugHud: e.target.checked })}
-          />
-          <span style={checkboxLabel}>XR debug HUD (immersive; extra status line)</span>
-        </label>
-      ) : null}
-
-      <div
-        className={variant === 'desktop' ? 'modal-actions' : undefined}
-        style={variant === 'xr' ? { marginTop: 12, display: 'flex', justifyContent: 'flex-end' } : undefined}
-      >
-        <button
-          type="button"
-          onClick={() => useRootStore.setState({ settingsOpen: false })}
-          style={
-            variant === 'xr'
-              ? {
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  border: '1px solid #d1d5db',
-                  background: '#f9fafb',
-                  cursor: 'pointer',
+            <div>
+              <div className="settings-section-title">World background (desktop)</div>
+              <div className="settings-colors-row">
+                <label>
+                  Horizon
+                  <input
+                    type="color"
+                    value={s.worldBackgroundHorizon ?? DEFAULT_WORLD_BACKGROUND_HORIZON}
+                    onChange={(e) =>
+                      dispatch({ type: 'patchSettings', patch: { worldBackgroundHorizon: e.target.value } })
+                    }
+                    aria-label="Sky horizon color"
+                  />
+                </label>
+                <label>
+                  Zenith
+                  <input
+                    type="color"
+                    value={s.worldBackgroundZenith ?? DEFAULT_WORLD_BACKGROUND_ZENITH}
+                    onChange={(e) =>
+                      dispatch({ type: 'patchSettings', patch: { worldBackgroundZenith: e.target.value } })
+                    }
+                    aria-label="Sky zenith color"
+                  />
+                </label>
+              </div>
+              <label className="settings-slider-row">
+                Gradient falloff{' '}
+                <span className="settings-value-muted">
+                  {(s.worldBackgroundExponent ?? DEFAULT_WORLD_BACKGROUND_EXPONENT).toFixed(2)}
+                </span>
+                <input
+                  type="range"
+                  className="settings-range"
+                  min={0.35}
+                  max={2.2}
+                  step={0.01}
+                  value={s.worldBackgroundExponent ?? DEFAULT_WORLD_BACKGROUND_EXPONENT}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patchSettings',
+                      patch: {
+                        worldBackgroundExponent: Math.round(Number(e.target.value) * 100) / 100,
+                      },
+                    })
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="settings-btn-secondary"
+                onClick={() =>
+                  dispatch({
+                    type: 'patchSettings',
+                    patch: {
+                      worldBackgroundHorizon: DEFAULT_WORLD_BACKGROUND_HORIZON,
+                      worldBackgroundZenith: DEFAULT_WORLD_BACKGROUND_ZENITH,
+                      worldBackgroundExponent: DEFAULT_WORLD_BACKGROUND_EXPONENT,
+                    },
+                  })
                 }
-              : undefined
-          }
+              >
+                Reset background to default
+              </button>
+            </div>
+
+            <div>
+              <div className="settings-section-title">Ambient particles</div>
+              <label className="settings-field">
+                Count (0 = off){' '}
+                <input
+                  type="number"
+                  className="settings-input-medium"
+                  min={0}
+                  max={3000}
+                  step={20}
+                  value={s.particlesCount ?? DEFAULT_PARTICLES_COUNT}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patchSettings',
+                      patch: {
+                        particlesCount: Math.max(0, Math.min(3000, Number(e.target.value) || 0)),
+                      },
+                    })
+                  }
+                />
+              </label>
+              <label className="settings-slider-row">
+                Size{' '}
+                <span className="settings-value-muted">{(s.particlesSize ?? DEFAULT_PARTICLES_SIZE).toFixed(1)}</span>
+                <input
+                  type="range"
+                  className="settings-range"
+                  min={1}
+                  max={16}
+                  step={0.1}
+                  value={s.particlesSize ?? DEFAULT_PARTICLES_SIZE}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patchSettings',
+                      patch: { particlesSize: Math.round(Number(e.target.value) * 10) / 10 },
+                    })
+                  }
+                />
+              </label>
+              <div className="settings-colors-row">
+                <label>
+                  Colour
+                  <input
+                    type="color"
+                    value={s.particlesColor ?? DEFAULT_PARTICLES_COLOR}
+                    onChange={(e) => dispatch({ type: 'patchSettings', patch: { particlesColor: e.target.value } })}
+                    aria-label="Particle colour"
+                  />
+                </label>
+              </div>
+              <label className="settings-slider-row">
+                Opacity{' '}
+                <span className="settings-value-muted">
+                  {(s.particlesOpacity ?? DEFAULT_PARTICLES_OPACITY).toFixed(2)}
+                </span>
+                <input
+                  type="range"
+                  className="settings-range"
+                  min={0}
+                  max={1}
+                  step={0.02}
+                  value={s.particlesOpacity ?? DEFAULT_PARTICLES_OPACITY}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patchSettings',
+                      patch: { particlesOpacity: Math.round(Number(e.target.value) * 100) / 100 },
+                    })
+                  }
+                />
+              </label>
+              <label className="settings-slider-row">
+                Speed{' '}
+                <span className="settings-value-muted">
+                  {(s.particlesSpeed ?? DEFAULT_PARTICLES_SPEED).toFixed(2)}×
+                </span>
+                <input
+                  type="range"
+                  className="settings-range"
+                  min={0}
+                  max={3}
+                  step={0.05}
+                  value={s.particlesSpeed ?? DEFAULT_PARTICLES_SPEED}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'patchSettings',
+                      patch: { particlesSpeed: Math.round(Number(e.target.value) * 100) / 100 },
+                    })
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className="settings-btn-secondary"
+                onClick={() =>
+                  dispatch({
+                    type: 'patchSettings',
+                    patch: {
+                      particlesCount: DEFAULT_PARTICLES_COUNT,
+                      particlesSize: DEFAULT_PARTICLES_SIZE,
+                      particlesColor: DEFAULT_PARTICLES_COLOR,
+                      particlesOpacity: DEFAULT_PARTICLES_OPACITY,
+                      particlesSpeed: DEFAULT_PARTICLES_SPEED,
+                    },
+                  })
+                }
+              >
+                Reset particles to default
+              </button>
+            </div>
+          </details>
+        </section>
+
+        <section
+          role="tabpanel"
+          id="settings-panel-vr"
+          aria-labelledby="settings-tab-vr"
+          hidden={tab !== 'vr'}
         >
-          Close
-        </button>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={devicePreferences.locomotionSmooth}
+              onChange={(e) =>
+                dispatch({ type: 'patchDevicePreferences', patch: { locomotionSmooth: e.target.checked } })
+              }
+            />
+            <span className="settings-checkbox-label">Smooth locomotion (VR)</span>
+          </label>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={devicePreferences.comfortVignette}
+              onChange={(e) =>
+                dispatch({ type: 'patchDevicePreferences', patch: { comfortVignette: e.target.checked } })
+              }
+            />
+            <span className="settings-checkbox-label">Comfort vignette</span>
+          </label>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={devicePreferences.preferXrPassthrough ?? false}
+              onChange={(e) =>
+                dispatch({ type: 'patchDevicePreferences', patch: { preferXrPassthrough: e.target.checked } })
+              }
+            />
+            <span className="settings-checkbox-label">Prefer camera passthrough when entering XR (if supported)</span>
+          </label>
+          <label className="settings-field-inline">
+            Dominant hand
+            <select
+              value={devicePreferences.dominantHand}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { dominantHand: e.target.value as 'left' | 'right' },
+                })
+              }
+              aria-describedby="dominant-hand-hint"
+            >
+              <option value="right">Right</option>
+              <option value="left">Left</option>
+            </select>
+          </label>
+          <p id="dominant-hand-hint" className="settings-muted" style={{ margin: '0 0 12px', lineHeight: 1.4 }}>
+            Used to bias which controller ray is preferred for selection. Travel sticks stay left move / right turn.
+          </p>
+          <label className="settings-field">
+            Move speed{' '}
+            <input
+              type="number"
+              className="settings-input-medium"
+              min={0.5}
+              max={8}
+              step={0.25}
+              value={devicePreferences.moveSpeed}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { moveSpeed: Math.max(0.5, Math.min(8, Number(e.target.value) || 2)) },
+                })
+              }
+            />
+          </label>
+          <label className="settings-field">
+            Smooth turn speed{' '}
+            <input
+              type="number"
+              className="settings-input-medium"
+              min={0.5}
+              max={6}
+              step={0.1}
+              value={devicePreferences.smoothTurnSpeed}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { smoothTurnSpeed: Math.max(0.5, Math.min(6, Number(e.target.value) || 2)) },
+                })
+              }
+            />
+          </label>
+          <label className="settings-field">
+            Snap turn (°){' '}
+            <input
+              type="number"
+              className="settings-input-narrow"
+              min={15}
+              max={90}
+              step={5}
+              value={devicePreferences.snapTurnDegrees}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { snapTurnDegrees: Math.max(15, Math.min(90, Number(e.target.value) || 45)) },
+                })
+              }
+            />
+          </label>
+          <p className="settings-section-hint">
+            Device preferences apply to this browser only and are not embedded in map exports.
+          </p>
+          {import.meta.env.DEV ? (
+            <label className="settings-checkbox-row">
+              <input
+                type="checkbox"
+                checked={xrDebugHud}
+                onChange={(e) => useRootStore.setState({ xrDebugHud: e.target.checked })}
+              />
+              <span className="settings-checkbox-label">XR debug HUD (immersive; extra status line)</span>
+            </label>
+          ) : null}
+        </section>
+
+        <section
+          role="tabpanel"
+          id="settings-panel-audio"
+          aria-labelledby="settings-tab-audio"
+          hidden={tab !== 'audio'}
+        >
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={devicePreferences.audioEnabled}
+              onChange={(e) =>
+                dispatch({ type: 'patchDevicePreferences', patch: { audioEnabled: e.target.checked } })
+              }
+            />
+            <span className="settings-checkbox-label">Sound — ambient bed and subtle interaction cues</span>
+          </label>
+          <label
+            className={`settings-slider-row${!devicePreferences.audioEnabled ? ' settings-audio-dim' : ''}`}
+          >
+            Ambient bed volume{' '}
+            <span className="settings-muted">{Math.round(devicePreferences.ambientVolume * 100)}%</span>
+            <input
+              type="range"
+              className="settings-range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={devicePreferences.ambientVolume}
+              disabled={!devicePreferences.audioEnabled}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { ambientVolume: Math.max(0, Math.min(1, Number(e.target.value) || 0)) },
+                })
+              }
+            />
+          </label>
+          <label
+            className={`settings-slider-row${!devicePreferences.audioEnabled ? ' settings-audio-dim' : ''}`}
+          >
+            Ambient bed pitch{' '}
+            <span className="settings-muted">{devicePreferences.ambientPitch.toFixed(2)}×</span>
+            <input
+              type="range"
+              className="settings-range"
+              min={0.5}
+              max={2}
+              step={0.01}
+              value={devicePreferences.ambientPitch}
+              disabled={!devicePreferences.audioEnabled}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: {
+                    ambientPitch: Math.max(0.5, Math.min(2, Number(e.target.value) || 1)),
+                  },
+                })
+              }
+            />
+          </label>
+        </section>
       </div>
-    </div>
+
+      <footer className="settings-modal-footer">
+        <button type="button" className="settings-btn-primary" onClick={close}>
+          Done
+        </button>
+      </footer>
+    </>
   )
 }

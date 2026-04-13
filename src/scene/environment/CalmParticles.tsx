@@ -125,7 +125,15 @@ function CalmParticlesInner({ particleCount }: { particleCount: number }) {
     m.uniforms.uColor.value.set(col)
   })
 
-  return <points ref={pointsRef} geometry={geometry} material={material} frustumCulled={false} />
+  return (
+    <points
+      ref={pointsRef}
+      geometry={geometry}
+      material={material}
+      frustumCulled={false}
+      raycast={() => null}
+    />
+  )
 }
 
 /** Ambient snow-like motes; count/size/colour/opacity/speed from project settings. */
