@@ -1,7 +1,11 @@
 import { z } from 'zod'
+import type { Vec3, Vec4 } from '../utils/math'
 
-const vec3 = z.tuple([z.number(), z.number(), z.number()])
-const vec4 = z.tuple([z.number(), z.number(), z.number(), z.number()])
+/** Zod tuples infer mutable `[number, number, number]`; graph types use readonly `Vec3` / `Vec4`. */
+const vec3 = z.tuple([z.number(), z.number(), z.number()]).transform((t): Vec3 => [t[0], t[1], t[2]] as const)
+const vec4 = z
+  .tuple([z.number(), z.number(), z.number(), z.number()])
+  .transform((t): Vec4 => [t[0], t[1], t[2], t[3]] as const)
 
 export const WorldTransformSchema = z.object({
   position: vec3,
