@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { NODE_LABEL_OUTLINE_DEFAULT, NODE_LABEL_TEXT_DEFAULT } from '../graph/types'
 import type { Vec3, Vec4 } from '../utils/math'
 
 /** Zod tuples infer mutable `[number, number, number]`; graph types use readonly `Vec3` / `Vec4`. */
@@ -27,6 +28,14 @@ export const UserSettingsSchema = z.object({
   worldAxisControls: z.boolean().optional(),
   floorGrid: z.boolean().optional(),
   preferXrPassthrough: z.boolean().optional(),
+  worldBackgroundHorizon: z.string().optional(),
+  worldBackgroundZenith: z.string().optional(),
+  worldBackgroundExponent: z.number().optional(),
+  particlesCount: z.number().optional(),
+  particlesSize: z.number().optional(),
+  particlesColor: z.string().optional(),
+  particlesOpacity: z.number().optional(),
+  particlesSpeed: z.number().optional(),
 })
 
 export const MediaAttachmentSchema = z.object({
@@ -46,6 +55,8 @@ export const NodeEntitySchema = z.object({
   shortDescription: z.string(),
   note: z.string(),
   color: z.string(),
+  labelTextColor: z.string().default(NODE_LABEL_TEXT_DEFAULT),
+  labelOutlineColor: z.string().default(NODE_LABEL_OUTLINE_DEFAULT),
   shape: z.enum(['sphere', 'cube', 'capsule', 'tetra', 'ring', 'diamond', 'pill']),
   size: z.number(),
   position: vec3,

@@ -3,7 +3,13 @@ import { Text } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
-import type { GraphState, NodeEntity, Project } from '../../graph/types'
+import {
+  NODE_LABEL_OUTLINE_DEFAULT,
+  NODE_LABEL_TEXT_DEFAULT,
+  type GraphState,
+  type NodeEntity,
+  type Project,
+} from '../../graph/types'
 import { shouldRenderNode } from '../../graph/selectors'
 import { LabelBillboard } from './LabelBillboard'
 import { NodeAxisGuides } from './AxisGuides'
@@ -254,8 +260,9 @@ function NodeItem({
           color={color}
           emissive={color}
           emissiveIntensity={0.12}
-          roughness={0.45}
+          roughness={0.15}
           metalness={0.08}
+          envMapIntensity={0.3}
           transparent={opacity < 1}
           opacity={opacity}
         />
@@ -278,12 +285,12 @@ function NodeItem({
           <Text
             position={[0, 0.55 * n.size + 0.35, 0]}
             fontSize={0.22}
-            color="#2a3140"
+            color={n.labelTextColor || NODE_LABEL_TEXT_DEFAULT}
             anchorX="center"
             anchorY="bottom"
             maxWidth={3}
             outlineWidth={0.02}
-            outlineColor="#ffffff"
+            outlineColor={n.labelOutlineColor || NODE_LABEL_OUTLINE_DEFAULT}
             raycast={() => null}
           >
             {n.title || 'Untitled'}

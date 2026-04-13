@@ -81,8 +81,47 @@ These five flows define the core product. Verify after meaningful interaction ch
 - [ ] Status HUD states hand-mode expectations (Child & Inspect; controllers for full Link).
 - [ ] Controller-based sessions still behave as in paths 3–4.
 
+## 6. Desktop: local snapshot → restore (with save-before)
+
+**Expected**
+
+1. Open a map with some nodes.
+2. **Map → Version history → Create snapshot** (optional label).
+3. Edit the map (e.g. add a node).
+4. **Version history → Restore** on the earlier snapshot; leave **Save current map as a snapshot first** checked.
+5. Map content matches the restored snapshot; a “Before restore” snapshot exists if you confirmed restore.
+
+**Checklist**
+
+- [ ] JSON/ZIP export does not need to contain snapshot rows (snapshots are device-local only).
+
+## 7. New project from template
+
+**Expected**
+
+1. From **Library**, **New from template…** (or **Map → New from template…** in scene).
+2. Pick a non-blank template (e.g. brainstorm).
+3. A **new** saved project opens with seeded nodes/edges.
+
+**Checklist**
+
+- [ ] Blank template still available alongside other starters.
+
+## 8. Desktop: Branch (3) quick action
+
+**Expected**
+
+1. Select one node.
+2. **Quick actions → Branch (3)**.
+3. Three new child nodes appear connected to the parent; **one Undo** removes the whole gesture.
+
+**Checklist**
+
+- [ ] Selection moves to the last created branch node (or remains consistent).
+
 ## Known limitations
 
 - **Hand tracking** is a lite mode: complex linking and precision graph edits may be hidden or reduced; controllers remain the full authoring path.
 - **Export / layout / bookmarks** may require exiting VR to use the flat HTML toolbar (see Help).
 - **Performance** — “Show all labels” and large graphs can stress standalone headsets; use label budget.
+- **Collaboration / cloud sync** — not implemented; see **docs/product-direction.md**.

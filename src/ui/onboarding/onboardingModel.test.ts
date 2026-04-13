@@ -5,7 +5,7 @@ import {
   getOnboardingMilestone,
   hasLinkOrChild,
 } from './onboardingModel'
-import { APP_SCHEMA_VERSION, type Project } from '../../graph/types'
+import { APP_SCHEMA_VERSION, NODE_LABEL_OUTLINE_DEFAULT, NODE_LABEL_TEXT_DEFAULT, type Project } from '../../graph/types'
 import { defaultUserSettings, defaultWorldTransform, emptyGraph } from '../../graph/defaults'
 
 function minimalProject(overrides: Partial<Project['graph']> & { nodes?: Project['graph']['nodes'] }): Project {
@@ -45,6 +45,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [0, 0, 0],
@@ -71,6 +73,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [0, 0, 0],
@@ -97,6 +101,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [0, 0, 0],
@@ -113,6 +119,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [1, 0, 0],
@@ -141,6 +149,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [0, 0, 0],
@@ -157,6 +167,8 @@ describe('getOnboardingMilestone', () => {
           shortDescription: '',
           note: '',
           color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
           shape: 'diamond',
           size: 1,
           position: [1, 0, 0],

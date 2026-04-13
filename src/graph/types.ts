@@ -39,12 +39,21 @@ export interface MediaAttachment {
   thumbnailBlobId?: string
 }
 
+/** Default fill for the floating title label above a node (3D Text). */
+export const NODE_LABEL_TEXT_DEFAULT = '#2a3140'
+/** Default outline/stroke for the floating title label. */
+export const NODE_LABEL_OUTLINE_DEFAULT = '#ffffff'
+
 export interface NodeEntity {
   id: string
   title: string
   shortDescription: string
   note: string
   color: string
+  /** Fill color for the floating title label (CSS color string). */
+  labelTextColor: string
+  /** Outline/stroke color for the title label (CSS color string). */
+  labelOutlineColor: string
   shape: NodeShape
   /** Visual scale multiplier */
   size: number
@@ -100,6 +109,10 @@ export interface DevicePreferences {
   snapTurnDegrees: number
   comfortVignette: boolean
   audioEnabled: boolean
+  /** Ambient bed loudness, 0–1 (does not affect UI interaction cues). */
+  ambientVolume: number
+  /** Ambient bed playback rate (pitch / speed), ~0.5–2. */
+  ambientPitch: number
   dominantHand: 'left' | 'right'
   smoothTurnSpeed: number
   moveSpeed: number
@@ -128,6 +141,22 @@ export interface UserSettings {
    * otherwise falls back to immersive VR. In-headset passthrough is toggled separately from travel/world mode.
    */
   preferXrPassthrough?: boolean
+  /** Flat (non-XR) view: sky gradient horizon color at eye level (#rrggbb). */
+  worldBackgroundHorizon?: string
+  /** Flat view: sky color at the zenith. */
+  worldBackgroundZenith?: string
+  /** Flat view: gradient exponent (higher keeps the horizon tone lower in the frame). */
+  worldBackgroundExponent?: number
+  /** Ambient scene particles (`CalmParticles`); 0 hides them. */
+  particlesCount?: number
+  /** Base point size (shader uniform; scales with distance). */
+  particlesSize?: number
+  /** CSS hex color for particles. */
+  particlesColor?: string
+  /** Overall opacity multiplier 0–1 (higher = more visible). */
+  particlesOpacity?: number
+  /** Animation speed multiplier (1 = built-in default drift / fall). */
+  particlesSpeed?: number
 }
 
 export interface Project {

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "ci": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

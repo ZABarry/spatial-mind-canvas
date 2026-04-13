@@ -1,7 +1,14 @@
 import type { CSSProperties } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { nextChildPosition } from '../../graph/selectors'
-import { NODE_SHAPES, type NodeEntity, type NodeShape, type Project } from '../../graph/types'
+import {
+  NODE_LABEL_OUTLINE_DEFAULT,
+  NODE_LABEL_TEXT_DEFAULT,
+  NODE_SHAPES,
+  type NodeEntity,
+  type NodeShape,
+  type Project,
+} from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
 import { MediaAttachmentRow } from '../MediaAttachmentRow'
 
@@ -38,6 +45,25 @@ const panelStyle = (variant: PanelVariant): CSSProperties =>
         color: '#1c2330',
       }
     : {}
+
+const colorSwatchStyle: CSSProperties = {
+  width: 40,
+  height: 32,
+  padding: 0,
+  border: '1px solid #d8e0ec',
+  borderRadius: 6,
+  cursor: 'pointer',
+  flexShrink: 0,
+}
+
+const colorLabelStyle: CSSProperties = {
+  fontSize: 12,
+  color: '#6b7280',
+  margin: 0,
+  justifySelf: 'end',
+  textAlign: 'right',
+  paddingRight: 2,
+}
 
 export function NodeDetailForm({
   id,
@@ -86,9 +112,21 @@ export function NodeDetailForm({
         </p>
       ) : null}
       <p style={{ fontSize: 12, fontWeight: 600, margin: '8px 0 6px', color: '#374151' }}>Appearance</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>Color</label>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(4.75rem, max-content) 40px',
+          columnGap: 10,
+          rowGap: 8,
+          alignItems: 'center',
+          marginBottom: 10,
+        }}
+      >
+        <label htmlFor={`${id}-color-node`} style={colorLabelStyle}>
+          Color
+        </label>
         <input
+          id={`${id}-color-node`}
           type="color"
           value={colorInputHex(node.color)}
           onChange={(e) =>
@@ -99,7 +137,41 @@ export function NodeDetailForm({
             })
           }
           aria-label="Node color"
-          style={{ width: 40, height: 32, padding: 0, border: '1px solid #d8e0ec', borderRadius: 6, cursor: 'pointer' }}
+          style={colorSwatchStyle}
+        />
+        <label htmlFor={`${id}-color-text`} style={colorLabelStyle}>
+          Text
+        </label>
+        <input
+          id={`${id}-color-text`}
+          type="color"
+          value={colorInputHex(node.labelTextColor || NODE_LABEL_TEXT_DEFAULT)}
+          onChange={(e) =>
+            dispatch({
+              type: 'updateNodeProps',
+              nodeId: id,
+              patch: { labelTextColor: e.target.value },
+            })
+          }
+          aria-label="Node title text color"
+          style={colorSwatchStyle}
+        />
+        <label htmlFor={`${id}-color-outline`} style={colorLabelStyle}>
+          Outline
+        </label>
+        <input
+          id={`${id}-color-outline`}
+          type="color"
+          value={colorInputHex(node.labelOutlineColor || NODE_LABEL_OUTLINE_DEFAULT)}
+          onChange={(e) =>
+            dispatch({
+              type: 'updateNodeProps',
+              nodeId: id,
+              patch: { labelOutlineColor: e.target.value },
+            })
+          }
+          aria-label="Node title outline color"
+          style={colorSwatchStyle}
         />
       </div>
       <label style={{ fontSize: 12, color: '#6b7280' }}>Shape</label>

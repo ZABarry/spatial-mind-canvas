@@ -1,30 +1,28 @@
 import { nanoid } from 'nanoid'
 import type { EdgeEntity, GraphState, NodeEntity, NodeShape } from './types'
+import { NODE_LABEL_OUTLINE_DEFAULT, NODE_LABEL_TEXT_DEFAULT } from './types'
 import type { Vec3 } from '../utils/math'
 
 const now = () => Date.now()
 
-export function addNode(
-  graph: GraphState,
-  partial: Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
-): { graph: GraphState; node: NodeEntity } {
+/** Input for `addNode`: label colors optional (defaults from `createNodeDefaults`). */
+export type NewNodeInput = Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt' | 'labelTextColor' | 'labelOutlineColor'> & {
+  id?: string
+  labelTextColor?: string
+  labelOutlineColor?: string
+}
+
+export function addNode(graph: GraphState, partial: NewNodeInput): { graph: GraphState; node: NodeEntity } {
   const t = now()
+  const base = createNodeDefaults(partial.position, partial.shape)
   const node: NodeEntity = {
+    ...base,
+    ...partial,
+    labelTextColor: partial.labelTextColor ?? base.labelTextColor,
+    labelOutlineColor: partial.labelOutlineColor ?? base.labelOutlineColor,
     id: partial.id ?? nanoid(),
-    title: partial.title,
-    shortDescription: partial.shortDescription,
-    note: partial.note,
-    color: partial.color,
-    shape: partial.shape,
-    size: partial.size,
-    position: partial.position,
-    tags: partial.tags,
     createdAt: t,
     updatedAt: t,
-    collapsed: partial.collapsed,
-    pinned: partial.pinned,
-    mediaIds: partial.mediaIds,
-    parentId: partial.parentId,
   }
   return {
     graph: {
@@ -117,6 +115,8 @@ export function createNodeDefaults(position: Vec3, shape: NodeShape = 'diamond')
     shortDescription: '',
     note: '',
     color: '#7eb8da',
+    labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+    labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
     shape,
     size: 1,
     position,

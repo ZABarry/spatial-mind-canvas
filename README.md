@@ -1,13 +1,16 @@
 # Spatial Mind Canvas
 
-Quest-first, local-only 3D mind mapping in the browser: an infinite calm white space for ideas, connections, and notes. Ships as a **Vite + React + TypeScript** SPA with **React Three Fiber**, **WebXR** (`@react-three/xr`), **Zustand**, and **IndexedDB** persistence—no backend required for v1.
+Quest-first, **local-only** 3D mind mapping in the browser: a calm space for **solo** spatial ideation—ideas, connections, and notes on one device. Ships as a **Vite + React + TypeScript** SPA with **React Three Fiber**, **WebXR** (`@react-three/xr`), **Zustand**, and **IndexedDB** persistence—no backend required. **Collaboration and cloud sync are not the current focus**; see **[docs/product-direction.md](docs/product-direction.md)**.
+
+**Controls and terminology (source of truth):** **[docs/controls.md](docs/controls.md)**.
 
 ## Features (shipped)
 
 | Area | What you get |
 | --- | --- |
-| **Graph** | Freeform nodes (multiple shapes), straight edges between node centers, multi-select (Ctrl/Cmd+click), drag to move, **cyan link handle** to connect nodes, node collapse/expand, graph focus (dim non-neighbors); optional **parent/child** links with **Add child** quick placement (desktop). |
-| **Library & projects** | Create / rename / duplicate / delete projects; new blank map; import **JSON** or **ZIP**; export JSON or **ZIP** (full round-trip with media). |
+| **Graph** | Freeform nodes (multiple shapes), straight **links** (edges) between node centers, multi-select (Ctrl/Cmd+click), drag to move, **cyan link handle** to connect nodes, node collapse/expand, graph focus (dim non-neighbors); optional **parent/child** links with **Add child** and **Branch (3)** quick placement (desktop). |
+| **Library & projects** | Create / rename / duplicate / delete projects; **new blank map** or **new from template**; import **JSON** or **ZIP**; export JSON or **ZIP** (full round-trip with media). |
+| **Local snapshots** | **Map → Version history**: device-local checkpoints in IndexedDB (not included in JSON/ZIP export); optional “save before restore”. |
 | **Persistence** | IndexedDB autosave, debounced saves, manual **Ctrl/Cmd+S** save; Zod-validated schemas; portable `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. |
 | **Media** | Attach images, PDFs, text, and generic files per node; storage **quota** checks before large writes; thumbnails for images; **PDF.js** first page in the inspector (**PdfCanvas**); markdown-style notes. |
 | **Search & navigation** | Fuse.js search palette (**Ctrl/Cmd+K** or **/**), **Focus neighborhood** (**F** dims non-neighbors), **Recenter** (**Home** or **.** — primary node to orbit pivot; not the same as Reset view), bookmarks (save/recall view + optional focus node), **Reset view** (toolbar — full camera reset), **Alt+arrows** to nudge the world. |
@@ -42,6 +45,12 @@ Open the printed local URL (typically `http://localhost:5173`).
 | `npm run lint` | ESLint |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run test` | Vitest (unit tests) |
+| `npm run ci` | Quality gate: `typecheck` → `lint` → `test` → `build` (run before merging) |
+
+## Contributing
+
+- **Green bar:** `npm run ci` should pass (typecheck, lint, tests, production build). CI runs the same steps on push/PR via GitHub Actions (see `.github/workflows/ci.yml`).
+- **Controls copy** should match **[docs/controls.md](docs/controls.md)**.
 
 ## Deployment (Vercel)
 
@@ -68,7 +77,8 @@ Use a **HTTPS** deployment URL on Quest.
 - **Select**: click a node (Ctrl/Cmd+click to add to selection).
 - **Link**: drag from the **cyan link handle** on a selected node; release on another node or on the ground for a new connected node.
 - **Move**: drag a node (horizontal plane).
-- **Detail**: right-click or double-click a node, or press **Enter** with selection; attach files and notes in the inspector. With one node selected, use **Node quick actions** (panel) to rename, add a connected child, start **Link**, open **Inspect**, or delete.
+- **Detail**: right-click or double-click a node, or press **Enter** with selection; attach files and notes in the inspector. With one node selected, use **Node quick actions** (panel) to rename, add a connected child, **Branch (3)**, start **Link**, open **Inspect**, or delete.
+- **Templates & history**: home screen or **Map → New from template**; **Map → Version history** for local snapshots (see [docs/controls.md](docs/controls.md)).
 - **Search**: **Ctrl/Cmd+K** or **/** — pick a result to focus.
 - **Focus neighborhood**: **F** dims non-neighbors (toggle intensity via graph focus state).
 - **Recenter**: **Home** or **.** — moves the primary selected node to the current orbit pivot (pan the world; different from **Reset view**, which restores the default camera framing).
@@ -78,7 +88,7 @@ Use a **HTTPS** deployment URL on Quest.
 - **Undo/redo**: **Ctrl/Cmd+Z**, **Ctrl/Cmd+Shift+Z**.
 - **Delete**: **Backspace** / **Delete** removes selection.
 - **New map**: **Ctrl/Cmd+Shift+N**; **Clear map** from toolbar (confirm).
-- **Help**: floating **?** button (lower-right) opens control reference.
+- **Help**: floating **?** button (lower-right) opens a short summary; full reference is **[docs/controls.md](docs/controls.md)** in the repo.
 - **VR**: **Enter VR** (immersive session on supported browsers / Quest Browser).
 
 ## Quest testing (manual QA)
@@ -128,6 +138,7 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - Projects and metadata live in IndexedDB (`spatial-mind-canvas` database).
 - **Primary portable backup:** **Export ZIP** (toolbar) — `.smc.zip` with `manifest.json`, `project.json`, and `media/` blobs. **Import JSON / ZIP** on the home screen accepts `.zip` or `.json`.
 - **Export JSON** (toolbar) downloads a single `.smc.json` (no embedded media blobs); useful for quick text backup or debugging.
+- **Local snapshots** (version history) stay in the `mapSnapshots` store and are **not** part of JSON or ZIP exports.
 - Media files are stored as binary blobs in IndexedDB and referenced from the project manifest; ZIP export includes those blobs for a full round-trip.
 
 ## Architecture (short)
@@ -146,7 +157,7 @@ Or with GitHub CLI: `gh repo create spatial-mind-canvas --public --source=. --re
 - `src/input/xr/handGestures.ts` — hand-tracking UX policy (e.g. when to hide advanced authoring).
 - `src/input/interactionPhase.ts` — high-level interaction phase notes (desktop vs modal vs search).
 - `src/input/sessionTypes.ts`, `src/input/sessionMachine.ts` — interaction session **kinds** and pure helpers (link preview deduping, orbit lock); **`interactionSession`** in `rootStore` is the authoritative live gesture state.
-- `src/persistence/` — IndexedDB + Zod schemas; `zipBundle.ts` for import/export archives.
+- `src/persistence/` — IndexedDB + Zod schemas; `zipBundle.ts` for import/export archives; `snapshotPayload.ts` and `mapSnapshotRepository.ts` validate and store **Map → Version history** checkpoints.
 - `src/media/` — quota helpers and image thumbnails.
 - `src/audio/` — `webAudioContext`, soft **ambient** bed, and **interaction** cue helpers consumed by the UI layer.
 - `src/scene/` — R3F `SceneCanvas`, environment (`WhiteVoid`, `SkyGradient`, `CalmParticles`), graph (`WorldRoot`, `InteractionPlane`, `NodeMeshes`, `EdgeMeshes`, `NodeHandles`, `AxisGuides`, `LinkPreview`, `FloorGrid`, …), shared **interaction** colors/tokens (`src/scene/visual/interactionTokens.ts` — link line, HUD hints, handle styling). WebXR (`src/scene/xr/`: `XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`). **`xrStore.ts`** configures `@react-three/xr` (blue ray pointer, DOM overlay, no auto `offerSession`); in **dev**, IWER Meta Quest 3 emulation disables the synthetic room layer so the simulator shows the app scene; production uses the device runtime only.

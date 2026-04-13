@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useRootStore } from '../store/rootStore'
+import { TemplatePickerModal } from './TemplatePickerModal'
 
 export function ProjectHome() {
+  const [templateOpen, setTemplateOpen] = useState(false)
   const index = useRootStore((s) => s.projectIndex)
   const openProject = useRootStore((s) => s.openProject)
   const newBlank = useRootStore((s) => s.newBlankProject)
@@ -11,6 +14,7 @@ export function ProjectHome() {
 
   return (
     <div className="project-home">
+      <TemplatePickerModal open={templateOpen} onClose={() => setTemplateOpen(false)} />
       <h1>Spatial Mind Canvas</h1>
       <p style={{ margin: 0, color: '#5a6578' }}>
         Local, calm 3D mind maps. Your projects stay on this device.
@@ -23,6 +27,14 @@ export function ProjectHome() {
           onClick={() => void newBlank()}
         >
           New blank map
+        </button>
+        <button
+          type="button"
+          className="panel"
+          style={{ padding: '10px 16px', cursor: 'pointer', border: 'none' }}
+          onClick={() => setTemplateOpen(true)}
+        >
+          New from template…
         </button>
         <label
           className="panel"
@@ -90,7 +102,9 @@ export function ProjectHome() {
           </div>
         ))}
         {index.length === 0 && (
-          <p style={{ color: '#7a8699' }}>No saved maps yet. Create a new blank map to begin.</p>
+          <p style={{ color: '#7a8699' }}>
+            No saved maps yet. Start from a template or create a blank map.
+          </p>
         )}
       </div>
     </div>

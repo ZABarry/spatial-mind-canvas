@@ -70,7 +70,9 @@ export function HelpControls() {
           >
             <h2 id="help-title">Controls</h2>
             <p style={{ margin: '0 0 14px', fontSize: 13, color: '#6b7280' }}>
-              Reference for the canvas on desktop and in VR.
+              Short summary for the canvas on desktop and in VR. The repo’s full reference (terminology, recovery,
+              hand-tracking–lite, exports) is <strong>docs/controls.md</strong>. QA flows:{' '}
+              <strong>docs/golden-paths.md</strong>.
             </p>
 
             <div className="help-columns">

@@ -1,8 +1,9 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Environment, OrbitControls, useTexture } from '@react-three/drei'
 import { XR, NotInXR, XROrigin, useXR } from '@react-three/xr'
 import type { ReactNode } from 'react'
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
+import { EquirectangularReflectionMapping, LinearSRGBColorSpace } from 'three'
 import type { Group } from 'three'
 import { WhiteVoid } from './environment/WhiteVoid'
 import { CalmParticles } from './environment/CalmParticles'
@@ -27,6 +28,27 @@ import { XrHelpHud } from './xr/XrHelpHud'
 import { XrNodeRadial } from './xr/XrNodeRadial'
 import { XrStatusHud } from './xr/XrStatusHud'
 import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
+
+/**
+ * Drei's `Environment` with `files` + `.jpg` uses HDRJPGLoader (gain-mapped JPEG-R). Plain
+ * equirectangular JPEGs lack that metadata and log a warning. Loading with TextureLoader avoids it.
+ */
+function EquirectJpegEnvironment({
+  url,
+  environmentIntensity,
+}: {
+  url: string
+  environmentIntensity?: number
+}) {
+  const loaded = useTexture(url)
+  const map = useMemo(() => {
+    const t = loaded.clone()
+    t.mapping = EquirectangularReflectionMapping
+    t.colorSpace = LinearSRGBColorSpace
+    return t
+  }, [loaded])
+  return <Environment map={map} background={false} environmentIntensity={environmentIntensity} />
+}
 
 function OrbitIfFlat() {
   const session = useXR((s) => s.session)
@@ -81,6 +103,7 @@ export function SceneCanvas() {
       <XR store={xrStore}>
         <XrSessionBridge />
         <WhiteVoid />
+        <EquirectJpegEnvironment url="/HDRI_.jpg" environmentIntensity={0.75} />
         <CalmParticles />
         <TravelLocomotion>
           <XrNodeDetailPanel />

@@ -32,7 +32,7 @@ export function createMapSnapshotRepository() {
     async listByProject(projectId: string): Promise<MapSnapshotRecord[]> {
       const db = await getDb()
       const tx = db.transaction('mapSnapshots', 'readonly')
-      const list = await tx.store.index('byProject').getAll(projectId)
+      const list = await tx.store.index('byProject').getAll(IDBKeyRange.only(projectId))
       await tx.done
       list.sort((a, b) => b.createdAt - a.createdAt)
       return list
@@ -51,7 +51,7 @@ export function createMapSnapshotRepository() {
     async deleteAllForProject(projectId: string): Promise<void> {
       const db = await getDb()
       const tx = db.transaction('mapSnapshots', 'readwrite')
-      const list = await tx.store.index('byProject').getAll(projectId)
+      const list = await tx.store.index('byProject').getAll(IDBKeyRange.only(projectId))
       for (const r of list) {
         await tx.store.delete(r.id)
       }
@@ -64,7 +64,7 @@ async function trimOldSnapshots(projectId: string): Promise<void> {
   const db = await getDb()
   const tx = db.transaction('mapSnapshots', 'readwrite')
   const store = tx.store
-  const list = await store.index('byProject').getAll(projectId)
+  const list = await store.index('byProject').getAll(IDBKeyRange.only(projectId))
   if (list.length <= MAX_SNAPSHOTS_PER_PROJECT) {
     await tx.done
     return

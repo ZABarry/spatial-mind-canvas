@@ -138,13 +138,22 @@ function cloneProject(p: Project): Project {
 
 /** Map-only settings for JSON/ZIP export (device prefs live in app metadata). */
 function mapOnlySettings(s: Project['settings']): Project['settings'] {
+  const d = defaultUserSettings()
   return {
-    ...defaultUserSettings(),
+    ...d,
     focusHopDepth: s.focusHopDepth,
     labelBudget: s.labelBudget,
     showAllLabels: s.showAllLabels,
     worldAxisControls: s.worldAxisControls,
     floorGrid: s.floorGrid,
+    worldBackgroundHorizon: s.worldBackgroundHorizon ?? d.worldBackgroundHorizon,
+    worldBackgroundZenith: s.worldBackgroundZenith ?? d.worldBackgroundZenith,
+    worldBackgroundExponent: s.worldBackgroundExponent ?? d.worldBackgroundExponent,
+    particlesCount: s.particlesCount ?? d.particlesCount,
+    particlesSize: s.particlesSize ?? d.particlesSize,
+    particlesColor: s.particlesColor ?? d.particlesColor,
+    particlesOpacity: s.particlesOpacity ?? d.particlesOpacity,
+    particlesSpeed: s.particlesSpeed ?? d.particlesSpeed,
   }
 }
 
