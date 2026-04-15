@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { nextChildPosition } from '../../graph/selectors'
 import {
+  DEFAULT_NODE_COLOR,
   NODE_LABEL_OUTLINE_DEFAULT,
   NODE_LABEL_TEXT_DEFAULT,
   NODE_SHAPES,
@@ -13,8 +14,6 @@ import {
 import { useRootStore } from '../../store/rootStore'
 import { MediaAttachmentRow } from '../MediaAttachmentRow'
 
-const DEFAULT_NODE_HEX = '#7eb8da'
-
 function colorInputHex(css: string): string {
   const t = css.trim()
   if (/^#[0-9A-Fa-f]{6}$/i.test(t)) return t.toLowerCase()
@@ -23,7 +22,7 @@ function colorInputHex(css: string): string {
     const x = m[1]!
     return `#${x[0]}${x[0]}${x[1]}${x[1]}${x[2]}${x[2]}`.toLowerCase()
   }
-  return DEFAULT_NODE_HEX
+  return DEFAULT_NODE_COLOR
 }
 
 function shapeLabel(s: NodeShape): string {

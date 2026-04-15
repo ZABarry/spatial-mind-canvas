@@ -10,6 +10,8 @@ function base(over: Partial<WorldGrabGuardState> = {}): WorldGrabGuardState {
     navigationMode: 'world',
     interactionSession: idleSession,
     searchOpen: false,
+    mapHistoryOpen: false,
+    bookmarksPanelOpen: false,
     detailNodeId: null,
     settingsOpen: false,
     confirmDialog: null,
@@ -50,6 +52,8 @@ describe('canBeginWorldGrab', () => {
 
   it('blocks when UI overlays are open', () => {
     expect(canBeginWorldGrab(base({ searchOpen: true }))).toBe(false)
+    expect(canBeginWorldGrab(base({ mapHistoryOpen: true }))).toBe(false)
+    expect(canBeginWorldGrab(base({ bookmarksPanelOpen: true }))).toBe(false)
     expect(canBeginWorldGrab(base({ detailNodeId: 'n1' }))).toBe(false)
     expect(canBeginWorldGrab(base({ settingsOpen: true }))).toBe(false)
     expect(canBeginWorldGrab(base({ confirmDialog: { title: 'x', message: 'y', onConfirm: () => {} } }))).toBe(false)
@@ -68,6 +72,8 @@ describe('shouldIgnoreXrGraphSelect', () => {
 
   it('is true when flat/HTML overlays block graph aim', () => {
     expect(shouldIgnoreXrGraphSelect(base({ searchOpen: true }))).toBe(true)
+    expect(shouldIgnoreXrGraphSelect(base({ mapHistoryOpen: true }))).toBe(true)
+    expect(shouldIgnoreXrGraphSelect(base({ bookmarksPanelOpen: true }))).toBe(true)
     expect(shouldIgnoreXrGraphSelect(base({ detailNodeId: 'x' }))).toBe(true)
     expect(shouldIgnoreXrGraphSelect(base({ settingsOpen: true }))).toBe(true)
     expect(shouldIgnoreXrGraphSelect(base({ confirmDialog: {} }))).toBe(true)

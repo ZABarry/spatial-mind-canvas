@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { COPY_HAND_TRACKING_LITE } from '../scene/xr/productCopy'
 
 function Kbd({ children }: { children: ReactNode }) {
   return (
@@ -175,13 +176,17 @@ export function HelpControls() {
                     status HUD.
                   </li>
                   <li>
+                    <strong>Hand-tracking–lite</strong> — {COPY_HAND_TRACKING_LITE}
+                  </li>
+                  <li>
                     <strong>Wrist menu (global)</strong> — On the <strong>left</strong>: with <strong>controllers</strong>,
                     toggle with the <strong>secondary face button</strong> (often Y); with <strong>hand tracking</strong>,
-                    turn your palm toward you. Includes Library, Search, Settings, Undo, Redo, <strong>Reset view</strong>,{' '}
+                    turn your palm toward you. Includes Library, Search, <strong>Version history</strong>,{' '}
+                    <strong>Bookmarks</strong>, Settings, Undo, Redo, <strong>Reset view</strong>,{' '}
                     <strong>Recenter</strong> (same as Home on desktop), <strong>Reset scale</strong>,{' '}
                     <strong>Cancel</strong>, <strong>Switch to Travel / Switch to World</strong>, Help, Exit VR. The{' '}
                     <strong>node radial</strong> holds Child, Link, Inspect, Delete, Focus, and Recenter.{' '}
-                    <strong>Layout</strong>, <strong>bookmarks</strong>, and <strong>export</strong> stay on the flat
+                    <strong>Layout</strong> and <strong>export</strong> stay on the flat
                     toolbar (exit VR to use them).
                   </li>
                   <li>

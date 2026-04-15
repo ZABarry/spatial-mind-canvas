@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { createWithEqualityFn } from 'zustand/traditional'
 import { nanoid } from 'nanoid'
 import type { AppAction } from '../input/actions'
 import { withLinkPreviewTarget } from '../input/sessionMachine'
@@ -41,6 +41,8 @@ import {
   META_DEVICE_PREFS,
   META_LAST_PROJECT,
   META_ONBOARDING_CORE_COMPLETE,
+  META_ONBOARDING_DID_RECENTER,
+  META_ONBOARDING_DID_UNDO,
   META_ONBOARDING_DISMISSED,
   META_ONBOARDING_LEGACY_DONE,
   META_ONBOARDING_SEEN_SELECTION,
@@ -52,8 +54,8 @@ import {
   buildProjectHistoryEntry,
   type HistoryEntry,
 } from '../input/historyTransactions'
-import Fuse from 'fuse.js'
 import { playInteractionCue } from '../audio/interactionCues'
+import { rebuildSearchIndex, shouldRebuildSearchIndex } from './searchIndex'
 
 export type AppView = 'home' | 'scene'
 
@@ -98,9 +100,21 @@ export interface RootState {
   onboardingDismissed: boolean
   onboardingCoreComplete: boolean
   onboardingSeenSelection: boolean
+  /** Guided path: Recenter step (IndexedDB meta). */
+  onboardingDidRecenter: boolean
+  /** Guided path: Undo step (IndexedDB meta). */
+  onboardingDidUndo: boolean
+  /** One-shot “first success” ribbon after guided path completes. */
+  onboardingCelebration: boolean
   settingsOpen: boolean
   /** Desktop: version history modal (local snapshots). */
   mapHistoryOpen: boolean
+  /** XR: bookmarks list panel (world-space HTML). */
+  bookmarksPanelOpen: boolean
+  /** Autosave / manual save feedback for the toolbar and XR HUD. */
+  saveIndicator: 'idle' | 'pending' | 'saving' | 'saved' | 'error'
+  /** Short non-blocking copy for snapshot / import / export outcomes. */
+  feedbackMessage: { text: string; tone: 'success' | 'error' | 'info'; at: number } | null
   confirmDialog: { title: string; message: string; onConfirm: () => void } | null
   /** Text prompt for VR (e.g. bookmark name); replaces `window.prompt` while immersive. */
   textPromptDialog: { title: string; defaultValue: string; onSubmit: (value: string) => void } | null
@@ -140,6 +154,7 @@ export interface RootState {
   importProject: (file: File) => Promise<void>
   saveNow: () => Promise<void>
   setMapHistoryOpen: (open: boolean) => void
+  setBookmarksPanelOpen: (open: boolean) => void
   createMapSnapshot: (label?: string) => Promise<void>
   restoreMapSnapshot: (snapshotId: string, options: { saveBeforeRestore: boolean }) => Promise<void>
 }
@@ -187,41 +202,11 @@ function finalizeWorldGrab(get: () => RootState, set: (partial: Partial<RootStat
   }
 }
 
-let fuse: Fuse<{ id: string; text: string }> | null = null
-
-function rebuildSearchIndex(project: Project) {
-  const items: { id: string; text: string }[] = []
-  for (const n of Object.values(project.graph.nodes)) {
-    items.push({
-      id: n.id,
-      text: [n.title, n.shortDescription, n.note, ...n.tags].join('\n'),
-    })
-  }
-  for (const m of Object.values(project.mediaManifest)) {
-    items.push({ id: `media:${m.id}`, text: m.filename })
-  }
-  fuse = new Fuse(items, { keys: ['text'], threshold: 0.35 })
-}
-
-/** Search index only tracks node text/tags and media filenames — skip hot paths (e.g. VR edge drawing). */
-function shouldRebuildSearchIndex(a: AppAction): boolean {
-  switch (a.type) {
-    case 'createNodeAt':
-    case 'spawnChildBranches':
-    case 'deleteNode':
-    case 'deleteSelection':
-    case 'updateNodeProps':
-    case 'attachMedia':
-    case 'undo':
-    case 'redo':
-    case 'finishConnection':
-      return true
-    default:
-      return false
-  }
-}
-
-export const useRootStore = create<RootState>((set, get) => {
+/**
+ * Zustand root store — domains: project lifecycle, graph editing (`dispatch`), XR/UI overlays,
+ * persistence (IndexedDB + autosave), onboarding metadata, local snapshots, search index (see `./searchIndex`).
+ */
+export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
   function commit(_label: string, mutator: (p: Project) => void) {
     const state = get()
     if (!state.project) return
@@ -263,7 +248,16 @@ export const useRootStore = create<RootState>((set, get) => {
         if (!last) break
         const audio = get().devicePreferences.audioEnabled
         last.undo()
-        set({ historyPast: past.slice(0, -1), historyFuture: [last, ...get().historyFuture] })
+        const stAfter = get()
+        const nextPast = past.slice(0, -1)
+        const nextFut = [last, ...stAfter.historyFuture]
+        const ob = get()
+        const patch: Partial<RootState> = { historyPast: nextPast, historyFuture: nextFut }
+        if (!ob.onboardingDismissed && !ob.onboardingCoreComplete && !ob.onboardingDidUndo) {
+          patch.onboardingDidUndo = true
+          void setMeta(META_ONBOARDING_DID_UNDO, true)
+        }
+        set(patch)
         if (audio) playInteractionCue('undo', true)
         break
       }
@@ -704,7 +698,13 @@ export const useRootStore = create<RootState>((set, get) => {
         if (!p) break
         const primary = get().selection.primaryNodeId ?? get().selection.nodeIds[0]
         if (!primary || !p.graph.nodes[primary]) break
-        set({ centerViewTick: get().centerViewTick + 1 })
+        const st = get()
+        const patch: Partial<RootState> = { centerViewTick: st.centerViewTick + 1 }
+        if (!st.onboardingDismissed && !st.onboardingCoreComplete && !st.onboardingDidRecenter) {
+          patch.onboardingDidRecenter = true
+          void setMeta(META_ONBOARDING_DID_RECENTER, true)
+        }
+        set(patch)
         break
       }
       case 'addBookmark': {
@@ -1039,8 +1039,14 @@ export const useRootStore = create<RootState>((set, get) => {
     onboardingDismissed: false,
     onboardingCoreComplete: false,
     onboardingSeenSelection: false,
+    onboardingDidRecenter: false,
+    onboardingDidUndo: false,
+    onboardingCelebration: false,
     settingsOpen: false,
     mapHistoryOpen: false,
+    bookmarksPanelOpen: false,
+    saveIndicator: 'idle',
+    feedbackMessage: null,
     confirmDialog: null,
     textPromptDialog: null,
     xrHelpOpen: false,
@@ -1078,6 +1084,8 @@ export const useRootStore = create<RootState>((set, get) => {
         ((await getMeta(META_ONBOARDING_LEGACY_DONE)) as boolean | undefined)
       const coreDone = (await getMeta(META_ONBOARDING_CORE_COMPLETE)) as boolean | undefined
       const seenSel = (await getMeta(META_ONBOARDING_SEEN_SELECTION)) as boolean | undefined
+      const didRe = (await getMeta(META_ONBOARDING_DID_RECENTER)) as boolean | undefined
+      const didUn = (await getMeta(META_ONBOARDING_DID_UNDO)) as boolean | undefined
       const rawDev = (await getMeta(META_DEVICE_PREFS)) as Partial<DevicePreferences> | undefined
       const devicePreferences = { ...defaultDevicePreferences(), ...rawDev }
       set({
@@ -1088,6 +1096,8 @@ export const useRootStore = create<RootState>((set, get) => {
         onboardingDismissed: !!dismissed,
         onboardingCoreComplete: !!coreDone,
         onboardingSeenSelection: !!seenSel,
+        onboardingDidRecenter: !!didRe,
+        onboardingDidUndo: !!didUn,
         devicePreferences,
       })
       if (lastId && ids.includes(lastId)) {
@@ -1129,6 +1139,8 @@ export const useRootStore = create<RootState>((set, get) => {
         textPromptDialog: null,
         xrHelpOpen: false,
         mapHistoryOpen: false,
+        bookmarksPanelOpen: false,
+        feedbackMessage: null,
         interactionSession: idleSession,
         worldAxisDragActive: false,
         pendingNodeDrag: null,
@@ -1167,15 +1179,22 @@ export const useRootStore = create<RootState>((set, get) => {
         mediaAttach: null,
       })
     },
-    setMapHistoryOpen: (open) => set({ mapHistoryOpen: open }),
+    setMapHistoryOpen: (open) => set({ mapHistoryOpen: open, ...(open ? { bookmarksPanelOpen: false } : {}) }),
+    setBookmarksPanelOpen: (open: boolean) =>
+      set({ bookmarksPanelOpen: open, ...(open ? { mapHistoryOpen: false } : {}) }),
     createMapSnapshot: async (label) => {
       const p = get().project
       if (!p) return
       const payload = buildMapSnapshotPayload(p)
       try {
         await mapSnapshots.create(p.id, payload, label)
+        set({
+          feedbackMessage: { text: 'Snapshot saved', tone: 'success', at: Date.now() },
+        })
       } catch {
-        window.alert('Could not save snapshot.')
+        set({
+          feedbackMessage: { text: 'Could not save snapshot', tone: 'error', at: Date.now() },
+        })
       }
     },
     restoreMapSnapshot: async (snapshotId, options) => {
@@ -1202,7 +1221,10 @@ export const useRootStore = create<RootState>((set, get) => {
         mapHistoryOpen: false,
       })
       await repo.save(next)
-      set({ projectIndex: await buildIndex(repo) })
+      set({
+        projectIndex: await buildIndex(repo),
+        feedbackMessage: { text: 'Map restored from snapshot', tone: 'success', at: Date.now() },
+      })
     },
     duplicateCurrentProject: async () => {
       const repo = get().repo
@@ -1327,12 +1349,12 @@ export const useRootStore = create<RootState>((set, get) => {
         const approx = estimateZipUncompressedSize(u8)
         const space = await checkSpaceForBytes(approx)
         if (!space.ok) {
-          window.alert(space.message)
+          set({ feedbackMessage: { text: space.message, tone: 'error', at: Date.now() } })
           return
         }
         const parsed = await parseProjectZip(u8, media)
         if (!parsed.ok) {
-          window.alert(parsed.error)
+          set({ feedbackMessage: { text: parsed.error, tone: 'error', at: Date.now() } })
           return
         }
         const data = parsed.project
@@ -1343,7 +1365,9 @@ export const useRootStore = create<RootState>((set, get) => {
         data.lastOpenedAt = t
         const valid = ProjectSchema.safeParse(data)
         if (!valid.success) {
-          window.alert('Imported ZIP project failed schema validation')
+          set({
+            feedbackMessage: { text: 'Imported ZIP failed schema validation', tone: 'error', at: Date.now() },
+          })
           return
         }
         await repo.save(valid.data as Project)
@@ -1355,12 +1379,18 @@ export const useRootStore = create<RootState>((set, get) => {
           projectIndex: await buildIndex(repo),
           interactionSession: idleSession,
           mediaAttach: null,
+          feedbackMessage: { text: 'Imported map from ZIP', tone: 'success', at: Date.now() },
         })
         return
       }
       const text = new TextDecoder().decode(buf)
       const parsed = ProjectSchema.safeParse(JSON.parse(text))
-      if (!parsed.success) return
+      if (!parsed.success) {
+        set({
+          feedbackMessage: { text: 'Imported JSON failed validation', tone: 'error', at: Date.now() },
+        })
+        return
+      }
       const data = parsed.data as Project
       data.id = nanoid()
       const t = Date.now()
@@ -1376,15 +1406,21 @@ export const useRootStore = create<RootState>((set, get) => {
         projectIndex: await buildIndex(repo),
         interactionSession: idleSession,
         mediaAttach: null,
+        feedbackMessage: { text: 'Imported map from JSON', tone: 'success', at: Date.now() },
       })
     },
     saveNow: async () => {
       const repo = get().repo
       const p = get().project
       if (!repo || !p) return
+      set({ saveIndicator: 'saving' })
       p.updatedAt = Date.now()
-      await repo.save(p)
-      set({ projectIndex: await buildIndex(repo) })
+      try {
+        await repo.save(p)
+        set({ projectIndex: await buildIndex(repo), saveIndicator: 'saved' })
+      } catch {
+        set({ saveIndicator: 'error' })
+      }
     },
   }
 })
@@ -1409,6 +1445,7 @@ async function buildIndex(repo: ProjectRepository) {
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null
 useRootStore.subscribe((s, p) => {
   if (!s.ready || !s.project || s.project === p.project) return
+  useRootStore.setState({ saveIndicator: 'pending' })
   if (autosaveTimer) clearTimeout(autosaveTimer)
   autosaveTimer = setTimeout(() => {
     autosaveTimer = null
@@ -1418,12 +1455,17 @@ useRootStore.subscribe((s, p) => {
       void warnIfStorageAlmostFull()
       const copy = cloneProject(proj)
       copy.updatedAt = Date.now()
-      void repo.save(copy)
+      useRootStore.setState({ saveIndicator: 'saving' })
+      void repo
+        .save(copy)
+        .then(() => {
+          useRootStore.setState({ saveIndicator: 'saved' })
+        })
+        .catch(() => {
+          useRootStore.setState({ saveIndicator: 'error' })
+        })
     }
   }, 500)
 })
 
-export function runSearchQuery(query: string): string[] {
-  if (!fuse || !query.trim()) return []
-  return fuse.search(query).map((r) => r.item.id)
-}
+export { runSearchQuery } from './searchIndex'

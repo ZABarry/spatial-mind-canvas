@@ -4,6 +4,8 @@
 
 **Spatial Mind Canvas** is primarily a **solo, local, spatial ideation tool**: a calm **browser-based** 3D / XR canvas for connecting ideas, notes, and media. The immediate goal is **excellent individual thinking**—fast capture, clear structure, and comfortable **Quest-first** WebXR—not a multiplayer or cloud collaboration platform.
 
+For a concise **feature ledger** (shipped vs partial vs out of scope), see **[feature-status.md](feature-status.md)**.
+
 ## Local-first now
 
 - Data lives **on the device** (IndexedDB) unless the user **exports** a portable JSON or ZIP.

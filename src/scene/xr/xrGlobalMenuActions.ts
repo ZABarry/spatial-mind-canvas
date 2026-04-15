@@ -6,6 +6,8 @@ export type XrGlobalMenuCommand =
   | 'library'
   | 'search'
   | 'settings'
+  | 'mapHistory'
+  | 'bookmarks'
   | 'undo'
   | 'redo'
   | 'resetView'
@@ -26,6 +28,12 @@ export function runXrGlobalMenuCommand(cmd: XrGlobalMenuCommand) {
       break
     case 'settings':
       cmds.openSettings()
+      break
+    case 'mapHistory':
+      cmds.openMapHistory()
+      break
+    case 'bookmarks':
+      cmds.openBookmarksPanel()
       break
     case 'undo':
       cmds.undo()

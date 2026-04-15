@@ -30,6 +30,10 @@ import {
 } from '../../utils/xrController'
 import { nodeMeshEmissive } from '../visual/interactionTokens'
 import { xrLastNodeSelectControllerIndex } from '../xr/xrSelectionRefs'
+import { clearNodePressAnchor, recordNodePressAnchor } from '../graphPointerGesture'
+
+/** Pixels of movement before a desktop press becomes a node drag (clicks stay selection-only). */
+const DESKTOP_DRAG_THRESHOLD_PX = 6
 
 function NodeItem({
   n,
@@ -183,6 +187,10 @@ function NodeItem({
         ref={meshRef}
         geometry={geom}
         userData={{ nodeId: n.id }}
+        onClick={(e) => {
+          e.stopPropagation()
+          clearNodePressAnchor()
+        }}
         onPointerOver={(e) => {
           e.stopPropagation()
           useRootStore.getState().dispatch({ type: 'setHover', nodeId: n.id })
@@ -209,6 +217,7 @@ function NodeItem({
             xrDragControllerIdx.current = null
           }
           const ev = e.nativeEvent as PointerEvent
+          if (!gl.xr.isPresenting) recordNodePressAnchor(ev)
           const additive = ev.ctrlKey || ev.metaKey
           useRootStore.getState().dispatch({
             type: 'selectNodes',
@@ -219,17 +228,44 @@ function NodeItem({
             xrLastNodeSelectControllerIndex.current = xrControllerIndexFromRayOrigin(gl, e.ray.origin)
           }
           if (e.button === 0 && !n.pinned) {
-            setDragging(true)
-            const dragPointerId =
-              gl.xr.isPresenting && e.ray
+            if (gl.xr.isPresenting) {
+              setDragging(true)
+              const dragPointerId = e.ray
                 ? xrPointerIdFromControllerIndex(xrControllerIndexFromRayOrigin(gl, e.ray.origin))
                 : undefined
-            useRootStore.getState().dispatch({
-              type: 'setNodeDragActive',
-              active: true,
-              nodeId: n.id,
-              ...(dragPointerId ? { pointerId: dragPointerId } : {}),
-            })
+              useRootStore.getState().dispatch({
+                type: 'setNodeDragActive',
+                active: true,
+                nodeId: n.id,
+                ...(dragPointerId ? { pointerId: dragPointerId } : {}),
+              })
+            } else {
+              const startX = ev.clientX
+              const startY = ev.clientY
+              const clearArm = () => {
+                window.removeEventListener('pointermove', onArmMove)
+                window.removeEventListener('pointerup', clearArm)
+                window.removeEventListener('pointercancel', clearArm)
+              }
+              const onArmMove = (pe: PointerEvent) => {
+                if (
+                  Math.hypot(pe.clientX - startX, pe.clientY - startY) <
+                  DESKTOP_DRAG_THRESHOLD_PX
+                ) {
+                  return
+                }
+                clearArm()
+                setDragging(true)
+                useRootStore.getState().dispatch({
+                  type: 'setNodeDragActive',
+                  active: true,
+                  nodeId: n.id,
+                })
+              }
+              window.addEventListener('pointermove', onArmMove, { passive: true })
+              window.addEventListener('pointerup', clearArm)
+              window.addEventListener('pointercancel', clearArm)
+            }
           }
         }}
         onPointerUp={(e) => {

@@ -6,12 +6,13 @@ These five flows define the core product. Verify after meaningful interaction ch
 
 **Expected**
 
-1. **Desktop** — A **Start here** strip shows one short action-first cue (place → select → link or child → rename or Inspect). **Dismiss** hides it; completing the path hides it and persists.
-2. **VR** — The same milestones appear as compact lines on the **status HUD** (no floating HTML strip). Dismiss/progress syncs with desktop via app metadata.
+1. **Desktop** — **Guided start** shows a short checklist (place → select → link or child → rename or inspect → **Recenter** → **Undo**) plus the current **next step** cue. **Dismiss** skips the guide; completing the path shows a **You’re set** ribbon once and persists completion in metadata.
+2. **VR** — The same milestones appear on the **status HUD** when idle (no floating HTML strip). Dismiss/progress syncs with desktop via IndexedDB metadata.
 
 **Checklist**
 
-- [ ] No long multi-step text carousel; cues match real graph/selection state.
+- [ ] No long carousel; steps reflect real graph/selection/onboarding flags.
+- [ ] Recenter and Undo steps register when those actions succeed during the guided path.
 
 ## 1. Desktop: create node → link node → inspect node
 

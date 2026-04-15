@@ -11,7 +11,9 @@ import {
   getOnboardingMilestone,
   shouldShowOnboarding,
 } from '../../ui/onboarding/onboardingModel'
-import { interactionTokens } from '../visual/interactionTokens'
+import { interactionTokens, isValidLinkNodeTarget } from '../visual/interactionTokens'
+import { COPY_WORLD_VS_TRAVEL_SHORT } from './productCopy'
+import { formatSceneMetricsLine } from '../sceneMetrics'
 
 const _dir = new Vector3()
 const _up = new Vector3()
@@ -38,6 +40,12 @@ export function XrStatusHud() {
   const onboardingDismissed = useRootStore((s) => s.onboardingDismissed)
   const onboardingCoreComplete = useRootStore((s) => s.onboardingCoreComplete)
   const onboardingSeenSelection = useRootStore((s) => s.onboardingSeenSelection)
+  const onboardingDidRecenter = useRootStore((s) => s.onboardingDidRecenter)
+  const onboardingDidUndo = useRootStore((s) => s.onboardingDidUndo)
+  const mapHistoryOpen = useRootStore((s) => s.mapHistoryOpen)
+  const bookmarksPanelOpen = useRootStore((s) => s.bookmarksPanelOpen)
+  const saveIndicator = useRootStore((s) => s.saveIndicator)
+  const feedbackMessage = useRootStore((s) => s.feedbackMessage)
   const groupRef = useRef<Group>(null)
   const { camera } = useThree()
 
@@ -51,12 +59,12 @@ export function XrStatusHud() {
 
   const line3 = useMemo(() => {
     if (nav === 'travel') {
-      return 'Left stick: move/strafe · Right stick: turn · Y: wrist menu · Dominant hand (Settings) biases aim'
+      return `${COPY_WORLD_VS_TRAVEL_SHORT} Left stick: move/strafe · Right stick: turn · Y: wrist menu`
     }
     if (handPrimary) {
       return 'Hand mode: pinch/select · palm opens menu · Radial: Child & Inspect — controllers: full Link'
     }
-    return 'Trigger: select/confirm · Grip: move/scale graph (not during menus) · Y: wrist menu · Radial: node actions'
+    return `${COPY_WORLD_VS_TRAVEL_SHORT} Trigger: select/confirm · Grip: move/scale graph · Y: wrist · Radial: node actions`
   }, [nav, handPrimary])
 
   const linkHudColor = useMemo(() => {
@@ -70,7 +78,13 @@ export function XrStatusHud() {
 
   const sessionHint = useMemo(() => {
     if (interactionSession.kind === 'link') {
-      return 'Linking: aim at another node (teal), ground, or same node to cancel'
+      const sess = interactionSession
+      const pt = sess.previewTarget
+      const from = sess.fromNodeId
+      if (isValidLinkNodeTarget(pt, from)) return 'Linking: release trigger to connect'
+      if (pt?.kind === 'ground') return 'Linking: release trigger to place a new node and connect'
+      if (pt?.kind === 'node' && pt.nodeId === from) return 'Linking: invalid — aim at another node or ground'
+      return 'Linking: aim at another node, ground, or cancel (Esc / wrist)'
     }
     if (interactionSession.kind === 'nodeDrag') return 'Dragging node'
     if (interactionSession.kind === 'worldGrab')
@@ -85,11 +99,22 @@ export function XrStatusHud() {
     if (confirmDialog) return 'Dialog open — complete or cancel (flat UI if needed)'
     if (textPromptDialog) return 'Prompt open — submit or Esc'
     if (searchOpen) return 'Search open — close from wrist Cancel'
+    if (mapHistoryOpen) return 'Version history open — Close'
+    if (bookmarksPanelOpen) return 'Bookmarks open — Close'
     if (detailNodeId) return 'Node detail open — close panel to resume'
     if (settingsOpen) return 'Settings open — close to resume'
     if (xrHelpOpen) return 'Help open — close button or wrist Cancel'
     return null
-  }, [confirmDialog, textPromptDialog, searchOpen, detailNodeId, settingsOpen, xrHelpOpen])
+  }, [
+    confirmDialog,
+    textPromptDialog,
+    searchOpen,
+    mapHistoryOpen,
+    bookmarksPanelOpen,
+    detailNodeId,
+    settingsOpen,
+    xrHelpOpen,
+  ])
 
   const onboardingRows = useMemo(() => {
     if (!shouldShowOnboarding(onboardingDismissed, onboardingCoreComplete)) return []
@@ -99,6 +124,8 @@ export function XrStatusHud() {
       primaryNodeId: primary ?? null,
       detailNodeId,
       seenSelection: onboardingSeenSelection,
+      didRecenter: onboardingDidRecenter,
+      didUndo: onboardingDidUndo,
     })
     if (m === 'complete') return []
     const surface = handPrimary ? 'xr_hand' : 'xr_controller'
@@ -115,12 +142,23 @@ export function XrStatusHud() {
     onboardingDismissed,
     onboardingCoreComplete,
     onboardingSeenSelection,
+    onboardingDidRecenter,
+    onboardingDidUndo,
     project,
     primary,
     detailNodeId,
     interactionSession.kind,
     handPrimary,
   ])
+
+  const persistHint = useMemo(() => {
+    if (feedbackMessage) return feedbackMessage.text
+    if (saveIndicator === 'pending') return 'Save: pending changes…'
+    if (saveIndicator === 'saving') return 'Save: writing…'
+    if (saveIndicator === 'saved') return 'Save: stored'
+    if (saveIndicator === 'error') return 'Save: failed — check storage'
+    return null
+  }, [feedbackMessage, saveIndicator])
 
   const st = useRootStore.getState()
   const phase = getInteractionPhase({
@@ -134,7 +172,17 @@ export function XrStatusHud() {
   })
   const lineDbg =
     import.meta.env.DEV && xrDebugHud
-      ? `dbg: phase=${phase} · dom=${dominantHand} · handOnly=${handPrimary ? 'y' : 'n'}`
+      ? `${formatSceneMetricsLine(project, {
+          searchOpen,
+          mapHistoryOpen,
+          bookmarksPanelOpen,
+          detailNodeId,
+          settingsOpen,
+          xrHelpOpen,
+          confirmDialog,
+          textPromptDialog,
+          xrHandTrackingPrimary: handPrimary,
+        })} · phase=${phase} · dom=${dominantHand}`
       : null
 
   const idleNudge = useMemo(() => {
@@ -168,6 +216,15 @@ export function XrStatusHud() {
     if (recoveryHint) {
       r.push({ text: recoveryHint, size: 0.024, color: '#b45309', maxW: 2.55 })
     }
+    if (persistHint) {
+      const c =
+        feedbackMessage?.tone === 'error' || saveIndicator === 'error'
+          ? '#b91c1c'
+          : feedbackMessage?.tone === 'success' || saveIndicator === 'saved'
+            ? '#0f766e'
+            : '#64748b'
+      r.push({ text: persistHint, size: 0.023, color: c, maxW: 2.55 })
+    }
     if (lineDbg) {
       r.push({ text: lineDbg, size: 0.022, color: '#94a3b8', maxW: 2.6 })
     }
@@ -180,6 +237,9 @@ export function XrStatusHud() {
     onboardingRows,
     sessionHint,
     recoveryHint,
+    persistHint,
+    feedbackMessage,
+    saveIndicator,
     lineDbg,
     linkHudColor,
     interactionSession.kind,

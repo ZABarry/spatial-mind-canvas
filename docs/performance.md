@@ -17,3 +17,19 @@ These are **guidelines** for Meta Quest Browser / WebXR on standalone headsets. 
 When importing large media, the app checks **storage quota** before writing blobs (`navigator.storage.estimate`).
 
 Adjust budgets in **Settings** (per map): `labelBudget`, `showAllLabels`.
+
+## Instrumentation (dev / QA)
+
+In **development**, enable **Settings → VR → XR debug HUD** while in a headset to show a compact metrics line on the **status HUD** (node/edge counts, label budget vs approximate visible labels, media counts, open panel count, input mode). Use this when validating Quest performance.
+
+### Concrete targets to test against
+
+| Signal | Comfortable band | Investigate if… |
+|--------|------------------|-----------------|
+| Node count | **&lt; 200** nodes for fluid editing on Quest | Frame drops when panning with many visible meshes |
+| Edge count | Scales with nodes; **&lt; 400** edges typical | Line draw cost + intersection tests |
+| Visible labels | At or below **label budget** (default 32) | “Show all labels” on device |
+| Nodes with attachments | **&gt; 30** nodes with media | Inspector + thumbnails; large PDFs |
+| Open XR panels | **≤ 2** heavy panels at once | Stacking search + settings + detail + history |
+
+**Remote debugging:** Chrome/Edge **inspect** Quest Browser → Performance panel; aim for stable frame time while editing.

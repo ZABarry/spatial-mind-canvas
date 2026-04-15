@@ -14,6 +14,8 @@ export function useOnboardingProgressSync() {
   const dismissed = useRootStore((s) => s.onboardingDismissed)
   const coreComplete = useRootStore((s) => s.onboardingCoreComplete)
   const seenSelection = useRootStore((s) => s.onboardingSeenSelection)
+  const didRecenter = useRootStore((s) => s.onboardingDidRecenter)
+  const didUndo = useRootStore((s) => s.onboardingDidUndo)
   const project = useRootStore((s) => s.project)
   const primary = useRootStore((s) => s.selection.primaryNodeId)
   const detailNodeId = useRootStore((s) => s.detailNodeId)
@@ -24,6 +26,8 @@ export function useOnboardingProgressSync() {
     primaryNodeId: primary ?? null,
     detailNodeId,
     seenSelection,
+    didRecenter,
+    didUndo,
   })
 
   useEffect(() => {
@@ -35,6 +39,9 @@ export function useOnboardingProgressSync() {
   useEffect(() => {
     if (!active || milestone !== 'complete') return
     void setMeta(META_ONBOARDING_CORE_COMPLETE, true)
-    useRootStore.setState({ onboardingCoreComplete: true })
+    useRootStore.setState({
+      onboardingCoreComplete: true,
+      onboardingCelebration: true,
+    })
   }, [active, milestone])
 }

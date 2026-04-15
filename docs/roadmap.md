@@ -38,6 +38,7 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | Area | Where |
 |------|--------|
 | App state, undo stack, autosave | [`src/store/rootStore.ts`](../src/store/rootStore.ts) |
+| Fuse search index | [`src/store/searchIndex.ts`](../src/store/searchIndex.ts) |
 | Semantic actions | [`src/input/actions.ts`](../src/input/actions.ts) |
 | Interaction phases helper | [`src/input/interactionPhase.ts`](../src/input/interactionPhase.ts) |
 | Interaction session (canonical link / node drag / world grab) | [`sessionTypes.ts`](../src/input/sessionTypes.ts), [`sessionMachine.ts`](../src/input/sessionMachine.ts) (preview/orbit helpers), [`sessionMachine.test.ts`](../src/input/sessionMachine.test.ts); live state in [`rootStore.ts`](../src/store/rootStore.ts) `interactionSession` |
@@ -53,7 +54,7 @@ This document reconstructs the **product intent**, **technical plan**, **milesto
 | Media store + quota on attach | [`src/media/`](../src/media/) |
 | Scene, graph meshes, connection drag (graph-local) | [`src/scene/graph/`](../src/scene/graph/) |
 | Desktop camera defaults, reset / center orbit effects | [`desktopCameraDefaults.ts`](../src/scene/desktopCameraDefaults.ts), [`ResetViewEffect.tsx`](../src/scene/ResetViewEffect.tsx), [`CenterViewEffect.tsx`](../src/scene/CenterViewEffect.tsx) |
-| XR: session bridge, confirm HUD, ray select + controller bridge, wrist menu (palm / Y), hand menu anchor stub, node radial, tool/status HUD, world-space detail/search/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
+| XR: session bridge, confirm HUD, ray select + controller bridge, wrist menu (palm / Y), hand menu anchor stub, node radial, tool/status HUD, world-space detail/search/history/bookmarks/settings/help/prompt HUDs, locomotion | [`src/scene/xr/`](../src/scene/xr/) (`XrRaycastSelect`, `XrWorldGrab`, `XrWristMenu`, `XrHandMenuAnchor`, `XrNodeRadial`, `XrStatusHud`, `XrNodeDetailPanel`, `XrSearchPanel`, `XrMapHistoryPanel`, `XrBookmarksPanel`, `XrSettingsPanel`, `XrHelpHud`, `XrTextPromptHud`, `XrConfirmHud`, `XrSessionBridge`, `xrMenuActions`, `xrGlobalMenuActions`, `palmFacing`, `xrSelectionRefs`), [`SceneCanvas.tsx`](../src/scene/SceneCanvas.tsx), [`xrStore.ts`](../src/scene/xrStore.ts) |
 | Label budget / settings & tabbed Settings UI | [`NodeMeshes.tsx`](../src/scene/graph/NodeMeshes.tsx), [`SettingsPanel.tsx`](../src/ui/SettingsPanel.tsx), [`SettingsFormBody.tsx`](../src/ui/panels/SettingsFormBody.tsx) (desktop + [`XrSettingsPanel`](../src/scene/xr/XrSettingsPanel.tsx)) |
 | Bookmarks UI | [`BookmarksMenu.tsx`](../src/ui/BookmarksMenu.tsx), toolbar |
 | PDF / image in inspector | [`MediaAttachmentRow.tsx`](../src/ui/MediaAttachmentRow.tsx), [`PdfCanvas.tsx`](../src/ui/PdfCanvas.tsx) |

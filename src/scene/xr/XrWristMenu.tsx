@@ -32,6 +32,8 @@ function buildMainMenuDefs(modeLabel: string): MenuDef[] {
   return [
     { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
     { label: 'Search', hit: { kind: 'cmd', cmd: 'search' } },
+    { label: 'History', hit: { kind: 'cmd', cmd: 'mapHistory' } },
+    { label: 'Bookmarks', hit: { kind: 'cmd', cmd: 'bookmarks' } },
     { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
     { label: 'Undo', hit: { kind: 'cmd', cmd: 'undo' } },
     { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },

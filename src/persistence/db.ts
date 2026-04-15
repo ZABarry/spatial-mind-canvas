@@ -59,6 +59,10 @@ export const META_ONBOARDING_DISMISSED = 'onboardingDismissed'
 export const META_ONBOARDING_CORE_COMPLETE = 'onboardingCoreComplete'
 /** User reached “select a node” once (persistent). */
 export const META_ONBOARDING_SEEN_SELECTION = 'onboardingSeenSelection'
+/** Guided path: user used Recenter at least once while onboarding (persistent). */
+export const META_ONBOARDING_DID_RECENTER = 'onboardingDidRecenter'
+/** Guided path: user used Undo at least once while onboarding (persistent). */
+export const META_ONBOARDING_DID_UNDO = 'onboardingDidUndo'
 
 /** @deprecated Legacy key — still read in bootstrap for migration. */
 export const META_ONBOARDING_LEGACY_DONE = 'onboardingDone'

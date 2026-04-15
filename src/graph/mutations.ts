@@ -1,6 +1,11 @@
 import { nanoid } from 'nanoid'
 import type { EdgeEntity, GraphState, NodeEntity, NodeShape } from './types'
-import { NODE_LABEL_OUTLINE_DEFAULT, NODE_LABEL_TEXT_DEFAULT } from './types'
+import {
+  DEFAULT_NODE_COLOR,
+  DEFAULT_NODE_SHAPE,
+  NODE_LABEL_OUTLINE_DEFAULT,
+  NODE_LABEL_TEXT_DEFAULT,
+} from './types'
 import type { Vec3 } from '../utils/math'
 
 const now = () => Date.now()
@@ -109,12 +114,12 @@ export function clearGraph(): GraphState {
   return { nodes: {}, edges: {} }
 }
 
-export function createNodeDefaults(position: Vec3, shape: NodeShape = 'diamond'): Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt'> {
+export function createNodeDefaults(position: Vec3, shape: NodeShape = DEFAULT_NODE_SHAPE): Omit<NodeEntity, 'id' | 'createdAt' | 'updatedAt'> {
   return {
     title: 'Idea',
     shortDescription: '',
     note: '',
-    color: '#7eb8da',
+    color: DEFAULT_NODE_COLOR,
     labelTextColor: NODE_LABEL_TEXT_DEFAULT,
     labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
     shape,

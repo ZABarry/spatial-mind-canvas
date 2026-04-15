@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRootStore } from '../store/rootStore'
+import { copyRecenterVsResetShort } from '../scene/xr/productCopy'
 import * as tb from './toolbar/sceneToolbarCommands'
 import { BookmarksDropdown } from './BookmarksMenu'
 import { StructureMenuContent } from './StructureMenu'
@@ -16,6 +17,20 @@ export function MainToolbar() {
   const project = useRootStore((s) => s.project)
   const worldAxisControls = project?.settings.worldAxisControls === true
   const floorGridOn = project?.settings.floorGrid !== false
+  const saveIndicator = useRootStore((s) => s.saveIndicator)
+  const feedbackMessage = useRootStore((s) => s.feedbackMessage)
+
+  useEffect(() => {
+    if (!feedbackMessage) return
+    const t = window.setTimeout(() => useRootStore.setState({ feedbackMessage: null }), 6000)
+    return () => window.clearTimeout(t)
+  }, [feedbackMessage])
+
+  useEffect(() => {
+    if (saveIndicator !== 'saved' && saveIndicator !== 'error') return
+    const t = window.setTimeout(() => useRootStore.setState({ saveIndicator: 'idle' }), 2800)
+    return () => window.clearTimeout(t)
+  }, [saveIndicator])
 
   if (xrSession) return null
 
@@ -40,6 +55,7 @@ export function MainToolbar() {
           type="button"
           className={navMode === 'world' ? 'toggle-on' : undefined}
           onClick={() => tb.setNavigationMode('world')}
+          title="World: manipulate the graph in place (no thumbstick locomotion)"
         >
           World
         </button>
@@ -47,6 +63,7 @@ export function MainToolbar() {
           type="button"
           className={navMode === 'travel' ? 'toggle-on' : undefined}
           onClick={() => tb.setNavigationMode('travel')}
+          title="Travel: move and turn through the space with thumbsticks"
         >
           Travel
         </button>
@@ -123,9 +140,26 @@ export function MainToolbar() {
         <button type="button" onClick={() => tb.focusSelection()}>
           Focus neighborhood (F)
         </button>
-        <button type="button" onClick={() => tb.resetView()}>
+        <button
+          type="button"
+          onClick={() => tb.centerViewOnSelection()}
+          title="Recenter: align the primary node with the orbit pivot (Home or . )"
+        >
+          Recenter selection
+        </button>
+        <button type="button" onClick={() => tb.resetView()} title="Reset view: restore default camera — not Recenter">
           Reset view
         </button>
+        <button
+          type="button"
+          onClick={() => tb.resetWorldScaleToDefault()}
+          title="Reset scale: uniform graph scale toward 1 — not Recenter or Reset view"
+        >
+          Reset scale
+        </button>
+        <p className="toolbar-menu-hint" title={copyRecenterVsResetShort()}>
+          Recenter / Reset view / Reset scale differ — hover this line for detail.
+        </p>
       </ToolbarMenu>
 
       <ToolbarMenu menuId="edit" openMenu={openMenu} setOpenMenu={setOpenMenu} label="Edit">
@@ -156,6 +190,31 @@ export function MainToolbar() {
         Settings
       </button>
 
+      <span
+        className="toolbar-save-hint"
+        style={{
+          fontSize: 12,
+          color: feedbackMessage?.tone === 'error' || saveIndicator === 'error' ? '#b91c1c' : '#64748b',
+          marginRight: 10,
+          maxWidth: 220,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+        title={feedbackMessage?.text}
+      >
+        {feedbackMessage?.text
+          ? feedbackMessage.text
+          : saveIndicator === 'pending'
+            ? 'Save pending…'
+            : saveIndicator === 'saving'
+              ? 'Saving…'
+              : saveIndicator === 'saved'
+                ? 'Saved'
+                : saveIndicator === 'error'
+                  ? 'Save failed'
+                  : ''}
+      </span>
       <span className="toolbar-project-name">{project?.name ?? ''}</span>
     </div>
     </>

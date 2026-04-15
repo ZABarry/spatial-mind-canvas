@@ -15,6 +15,14 @@ export function openMapHistory() {
   useRootStore.getState().setMapHistoryOpen(true)
 }
 
+export function openBookmarksPanel() {
+  useRootStore.getState().setBookmarksPanelOpen(true)
+}
+
+export function closeBookmarksPanel() {
+  useRootStore.getState().setBookmarksPanelOpen(false)
+}
+
 export function duplicateMap() {
   void useRootStore.getState().duplicateCurrentProject()
 }
@@ -138,7 +146,13 @@ export function cancelInteraction() {
   st.dispatch({ type: 'setPlacementPreview', preview: null })
   st.dispatch({ type: 'setSearchOpen', open: false })
   st.dispatch({ type: 'setMenuSession', menu: null })
-  useRootStore.setState({ settingsOpen: false, xrHelpOpen: false, textPromptDialog: null })
+  useRootStore.setState({
+    settingsOpen: false,
+    xrHelpOpen: false,
+    textPromptDialog: null,
+    mapHistoryOpen: false,
+    bookmarksPanelOpen: false,
+  })
 }
 
 export function undo() {

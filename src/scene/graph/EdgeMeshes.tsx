@@ -3,6 +3,7 @@ import { useXR } from '@react-three/xr'
 import * as THREE from 'three'
 import type { EdgeEntity, GraphState } from '../../graph/types'
 import { useRootStore } from '../../store/rootStore'
+import { clearNodePressAnchor } from '../graphPointerGesture'
 
 function edgePoints(graph: GraphState, e: EdgeEntity): THREE.Vector3[] {
   const a = graph.nodes[e.sourceId]?.position
@@ -70,6 +71,7 @@ export function EdgeMeshes() {
               onPointerOut={() => useRootStore.getState().dispatch({ type: 'setHover' })}
               onPointerDown={(ev) => {
                 ev.stopPropagation()
+                clearNodePressAnchor()
                 useRootStore.getState().dispatch({
                   type: 'selectEdges',
                   ids: [e.id],

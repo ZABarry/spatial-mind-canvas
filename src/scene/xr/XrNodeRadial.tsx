@@ -14,6 +14,7 @@ import {
   runNodeRecenter,
   runNodeStartLink,
 } from './xrNodeMenuActions'
+import { COPY_CONTROLLERS_FOR_LINK } from './productCopy'
 
 type RadialBtn = {
   label: string
@@ -50,7 +51,7 @@ export function XrNodeRadial() {
               label: 'Link',
               intent: 'link' as const,
               disabled: true,
-              footnote: 'Full Link on controllers',
+              footnote: COPY_CONTROLLERS_FOR_LINK,
               onPress: () => {},
             },
           ] as RadialBtn[])

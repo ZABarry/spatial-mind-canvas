@@ -22,12 +22,15 @@ import { XrWorldGrab } from './xr/XrWorldGrab'
 import { XrWristMenu } from './xr/XrWristMenu'
 import { XrNodeDetailPanel } from './xr/XrNodeDetailPanel'
 import { XrSearchPanel } from './xr/XrSearchPanel'
+import { XrMapHistoryPanel } from './xr/XrMapHistoryPanel'
+import { XrBookmarksPanel } from './xr/XrBookmarksPanel'
 import { XrSettingsPanel } from './xr/XrSettingsPanel'
 import { XrTextPromptHud } from './xr/XrTextPromptHud'
 import { XrHelpHud } from './xr/XrHelpHud'
 import { XrNodeRadial } from './xr/XrNodeRadial'
 import { XrStatusHud } from './xr/XrStatusHud'
 import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
+import { consumeSpuriousCanvasMissAfterNodePress } from './graphPointerGesture'
 
 /**
  * Drei's `Environment` with `files` + `.jpg` uses HDRJPGLoader (gain-mapped JPEG-R). Plain
@@ -60,6 +63,7 @@ function OrbitIfFlat() {
       makeDefault
       enabled={!session}
       enableRotate={!lockOrbitRotate}
+      enablePan
       minDistance={2}
       maxDistance={160}
       enableDamping
@@ -96,6 +100,7 @@ function TravelLocomotion({ children }: { children?: ReactNode }) {
 export function SceneCanvas() {
   const onPointerMissed = useCallback((e: MouseEvent) => {
     if (e.button !== 0) return
+    if (consumeSpuriousCanvasMissAfterNodePress(e)) return
     const st = useRootStore.getState()
     if (st.interactionSession.kind !== 'idle') return
     if (st.selection.nodeIds.length === 0 && st.selection.edgeIds.length === 0) return
@@ -117,6 +122,8 @@ export function SceneCanvas() {
         <TravelLocomotion>
           <XrNodeDetailPanel />
           <XrSearchPanel />
+          <XrMapHistoryPanel />
+          <XrBookmarksPanel />
           <XrSettingsPanel />
         </TravelLocomotion>
         <XrControllerInputBridge />

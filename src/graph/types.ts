@@ -44,6 +44,11 @@ export const NODE_LABEL_TEXT_DEFAULT = '#2a3140'
 /** Default outline/stroke for the floating title label. */
 export const NODE_LABEL_OUTLINE_DEFAULT = '#ffffff'
 
+/** Default fill for new nodes and color-picker fallback when parsing fails. */
+export const DEFAULT_NODE_COLOR = '#529be0'
+/** Default 3D shape for new nodes (see `scene/graph/nodeGeometry.tsx`). */
+export const DEFAULT_NODE_SHAPE: NodeShape = 'sphere'
+
 export interface NodeEntity {
   id: string
   title: string

@@ -8,6 +8,8 @@ export type WorldGrabGuardState = {
   navigationMode: NavigationMode
   interactionSession: InteractionSession
   searchOpen: boolean
+  mapHistoryOpen: boolean
+  bookmarksPanelOpen: boolean
   detailNodeId: string | null
   settingsOpen: boolean
   confirmDialog: unknown
@@ -24,6 +26,8 @@ export function canBeginWorldGrab(s: WorldGrabGuardState): boolean {
   if (s.navigationMode !== 'world') return false
   if (s.interactionSession.kind !== 'idle') return false
   if (s.searchOpen) return false
+  if (s.mapHistoryOpen) return false
+  if (s.bookmarksPanelOpen) return false
   if (s.detailNodeId) return false
   if (s.settingsOpen) return false
   if (s.confirmDialog) return false
@@ -38,6 +42,8 @@ export function canBeginWorldGrab(s: WorldGrabGuardState): boolean {
  */
 export function shouldIgnoreXrGraphSelect(s: WorldGrabGuardState): boolean {
   if (s.searchOpen) return true
+  if (s.mapHistoryOpen) return true
+  if (s.bookmarksPanelOpen) return true
   if (s.detailNodeId) return true
   if (s.settingsOpen) return true
   if (s.confirmDialog) return true

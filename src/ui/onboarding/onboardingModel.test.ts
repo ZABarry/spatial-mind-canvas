@@ -31,9 +31,16 @@ function minimalProject(overrides: Partial<Project['graph']> & { nodes?: Project
 describe('getOnboardingMilestone', () => {
   it('starts at create when graph is empty', () => {
     const p = minimalProject({})
-    expect(getOnboardingMilestone({ project: p, primaryNodeId: null, detailNodeId: null, seenSelection: false })).toBe(
-      'create',
-    )
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: null,
+        detailNodeId: null,
+        seenSelection: false,
+        didRecenter: false,
+        didUndo: false,
+      }),
+    ).toBe('create')
   })
 
   it('asks for select when nodes exist but no selection recorded', () => {
@@ -59,9 +66,16 @@ describe('getOnboardingMilestone', () => {
         },
       },
     })
-    expect(getOnboardingMilestone({ project: p, primaryNodeId: null, detailNodeId: null, seenSelection: false })).toBe(
-      'select',
-    )
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: null,
+        detailNodeId: null,
+        seenSelection: false,
+        didRecenter: false,
+        didUndo: false,
+      }),
+    ).toBe('select')
   })
 
   it('advances past select when primary is set', () => {
@@ -87,9 +101,16 @@ describe('getOnboardingMilestone', () => {
         },
       },
     })
-    expect(getOnboardingMilestone({ project: p, primaryNodeId: 'a', detailNodeId: null, seenSelection: false })).toBe(
-      'linkOrChild',
-    )
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: 'a',
+        detailNodeId: null,
+        seenSelection: false,
+        didRecenter: false,
+        didUndo: false,
+      }),
+    ).toBe('linkOrChild')
   })
 
   it('detects linkOrChild via parentId', () => {
@@ -136,11 +157,18 @@ describe('getOnboardingMilestone', () => {
     })
     expect(hasLinkOrChild(p)).toBe(true)
     expect(
-      getOnboardingMilestone({ project: p, primaryNodeId: 'b', detailNodeId: null, seenSelection: true }),
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: 'b',
+        detailNodeId: null,
+        seenSelection: true,
+        didRecenter: false,
+        didUndo: false,
+      }),
     ).toBe('renameOrInspect')
   })
 
-  it('completes when a title is non-default', () => {
+  it('asks for recenter after rename when handoff steps not done', () => {
     const p = minimalProject({
       nodes: {
         a: {
@@ -182,9 +210,124 @@ describe('getOnboardingMilestone', () => {
         },
       },
     })
-    expect(getOnboardingMilestone({ project: p, primaryNodeId: 'b', detailNodeId: null, seenSelection: true })).toBe(
-      'complete',
-    )
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: 'b',
+        detailNodeId: null,
+        seenSelection: true,
+        didRecenter: false,
+        didUndo: false,
+      }),
+    ).toBe('recenter')
+  })
+
+  it('asks for undo after recenter', () => {
+    const p = minimalProject({
+      nodes: {
+        a: {
+          id: 'a',
+          title: 'Hello',
+          shortDescription: '',
+          note: '',
+          color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
+          shape: 'diamond',
+          size: 1,
+          position: [0, 0, 0],
+          tags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          collapsed: false,
+          pinned: false,
+          mediaIds: [],
+        },
+        b: {
+          id: 'b',
+          title: DEFAULT_NEW_NODE_TITLE,
+          shortDescription: '',
+          note: '',
+          color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
+          shape: 'diamond',
+          size: 1,
+          position: [1, 0, 0],
+          tags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          collapsed: false,
+          pinned: false,
+          mediaIds: [],
+          parentId: 'a',
+        },
+      },
+    })
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: 'a',
+        detailNodeId: null,
+        seenSelection: true,
+        didRecenter: true,
+        didUndo: false,
+      }),
+    ).toBe('undo')
+  })
+
+  it('completes after undo step', () => {
+    const p = minimalProject({
+      nodes: {
+        a: {
+          id: 'a',
+          title: 'Hello',
+          shortDescription: '',
+          note: '',
+          color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
+          shape: 'diamond',
+          size: 1,
+          position: [0, 0, 0],
+          tags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          collapsed: false,
+          pinned: false,
+          mediaIds: [],
+        },
+        b: {
+          id: 'b',
+          title: DEFAULT_NEW_NODE_TITLE,
+          shortDescription: '',
+          note: '',
+          color: '#fff',
+          labelTextColor: NODE_LABEL_TEXT_DEFAULT,
+          labelOutlineColor: NODE_LABEL_OUTLINE_DEFAULT,
+          shape: 'diamond',
+          size: 1,
+          position: [1, 0, 0],
+          tags: [],
+          createdAt: 0,
+          updatedAt: 0,
+          collapsed: false,
+          pinned: false,
+          mediaIds: [],
+          parentId: 'a',
+        },
+      },
+    })
+    expect(
+      getOnboardingMilestone({
+        project: p,
+        primaryNodeId: 'a',
+        detailNodeId: null,
+        seenSelection: true,
+        didRecenter: true,
+        didUndo: true,
+      }),
+    ).toBe('complete')
   })
 })
 

@@ -89,6 +89,8 @@ In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`);
 ## Known limitations
 
 - **Hand tracking** is a reduced authoring mode; precision graph work and **Link** favor controllers.
-- **Export / layout / bookmarks** may require exiting VR for the full desktop toolbar.
-- **Performance** — Large graphs and “show all labels” can stress standalone headsets; use label budget.
+- **Export / layout** use the **desktop toolbar** (exit VR or return to Library). **Bookmarks** and **version history** also have **in-VR panels** from the wrist menu.
+- **Performance** — Large graphs and “show all labels” can stress standalone headsets; use label budget and see [performance.md](performance.md) for QA targets.
 - **Collaboration, accounts, and cloud sync** are **not** part of the current product (see [product-direction.md](product-direction.md)).
+
+See **[feature-status.md](feature-status.md)** for a fuller shipped / partial / out-of-scope ledger.
