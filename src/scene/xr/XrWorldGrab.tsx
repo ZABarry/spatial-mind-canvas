@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useXRInputSourceEvent } from '@react-three/xr'
 import {
+  isPinchApproachingGrasp,
   pinchTipDistanceM,
   updatePinchGraspActive,
   type PinchGraspHysteresis,
@@ -12,7 +13,7 @@ import { useRootStore } from '../../store/rootStore'
 import { getGrabAnchorWorld } from './anchors/xrGrabAnchor'
 
 const TRANSLATE_SENS = 2.2
-const ROT_TWIST_SENS = 2.4
+const ROT_TWIST_SENS = 1.85
 const SCALE_CLAMP = { min: 0.94, max: 1.06 } as const
 
 function handednessOrder(src: XRInputSource): number {
@@ -35,6 +36,13 @@ export function XrWorldGrab() {
   const forward = useRef(new THREE.Vector3())
   const pinchBySource = useRef(new Map<XRInputSource, PinchGraspHysteresis>())
   const tmpAnchor = useRef(new THREE.Vector3())
+  const affordRef = useRef<'idle' | 'pinchNear' | 'grab1' | 'grab2'>('idle')
+
+  const setGrabAffordance = (next: 'idle' | 'pinchNear' | 'grab1' | 'grab2') => {
+    if (affordRef.current === next) return
+    affordRef.current = next
+    useRootStore.setState({ xrGrabAffordance: next })
+  }
 
   useXRInputSourceEvent(
     'all',
@@ -69,7 +77,10 @@ export function XrWorldGrab() {
   )
 
   useFrame(() => {
-    if (!gl.xr.isPresenting) return
+    if (!gl.xr.isPresenting) {
+      setGrabAffordance('idle')
+      return
+    }
     const frame = gl.xr.getFrame()
     const refSpace = gl.xr.getReferenceSpace()
     const xrSession = gl.xr.getSession()
@@ -93,7 +104,11 @@ export function XrWorldGrab() {
     }
 
     /** Hand-primary: pinch toggles grab (controllers use squeeze events above). */
-    if (st.xrHandTrackingPrimary && st.navigationMode === 'world') {
+    if (
+      st.xrHandTrackingPrimary &&
+      st.navigationMode === 'world' &&
+      !st.devicePreferences.xrDisableHandWorldGrab
+    ) {
       for (const src of xrSession.inputSources) {
         if (!src.hand) continue
         const dist = pinchTipDistanceM(frame, refSpace, src.hand)
@@ -125,6 +140,32 @@ export function XrWorldGrab() {
 
     st = useRootStore.getState()
     const ik = st.interactionSession.kind
+
+    let afford: 'idle' | 'pinchNear' | 'grab1' | 'grab2' = 'idle'
+    if (ik === 'worldGrab') {
+      afford = lastPos.current.size >= 2 ? 'grab2' : 'grab1'
+    } else if (
+      st.xrHandTrackingPrimary &&
+      st.navigationMode === 'world' &&
+      !st.devicePreferences.xrDisableHandWorldGrab
+    ) {
+      for (const src of xrSession.inputSources) {
+        if (!src.hand) continue
+        const dist = pinchTipDistanceM(frame, refSpace, src.hand)
+        let hyst = pinchBySource.current.get(src)
+        if (!hyst) {
+          hyst = { pinched: false }
+          pinchBySource.current.set(src, hyst)
+        }
+        const pinching = updatePinchGraspActive(dist, hyst)
+        if (isPinchApproachingGrasp(dist, pinching)) {
+          afford = 'pinchNear'
+          break
+        }
+      }
+    }
+    setGrabAffordance(afford)
+
     if (st.navigationMode !== 'world' || ik !== 'worldGrab') return
 
     const sources = [...lastPos.current.keys()]
@@ -169,7 +210,7 @@ export function XrWorldGrab() {
             forward.current.normalize()
             const twist =
               (da.current.dot(forward.current) - db.current.dot(forward.current)) * ROT_TWIST_SENS
-            if (Math.abs(twist) > 0.001) {
+            if (Math.abs(twist) > 0.003) {
               st.dispatch({ type: 'rotateWorldLive', axis: [0, 1, 0], radians: twist })
             }
           }

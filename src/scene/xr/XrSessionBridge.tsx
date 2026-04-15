@@ -6,7 +6,10 @@ import { useRootStore } from '../../store/rootStore'
 export function XrSessionBridge() {
   const session = useXR((s) => s.session)
   useEffect(() => {
-    useRootStore.setState({ xrSessionActive: !!session })
+    useRootStore.setState({
+      xrSessionActive: !!session,
+      ...(!session ? { xrGrabAffordance: 'idle' as const } : {}),
+    })
   }, [session])
   return null
 }

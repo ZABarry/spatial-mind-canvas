@@ -1,4 +1,6 @@
+import { playInteractionCue } from '../../audio/interactionCues'
 import * as cmds from '../../ui/toolbar/sceneToolbarCommands'
+import { useRootStore } from '../../store/rootStore'
 import { xrStore } from '../xrStore'
 
 /** Wrist menu and global XR HUD — no node-specific actions. */
@@ -17,6 +19,8 @@ export type XrGlobalMenuCommand =
   | 'toggleMode'
   | 'help'
   | 'exitVr'
+  /** Re-snap floating HTML panels to a comfortable pose in front of you. */
+  | 'recallPanels'
 
 export function runXrGlobalMenuCommand(cmd: XrGlobalMenuCommand) {
   switch (cmd) {
@@ -62,6 +66,12 @@ export function runXrGlobalMenuCommand(cmd: XrGlobalMenuCommand) {
     case 'exitVr': {
       const session = xrStore.getState().session
       session?.end()
+      break
+    }
+    case 'recallPanels': {
+      const st = useRootStore.getState()
+      st.dispatch({ type: 'bumpXrPanelAnchors' })
+      playInteractionCue('select', st.devicePreferences.audioEnabled)
       break
     }
   }

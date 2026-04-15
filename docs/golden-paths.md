@@ -53,7 +53,7 @@ These five flows define the core product. Verify after meaningful interaction ch
 **Checklist**
 
 - [ ] Status HUD shows tool/nav and a hint while linking.
-- [ ] Wrist menu stays global (Library, recovery, mode switch); node-specific actions stay on the strip.
+- [ ] Wrist menu: page 1 covers Search/Undo/Recenter/Cancel/mode/Help/Exit; **More…** opens page 2 for Library, History, Bookmarks, Settings, recovery, **Recall panels**. Node-specific actions stay on the strip.
 
 ## 4. XR controller: cancel → recenter → reset scale/view
 

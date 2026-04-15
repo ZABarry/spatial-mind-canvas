@@ -59,6 +59,8 @@ export type AppAction =
   | { type: 'setSearchOpen'; open: boolean }
   | { type: 'patchSettings'; patch: Partial<UserSettings> }
   | { type: 'patchDevicePreferences'; patch: Partial<DevicePreferences> }
+  /** VR: snap head-relative panel anchors to the current comfortable pose (recovery). */
+  | { type: 'bumpXrPanelAnchors' }
   /** Desktop: disable orbit rotation while dragging nodes so the camera does not spin. */
   | { type: 'setNodeDragActive'; active: boolean; nodeId?: string; pointerId?: string }
   /** VR: wrist panel or node contextual menu — blocks world grab; does not replace link/drag/worldGrab. */

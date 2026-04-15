@@ -28,6 +28,7 @@ export function defaultDevicePreferences(): DevicePreferences {
     smoothTurnSpeed: 1.2,
     moveSpeed: 2,
     preferXrPassthrough: false,
+    xrDisableHandWorldGrab: false,
   }
 }
 

@@ -440,6 +440,24 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
           <p id="dominant-hand-hint" className="settings-muted" style={{ margin: '0 0 12px', lineHeight: 1.4 }}>
             Used to bias which controller ray is preferred for selection. Travel sticks stay left move / right turn.
           </p>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={devicePreferences.xrDisableHandWorldGrab === true}
+              onChange={(e) =>
+                dispatch({
+                  type: 'patchDevicePreferences',
+                  patch: { xrDisableHandWorldGrab: e.target.checked },
+                })
+              }
+            />
+            <span className="settings-checkbox-label">
+              Disable hand pinch for moving/scaling workspace (hand-tracking sessions only)
+            </span>
+          </label>
+          <p className="settings-muted" style={{ margin: '0 0 12px', lineHeight: 1.4 }}>
+            Controllers still use grips for workspace moves. Link and fine edits remain controller-first in hand mode.
+          </p>
           <label className="settings-field">
             Move speed{' '}
             <input

@@ -1,7 +1,9 @@
 import * as THREE from 'three'
 
-const _ctrlOffGrip = new THREE.Matrix4().makeTranslation(0, 0.02, -0.1)
-const _ctrlOffRay = new THREE.Matrix4().makeTranslation(0.14, 0.04, -0.12)
+/** Grip space: float the panel forward from the controller body (not coplanar with the shell). */
+const _ctrlOffGrip = new THREE.Matrix4().makeTranslation(0, 0.035, -0.22)
+/** Target-ray fallback: similar forward float; lateral bias keeps the board beside the ray. */
+const _ctrlOffRay = new THREE.Matrix4().makeTranslation(0.14, 0.045, -0.24)
 
 /**
  * Mount the global menu board on the left controller: stable offset from grip when available,

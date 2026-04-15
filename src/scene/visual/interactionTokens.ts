@@ -220,10 +220,10 @@ export function wristMenuButtonColors(kind: WristButtonKind): {
       }
     default:
       return {
-        bg: interactionTokens.uiPlate,
-        bgHover: interactionTokens.uiPlateHover,
-        bgPress: interactionTokens.uiPlatePress,
-        text: interactionTokens.neutralFg,
+        bg: '#ffffff',
+        bgHover: '#f1f5f9',
+        bgPress: '#e2e8f0',
+        text: '#0f172a',
       }
   }
 }

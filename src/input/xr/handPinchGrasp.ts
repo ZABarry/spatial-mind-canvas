@@ -5,6 +5,9 @@
 export const PINCH_GRASP_CLOSE_M = 0.036
 export const PINCH_GRASP_OPEN_M = 0.052
 
+/** Below this distance but above close threshold — “arming” zone for subtle affordance (not a grab yet). */
+export const PINCH_GRASP_ARMING_MAX_M = 0.048
+
 export type PinchGraspHysteresis = {
   pinched: boolean
 }
@@ -39,4 +42,10 @@ export function updatePinchGraspActive(
   if (!h.pinched && distM <= PINCH_GRASP_CLOSE_M) h.pinched = true
   else if (h.pinched && distM >= PINCH_GRASP_OPEN_M) h.pinched = false
   return h.pinched
+}
+
+/** True when a pinch is getting close enough that a grab may engage soon (hand mode UX). */
+export function isPinchApproachingGrasp(distM: number | null, pinched: boolean): boolean {
+  if (pinched || distM == null) return false
+  return distM > PINCH_GRASP_CLOSE_M && distM <= PINCH_GRASP_ARMING_MAX_M
 }

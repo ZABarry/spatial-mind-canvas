@@ -1,6 +1,10 @@
 import * as THREE from 'three'
 
-const _wristOffset = new THREE.Matrix4().makeTranslation(0, 0.09, -0.07)
+/**
+ * Offset from wrist joint (meters, wrist local space): lift toward fingers and push
+ * **forward** so the board floats in open space in front of the hand, not on the tracker.
+ */
+const _wristOffset = new THREE.Matrix4().makeTranslation(0, 0.11, -0.2)
 
 /**
  * Palm-open global menu: offset from wrist joint so the board sits above the palm,

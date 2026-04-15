@@ -11,12 +11,13 @@ import {
   shouldShowOnboarding,
 } from '../../ui/onboarding/onboardingModel'
 import { interactionTokens, isValidLinkNodeTarget } from '../visual/interactionTokens'
-import { COPY_WORLD_VS_TRAVEL_SHORT } from './productCopy'
 import { formatSceneMetricsLine } from '../sceneMetrics'
 import { applyHeadHudAnchor } from './anchors/xrHeadHudAnchor'
 
 /**
  * In-VR status: tool, navigation mode, selection, active gesture, and recovery hints.
+ * Pose is head-locked via {@link applyHeadHudAnchor} (camera-local offset + headset orientation).
+ * {@link Billboard} keeps troika text facing the view ray for readability.
  */
 export function XrStatusHud() {
   const session = useXR((s) => s.session)
@@ -43,6 +44,8 @@ export function XrStatusHud() {
   const bookmarksPanelOpen = useRootStore((s) => s.bookmarksPanelOpen)
   const saveIndicator = useRootStore((s) => s.saveIndicator)
   const feedbackMessage = useRootStore((s) => s.feedbackMessage)
+  const xrGrabAffordance = useRootStore((s) => s.xrGrabAffordance)
+  const xrDisableHandGrab = useRootStore((s) => s.devicePreferences.xrDisableHandWorldGrab === true)
   const groupRef = useRef<Group>(null)
   const { camera } = useThree()
 
@@ -56,13 +59,16 @@ export function XrStatusHud() {
 
   const line3 = useMemo(() => {
     if (nav === 'travel') {
-      return `${COPY_WORLD_VS_TRAVEL_SHORT} Left stick: move/strafe · Right stick: turn · Y: wrist menu`
+      return 'Travel · sticks move/strafe & turn · Y: wrist menu'
     }
     if (handPrimary) {
-      return 'Hand mode: pinch/select · palm opens menu · pinch grab: move/scale graph · Node actions: Child & Inspect — controllers: full Link'
+      if (xrDisableHandGrab) {
+        return 'Hand · pinch select · palm menu · workspace pinch off (Settings) · controllers: Link & precision'
+      }
+      return 'Hand · pinch select · palm menu · pinch grab workspace · Child/Inspect on strip · controllers: Link'
     }
-    return `${COPY_WORLD_VS_TRAVEL_SHORT} Trigger: select/confirm · Grip: move/scale graph · Y: wrist · Node actions strip`
-  }, [nav, handPrimary])
+    return 'World · trigger · grip · Y · node actions strip'
+  }, [nav, handPrimary, xrDisableHandGrab])
 
   const linkHudColor = useMemo(() => {
     if (interactionSession.kind !== 'link') return interactionTokens.link
@@ -84,13 +90,17 @@ export function XrStatusHud() {
       return 'Linking: aim at another node, ground, or cancel (Esc / wrist)'
     }
     if (interactionSession.kind === 'nodeDrag') return 'Dragging node'
-    if (interactionSession.kind === 'worldGrab')
-      return 'Moving/scaling world — release grips / open pinch to finish · wrist Cancel if stuck'
+    if (interactionSession.kind === 'worldGrab') {
+      if (xrGrabAffordance === 'grab2') {
+        return 'Workspace · two hands — spread/pinch scales · opposite slide turns · release to finish'
+      }
+      return 'Workspace · move — release grip/pinch to finish · wrist Cancel if stuck'
+    }
     if (interactionSession.kind === 'menu') {
       return interactionSession.menu === 'global' ? 'Wrist menu' : 'Node actions'
     }
     return null
-  }, [interactionSession])
+  }, [interactionSession, xrGrabAffordance])
 
   const recoveryHint = useMemo(() => {
     if (confirmDialog) return 'Dialog open — complete or cancel (flat UI if needed)'
@@ -182,6 +192,13 @@ export function XrStatusHud() {
         })} · phase=${phase} · dom=${dominantHand}`
       : null
 
+  const pinchWarmHint = useMemo(() => {
+    if (!handPrimary || nav !== 'world' || xrDisableHandGrab) return null
+    if (interactionSession.kind !== 'idle') return null
+    if (xrGrabAffordance !== 'pinchNear') return null
+    return 'Pinch a little closer to grab the workspace'
+  }, [handPrimary, nav, xrDisableHandGrab, interactionSession.kind, xrGrabAffordance])
+
   const idleNudge = useMemo(() => {
     if (primary != null) return null
     if (interactionSession.kind !== 'idle') return null
@@ -200,6 +217,9 @@ export function XrStatusHud() {
     }
     for (const o of onboardingRows) {
       r.push(o)
+    }
+    if (pinchWarmHint) {
+      r.push({ text: pinchWarmHint, size: 0.023, color: '#0d9488', maxW: 2.55 })
     }
     if (sessionHint) {
       const hintColor =
@@ -232,6 +252,7 @@ export function XrStatusHud() {
     line3,
     idleNudge,
     onboardingRows,
+    pinchWarmHint,
     sessionHint,
     recoveryHint,
     persistHint,

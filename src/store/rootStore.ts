@@ -126,6 +126,10 @@ export interface RootState {
   xrHandTrackingPrimary: boolean
   /** Dev-only: show extra XR HUD diagnostics (toggled from Settings). */
   xrDebugHud: boolean
+  /** Bumped to re-snap damped head-relative panel poses in front of the user. */
+  xrPanelAnchorGeneration: number
+  /** Hand world-grab UX hint for status HUD (updated when value changes). */
+  xrGrabAffordance: 'idle' | 'pinchNear' | 'grab1' | 'grab2'
   /** Bumped when `centerViewOnSelection` runs; canvas reads orbit target and applies `translateWorld`. */
   centerViewTick: number
   /** Bumped on `resetWorld`; canvas restores desktop orbit camera to its initial pose. */
@@ -1008,6 +1012,9 @@ export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
         void setMeta(META_DEVICE_PREFS, next)
         break
       }
+      case 'bumpXrPanelAnchors':
+        set({ xrPanelAnchorGeneration: get().xrPanelAnchorGeneration + 1 })
+        break
       default:
         break
     }
@@ -1053,6 +1060,8 @@ export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
     xrSessionActive: false,
     xrHandTrackingPrimary: false,
     xrDebugHud: false,
+    xrPanelAnchorGeneration: 0,
+    xrGrabAffordance: 'idle',
     centerViewTick: 0,
     resetViewTick: 0,
     worldAxisDragActive: false,

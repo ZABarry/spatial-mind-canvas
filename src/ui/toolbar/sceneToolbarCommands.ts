@@ -207,6 +207,11 @@ export function openXrHelp() {
   useRootStore.setState({ xrHelpOpen: true })
 }
 
+/** VR: snap head-relative panel anchors to the current view (recovery if panels drift or feel lost). */
+export function recallXrPanels() {
+  useRootStore.getState().dispatch({ type: 'bumpXrPanelAnchors' })
+}
+
 export function recallBookmark(id: string) {
   useRootStore.getState().dispatch({ type: 'recallBookmark', id })
 }

@@ -49,22 +49,22 @@ Opened from the toolbar (desktop) or the **wrist menu** in VR. Tabs: **General**
 - **VR** — Locomotion (smooth vs snap turn, move speed, etc.), comfort (vignette), dominant hand, optional passthrough preference, optional XR debug HUD in dev.
 - **Audio** — Enable ambient/interaction audio and levels where exposed.
 
-In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused. Panels **follow the headset** each frame at a comfortable distance with **left / center / near-right / right** lanes so multiple surfaces rarely stack in the same spot.
+In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused. Panels spawn in **left / center / near-right / right** lanes and **ease** toward a comfortable head-guided pose (not a rigid per-frame snap). If a panel feels lost, use **wrist menu → More… → Recall panels** to re-anchor surfaces in front of you.
 
 ## XR controllers
 
 - **Enter VR** — Toolbar primary button; confirm in headset/browser.
 - **Select** — Ray and **trigger** on nodes (and to complete gestures per HUD).
 - **Travel vs World** (nav) — **Travel** = thumbstick locomotion; **World** = stay put for fine graph work (see terminology).
-- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). Global: Library, Search, **History** (version history), **Bookmarks**, Settings, Undo, Redo, **Reset view**, **Recenter**, **Reset scale**, **Cancel**, switch Travel/World, Help, Exit VR.
-- **Node actions** (strip) — **Child**, **Link**, **Inspect**, Delete, Focus, Recenter (exact set as implemented); billboard strip toward you from the selection.
+- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). **Page 1:** Search, Undo, Recenter, Cancel, switch Travel/World, Help, Exit VR, **More…**. **Page 2:** Library, History, Bookmarks, Settings, Redo, Reset view, Reset scale, **Recall panels**, **« Back**.
+- **Node actions** — Layered strip: primary row **Child**, **Link**, **Inspect**; secondary **Focus**, **Recenter**; **Delete** on its own row. Billboard toward you; distance-aware scale. Hand mode: **Link** shows a controllers badge — use tracked controllers for reliable Link.
 - **World grab** — **World** mode: controllers squeeze **grip**; hands-only: **index–thumb pinch** on each hand. One hand: translate. Two: pinch/grip separation scales; opposite forward motion yaws.
 - **Layout, bookmarks, export** — Primarily on the **flat** toolbar; exit VR or use Library as implemented.
 
 ## Hand-tracking–lite
 
 - **Menu** — Palm toward you (left hand) to open the wrist menu (when hands-only session is active). Uses a short dwell + stricter palm score so casual wrist motion does not open it.
-- **World grab** — Pinch index–thumb (both hands for scale/yaw) in World mode; same guard rules as controller grips (blocked during menus/modals/link).
+- **World grab** — Pinch index–thumb (both hands for scale/yaw) in World mode; same guard rules as controller grips (blocked during menus/modals/link). Optional **Settings → VR → Disable hand pinch for moving/scaling workspace** if you want controllers only for workspace moves.
 - **Link** — Disabled on **node actions** with a short cue; use **controllers** for full Link authoring.
 - **Child / Inspect** — Available on the strip per current implementation.
 - **Status HUD** — Shows mode expectations for hand-primary sessions.
@@ -79,6 +79,7 @@ In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`);
 | **Recenter** | Align primary selection with orbit pivot / framing (see terminology). |
 | **Reset scale** | World scale multiplier toward default. |
 | **Escape** (desktop) | Broad cancel + clear selection and close panels/search as implemented. |
+| **Recall panels** (VR wrist, page 2) | Re-snap floating HTML panels to a comfortable pose in front of you. |
 
 ## Local snapshots (version history)
 

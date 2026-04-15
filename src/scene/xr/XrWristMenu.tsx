@@ -29,24 +29,41 @@ const GAP = 0.008
 const COLS = 2
 const CELL_W = PANEL_W / COLS
 
+/** Tray + shadow sit behind raised buttons so layers read clearly in headset. */
+const PANEL_TRAY_Z = -0.005
+const PANEL_SHADOW_Z = -0.012
+const PANEL_SHADOW_PAD = 0.024
+const BTN_BORDER_Z = 0.0012
+const BTN_FACE_Z = 0.0032
+const BTN_LABEL_Z = 0.0055
+const BTN_BORDER_INSET = 0.0018
+
 type MenuDef = { label: string; hit: XrMenuHit }
 
-function buildMainMenuDefs(modeLabel: string): MenuDef[] {
+/** High-frequency workflow + recovery (page 1). */
+function buildPrimaryMenuDefs(modeLabel: string): MenuDef[] {
   return [
-    { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
     { label: 'Search', hit: { kind: 'cmd', cmd: 'search' } },
-    { label: 'History', hit: { kind: 'cmd', cmd: 'mapHistory' } },
-    { label: 'Bookmarks', hit: { kind: 'cmd', cmd: 'bookmarks' } },
-    { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
     { label: 'Undo', hit: { kind: 'cmd', cmd: 'undo' } },
-    { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
-    { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
     { label: 'Recenter', hit: { kind: 'cmd', cmd: 'recenterSelection' } },
-    { label: 'Reset scale', hit: { kind: 'cmd', cmd: 'resetScale' } },
     { label: 'Cancel', hit: { kind: 'cmd', cmd: 'cancel' } },
     { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
     { label: 'Help', hit: { kind: 'cmd', cmd: 'help' } },
     { label: 'Exit VR', hit: { kind: 'cmd', cmd: 'exitVr' } },
+  ]
+}
+
+/** Library, history, layout recovery, settings (page 2). */
+function buildSecondaryMenuDefs(): MenuDef[] {
+  return [
+    { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
+    { label: 'History', hit: { kind: 'cmd', cmd: 'mapHistory' } },
+    { label: 'Bookmarks', hit: { kind: 'cmd', cmd: 'bookmarks' } },
+    { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
+    { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
+    { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
+    { label: 'Reset scale', hit: { kind: 'cmd', cmd: 'resetScale' } },
+    { label: 'Recall panels', hit: { kind: 'cmd', cmd: 'recallPanels' } },
   ]
 }
 
@@ -57,39 +74,64 @@ function MenuButton({
   col,
   rowsTop,
   buttonKind = 'default',
+  onLocal,
+  spanCols = 1,
 }: {
   label: string
-  hit: XrMenuHit
+  hit?: XrMenuHit
   row: number
   col: number
   rowsTop: number
   buttonKind?: WristButtonKind
+  /** Bypasses global menu routing (e.g. More / Back). */
+  onLocal?: () => void
+  /** 2 = full panel width (single row control). */
+  spanCols?: 1 | 2
 }) {
   const [hover, setHover] = React.useState(false)
   const [pressed, setPressed] = React.useState(false)
   /** Cell centers from left edge of the panel: -PANEL_W/2 + (col + 0.5) * CELL_W */
-  const x = -PANEL_W / 2 + (col + 0.5) * CELL_W
+  const x =
+    spanCols === 2 ? 0 : -PANEL_W / 2 + (col + 0.5) * CELL_W
   const y = rowsTop - row * (BTN_H + GAP) - BTN_H / 2
-  const z = 0.002
+  const z = 0
   const pal = wristMenuButtonColors(buttonKind)
   const face = pressed ? pal.bgPress : hover ? pal.bgHover : pal.bg
+  const bw = spanCols === 2 ? PANEL_W - GAP * 4 : CELL_W - GAP * 2
+  const bh = BTN_H
+  const borderColor =
+    buttonKind === 'danger'
+      ? pressed
+        ? '#c49aa4'
+        : hover
+          ? '#d4aeb8'
+          : '#e0bcc4'
+      : pressed
+        ? '#7c8ca3'
+        : hover
+          ? '#8b9bb0'
+          : '#9ca8ba'
 
   const onPointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     setPressed(true)
-    tryHandleXrMenuObject(e.object)
+    if (onLocal) {
+      onLocal()
+      return
+    }
+    if (hit) tryHandleXrMenuObject(e.object)
   }
   const onPointerUp = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation()
     setPressed(false)
   }
 
-  const hitW = (CELL_W - GAP * 2) * 1.35
+  const hitW = (spanCols === 2 ? bw : CELL_W - GAP * 2) * 1.2
   const hitH = BTN_H * 1.4
   return (
-    <group position={[x, y, z]} userData={{ xrMenuHit: hit }}>
+    <group position={[x, y, z]} userData={hit ? { xrMenuHit: hit } : {}}>
       <mesh
-        userData={{ xrMenuHit: hit }}
+        userData={hit ? { xrMenuHit: hit } : {}}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
@@ -106,12 +148,17 @@ function MenuButton({
         <planeGeometry args={[hitW, hitH]} />
         <meshBasicMaterial color="#e8eef8" transparent opacity={0.002} side={THREE.DoubleSide} depthWrite={false} />
       </mesh>
-      <mesh position={[0, 0, 0.001]} raycast={() => null}>
-        <planeGeometry args={[CELL_W - GAP * 2, BTN_H]} />
+      {/* Rim slightly larger than face — reads as depth vs tray */}
+      <mesh position={[0, 0, BTN_BORDER_Z]} raycast={() => null}>
+        <planeGeometry args={[bw + BTN_BORDER_INSET * 2, bh + BTN_BORDER_INSET * 2]} />
+        <meshBasicMaterial color={borderColor} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0, BTN_FACE_Z]} raycast={() => null}>
+        <planeGeometry args={[bw, bh]} />
         <meshBasicMaterial color={face} side={THREE.DoubleSide} />
       </mesh>
       <Text
-        position={[0, 0, 0.001]}
+        position={[0, 0, BTN_LABEL_Z]}
         fontSize={0.014}
         color={pal.text}
         anchorX="center"
@@ -142,10 +189,14 @@ export function XrWristMenu() {
 
   const modeLabel = mode === 'travel' ? 'Switch to World' : 'Switch to Travel'
 
-  const mainDefs = React.useMemo(() => buildMainMenuDefs(modeLabel), [modeLabel])
+  const [menuPage, setMenuPage] = React.useState(0)
+  const primaryDefs = React.useMemo(() => buildPrimaryMenuDefs(modeLabel), [modeLabel])
+  const secondaryDefs = React.useMemo(() => buildSecondaryMenuDefs(), [])
 
-  const mainRows = Math.ceil(mainDefs.length / COLS)
-  const totalRows = mainRows
+  const primaryGrid = React.useMemo(() => primaryDefs.slice(0, 6), [primaryDefs])
+  const primaryExit = primaryDefs[6]
+
+  const totalRows = menuPage === 0 ? 4 : 5
   const panelH = totalRows * (BTN_H + GAP) + GAP * 2
   const rowsTop = panelH / 2 - GAP
 
@@ -223,7 +274,10 @@ export function XrWristMenu() {
     if (visible !== prevWristVisible.current) {
       const audio = useRootStore.getState().devicePreferences.audioEnabled
       playInteractionCue('menuToggle', audio)
-      if (visible) openT.current = 0
+      if (visible) {
+        openT.current = 0
+        setMenuPage(0)
+      }
       prevWristVisible.current = visible
       const st = useRootStore.getState()
       if (visible) {
@@ -262,22 +316,76 @@ export function XrWristMenu() {
   return (
     <group ref={groupRef} renderOrder={10}>
       <group ref={panelInnerRef}>
-        <mesh position={[0, 0, -0.003]} raycast={() => null}>
+        <mesh position={[0, 0, PANEL_SHADOW_Z]} raycast={() => null}>
+          <planeGeometry args={[PANEL_W + PANEL_SHADOW_PAD, panelH + PANEL_SHADOW_PAD]} />
+          <meshBasicMaterial color="#64748b" transparent opacity={0.35} side={THREE.DoubleSide} depthWrite={false} />
+        </mesh>
+        <mesh position={[0, 0, PANEL_TRAY_Z]} raycast={() => null}>
           <planeGeometry args={[PANEL_W + 0.02, panelH + 0.02]} />
-          <meshBasicMaterial color="#f4f6fb" transparent opacity={0.92} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#b8c5d8" side={THREE.DoubleSide} />
         </mesh>
 
-        {mainDefs.map((def, i) => (
-          <MenuButton
-            key={`m-${i}`}
-            label={def.label}
-            hit={def.hit}
-            row={Math.floor(i / COLS)}
-            col={i % COLS}
-            rowsTop={rowsTop}
-            buttonKind={def.label === 'Cancel' || def.label === 'Exit VR' ? 'danger' : 'default'}
-          />
-        ))}
+        {menuPage === 0 ? (
+          <>
+            {primaryGrid.map((def, i) => (
+              <MenuButton
+                key={`p-${def.label}-${i}`}
+                label={def.label}
+                hit={def.hit}
+                row={Math.floor(i / COLS)}
+                col={i % COLS}
+                rowsTop={rowsTop}
+                buttonKind={def.label === 'Cancel' ? 'danger' : 'default'}
+              />
+            ))}
+            {primaryExit ? (
+              <>
+                <MenuButton
+                  key="exit-vr"
+                  label={primaryExit.label}
+                  hit={primaryExit.hit}
+                  row={3}
+                  col={0}
+                  rowsTop={rowsTop}
+                  buttonKind="danger"
+                />
+                <MenuButton
+                  key="more"
+                  label="More…"
+                  row={3}
+                  col={1}
+                  rowsTop={rowsTop}
+                  buttonKind="default"
+                  onLocal={() => setMenuPage(1)}
+                />
+              </>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {secondaryDefs.map((def, i) => (
+              <MenuButton
+                key={`s-${def.label}-${i}`}
+                label={def.label}
+                hit={def.hit}
+                row={Math.floor(i / COLS)}
+                col={i % COLS}
+                rowsTop={rowsTop}
+                buttonKind="default"
+              />
+            ))}
+            <MenuButton
+              key="back"
+              label="« Back"
+              row={4}
+              col={0}
+              rowsTop={rowsTop}
+              spanCols={2}
+              buttonKind="default"
+              onLocal={() => setMenuPage(0)}
+            />
+          </>
+        )}
       </group>
     </group>
   )

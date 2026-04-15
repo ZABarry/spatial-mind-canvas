@@ -122,6 +122,11 @@ export interface DevicePreferences {
   smoothTurnSpeed: number
   moveSpeed: number
   preferXrPassthrough?: boolean
+  /**
+   * Hand-tracking–primary only: disable index–thumb pinch for moving/scaling the workspace.
+   * Controllers unchanged. Does not affect selection or UI pinch.
+   */
+  xrDisableHandWorldGrab?: boolean
 }
 
 export interface UserSettings {

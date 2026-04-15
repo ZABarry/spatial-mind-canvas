@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import {
   computeHeadAnchoredPanelPose,
+  dampPanelAnchorPose,
   lateralOffsetForLane,
   XR_PANEL_LANE_STRIDE,
 } from './xrPanelSpawner'
@@ -31,5 +32,17 @@ describe('computeHeadAnchoredPanelPose', () => {
     computeHeadAnchoredPanelPose(cam, 'right', pr, qr)
 
     expect(pl.distanceTo(pr)).toBeGreaterThan(0.5)
+  })
+})
+
+describe('dampPanelAnchorPose', () => {
+  it('moves current toward target over time', () => {
+    const curP = new THREE.Vector3(0, 0, 0)
+    const curQ = new THREE.Quaternion()
+    const tgtP = new THREE.Vector3(1, 0, 0)
+    const tgtQ = new THREE.Quaternion()
+    dampPanelAnchorPose(curP, curQ, tgtP, tgtQ, 10, 0.1)
+    expect(curP.x).toBeGreaterThan(0)
+    expect(curP.x).toBeLessThan(1)
   })
 })

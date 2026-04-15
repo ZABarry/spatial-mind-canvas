@@ -11,7 +11,7 @@ Honest snapshot of what ships today vs what is partial, deferred, or out of scop
 | Search (Fuse) | **Shipped** | |
 | Bookmarks (saved view + graph framing) | **Shipped** | Desktop menu + XR panel; naming uses `window.prompt` on desktop, in-headset prompt in VR. |
 | Layout / structure tools | **Shipped** | Desktop toolbar; not duplicated in XR wrist menu (advanced / lower frequency). |
-| WebXR (Quest-class) | **Shipped** | Travel vs world nav, wrist menu (Library, Search, History, Bookmarks, Settings, recovery, mode, Help, Exit VR), **node actions** strip, controller grip + hand pinch world grab (`handPinchGrasp` thresholds in **XrWorldGrab**); HTML panels head-relative lanes (`anchors/`). |
+| WebXR (Quest-class) | **Shipped** | Travel vs world nav; **two-page wrist menu** (primary workflow + More for library/history/settings/**Recall panels**); layered **node actions**; controller grip + optional hand pinch world grab (can disable in Settings); damped head-guided **HTML panels** + lane offsets (`anchors/`). |
 | Hand-tracking–lite | **Partial** | Selection, wrist menu (palm dwell), pinch **world** grab, node actions (Child/Inspect; **Link** disabled). Precision link/editing still controller-first. |
 | VR ↔ desktop parity | **Partial** | High-frequency actions on wrist + radial; layout, full export UX, and some tooling remain desktop-first by intent. |
 | Collaboration / accounts / cloud sync | **Out of scope** | See [product-direction.md](product-direction.md). |
