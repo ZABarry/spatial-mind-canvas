@@ -89,7 +89,7 @@ export function getOnboardingCue(milestone: OnboardingMilestoneId, surface: Onbo
         return {
           milestone,
           headline: 'Place your first node',
-          subline: 'Node radial — Child — or use placement when the scene allows.',
+          subline: 'Node actions — Child — or use placement when the scene allows.',
         }
       }
       return {
@@ -122,7 +122,7 @@ export function getOnboardingCue(milestone: OnboardingMilestoneId, surface: Onbo
         subline:
           surface === 'desktop'
             ? 'Quick actions: Add child, or Link and finish on another node or the ground.'
-            : 'Node radial: Child or Link — then aim and confirm.',
+            : 'Node actions: Child or Link — then aim and confirm.',
       }
     case 'renameOrInspect':
       return {
@@ -131,7 +131,7 @@ export function getOnboardingCue(milestone: OnboardingMilestoneId, surface: Onbo
         subline:
           surface === 'desktop'
             ? 'Quick actions: Rename or Inspect (Enter also opens detail).'
-            : 'Radial — Inspect — or rename after exiting VR if needed.',
+            : 'Node actions — Inspect — or rename after exiting VR if needed.',
       }
     case 'recenter':
       return {

@@ -185,7 +185,7 @@ export function HelpControls() {
                     <strong>Bookmarks</strong>, Settings, Undo, Redo, <strong>Reset view</strong>,{' '}
                     <strong>Recenter</strong> (same as Home on desktop), <strong>Reset scale</strong>,{' '}
                     <strong>Cancel</strong>, <strong>Switch to Travel / Switch to World</strong>, Help, Exit VR. The{' '}
-                    <strong>node radial</strong> holds Child, Link, Inspect, Delete, Focus, and Recenter.{' '}
+                    <strong>node actions</strong> strip holds Child, Link, Inspect, Delete, Focus, and Recenter.{' '}
                     <strong>Layout</strong> and <strong>export</strong> stay on the flat
                     toolbar (exit VR to use them).
                   </li>
@@ -195,11 +195,11 @@ export function HelpControls() {
                     valid target node.
                   </li>
                   <li>
-                    <strong>Node radial</strong> — When a node is selected, an arc appears beside it:{' '}
+                    <strong>Node actions</strong> — When a node is selected, a calm strip of actions faces you:{' '}
                     <strong>Child</strong>, <strong>Link</strong> (controllers), <strong>Inspect</strong>,{' '}
                     <strong>Delete</strong>, <strong>Focus neighborhood</strong>, <strong>Recenter</strong>.{' '}
-                    <strong>Hand-tracking–lite</strong> sessions intentionally disable Link on the radial; use
-                    controllers for full Link authoring.
+                    <strong>Hand-tracking–lite</strong> sessions intentionally disable Link; use controllers for full
+                    Link authoring.
                   </li>
                   <li>
                     <strong>Flat toolbar</strong> — Exit the XR session (or use <strong>Exit VR</strong> in the wrist

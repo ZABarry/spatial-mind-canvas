@@ -4,6 +4,14 @@ import { createXRStore } from '@react-three/xr'
 const XR_RAY_BLUE = '#1a6bff'
 const XR_RAY_OPACITY = 0.5
 
+/**
+ * IWER desktop emulation only (`emulate` is disabled in production): initial headset position in meters.
+ * Aligns with Meta Quest 3 DevUI defaults (X/Y/Z user position + ~90° vertical FOV) so dev sessions
+ * start with a consistent elevated, stepped-back view of the scene. Real headsets ignore this.
+ */
+const IWER_DEV_HEADSET_POSITION: [number, number, number] = [0, 5, 15]
+const IWER_DEV_FOVY_RAD = Math.PI / 2
+
 const rayPointer = {
   rayModel: {
     color: XR_RAY_BLUE,
@@ -23,7 +31,13 @@ export const xrStore = createXRStore({
    * use the browser runtime only.
    */
   emulate: import.meta.env.DEV
-    ? { type: 'metaQuest3', syntheticEnvironment: false, inject: true }
+    ? {
+        type: 'metaQuest3',
+        syntheticEnvironment: false,
+        inject: true,
+        headset: { position: IWER_DEV_HEADSET_POSITION },
+        fovy: IWER_DEV_FOVY_RAD,
+      }
     : false,
   controller: {
     rayPointer,

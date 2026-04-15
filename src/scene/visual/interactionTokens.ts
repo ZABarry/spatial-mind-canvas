@@ -15,7 +15,7 @@ export const interactionTokens = {
   neutralMuted: '#64748b',
   surface: '#f4f6fb',
   surfaceHover: '#e8eef8',
-  /** XR radial / wrist plate */
+  /** XR contextual UI / wrist plate */
   uiPlate: '#eef2f9',
   uiPlateHover: '#e2e9f5',
   uiPlatePress: '#d8e0ef',

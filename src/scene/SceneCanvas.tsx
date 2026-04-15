@@ -27,7 +27,7 @@ import { XrBookmarksPanel } from './xr/XrBookmarksPanel'
 import { XrSettingsPanel } from './xr/XrSettingsPanel'
 import { XrTextPromptHud } from './xr/XrTextPromptHud'
 import { XrHelpHud } from './xr/XrHelpHud'
-import { XrNodeRadial } from './xr/XrNodeRadial'
+import { XrNodeContextActions } from './xr/XrNodeContextActions'
 import { XrStatusHud } from './xr/XrStatusHud'
 import { XrHandInputStub } from '../input/adapters/useXrHandInputBridge'
 import { consumeSpuriousCanvasMissAfterNodePress } from './graphPointerGesture'
@@ -128,7 +128,7 @@ export function SceneCanvas() {
         </TravelLocomotion>
         <XrControllerInputBridge />
         <XrHandInputStub />
-        <XrNodeRadial />
+        <XrNodeContextActions />
         <XrStatusHud />
         <XrWorldGrab />
         <XrConfirmHud />

@@ -14,7 +14,7 @@ This document is the **authoritative** reference for input, recovery actions, an
 | **Recenter** | Pan the world so the **primary** selected node aligns with the orbit pivot (desktop: **Home** or **.**). Not the same as **Reset view**. |
 | **Reset view** | Toolbar / wrist menu: restore default **camera** framing (and related view reset). |
 | **Reset scale** | Toolbar / wrist: reset **world graph scale** toward default (uniform scale), not the same as Recenter or Reset view. |
-| **Hand-tracking–lite** | WebXR session with **hands only** (no tracked gamepad controllers). **Link** on the node radial is disabled; Child and Inspect remain. Controllers are the full authoring path for Link. |
+| **Hand-tracking–lite** | WebXR session with **hands only** (no tracked gamepad controllers). **Link** on **node actions** is disabled; Child and Inspect remain. Pinch grab moves/scales the **world** in World mode (not node-precision authoring). Controllers are the full authoring path for Link and heavy edits. |
 
 ## Desktop
 
@@ -49,23 +49,24 @@ Opened from the toolbar (desktop) or the **wrist menu** in VR. Tabs: **General**
 - **VR** — Locomotion (smooth vs snap turn, move speed, etc.), comfort (vignette), dominant hand, optional passthrough preference, optional XR debug HUD in dev.
 - **Audio** — Enable ambient/interaction audio and levels where exposed.
 
-In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused.
+In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused. Panels **follow the headset** each frame at a comfortable distance with **left / center / near-right / right** lanes so multiple surfaces rarely stack in the same spot.
 
 ## XR controllers
 
 - **Enter VR** — Toolbar primary button; confirm in headset/browser.
 - **Select** — Ray and **trigger** on nodes (and to complete gestures per HUD).
 - **Travel vs World** (nav) — **Travel** = thumbstick locomotion; **World** = stay put for fine graph work (see terminology).
-- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). Global: Library, Search, Settings, Undo, Redo, **Reset view**, **Recenter**, **Reset scale**, **Cancel**, switch Travel/World, Help, Exit VR.
-- **Node radial** — **Child**, **Link**, **Inspect**, Delete, Focus, Recenter (exact set as implemented).
-- **World grab** — **World** mode: squeeze **grip** to move graph; two-hand scale with both grips.
+- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). Global: Library, Search, **History** (version history), **Bookmarks**, Settings, Undo, Redo, **Reset view**, **Recenter**, **Reset scale**, **Cancel**, switch Travel/World, Help, Exit VR.
+- **Node actions** (strip) — **Child**, **Link**, **Inspect**, Delete, Focus, Recenter (exact set as implemented); billboard strip toward you from the selection.
+- **World grab** — **World** mode: controllers squeeze **grip**; hands-only: **index–thumb pinch** on each hand. One hand: translate. Two: pinch/grip separation scales; opposite forward motion yaws.
 - **Layout, bookmarks, export** — Primarily on the **flat** toolbar; exit VR or use Library as implemented.
 
 ## Hand-tracking–lite
 
-- **Menu** — Palm toward you (left hand) to open the wrist menu (when hands-only session is active).
-- **Link** — Disabled on the radial with a short cue; use **controllers** for full Link authoring.
-- **Child / Inspect** — Available on the radial per current implementation.
+- **Menu** — Palm toward you (left hand) to open the wrist menu (when hands-only session is active). Uses a short dwell + stricter palm score so casual wrist motion does not open it.
+- **World grab** — Pinch index–thumb (both hands for scale/yaw) in World mode; same guard rules as controller grips (blocked during menus/modals/link).
+- **Link** — Disabled on **node actions** with a short cue; use **controllers** for full Link authoring.
+- **Child / Inspect** — Available on the strip per current implementation.
 - **Status HUD** — Shows mode expectations for hand-primary sessions.
 
 ## Recovery actions

@@ -41,45 +41,47 @@ These five flows define the core product. Verify after meaningful interaction ch
 - [ ] Map saves (autosave) after edits.
 - [ ] While **Link** is in progress from quick actions, status copy references Esc to cancel.
 
-## 3. XR controller: select node → open radial → link → complete
+## 3. XR controller: select node → node actions → link → complete
 
 **Expected**
 
 1. Enter VR with controllers.
 2. Select a node with the trigger.
-3. Use the **node radial** beside the selection (Child, Link, Inspect, etc.).
+3. Use **node actions** (strip in front of the selection): Child, Link, Inspect, etc.
 4. Tap **Link**, aim at another node or ground, trigger to complete (ghost line while drafting).
 
 **Checklist**
 
 - [ ] Status HUD shows tool/nav and a hint while linking.
-- [ ] Wrist menu stays global (Library, recovery, mode switch); node-specific actions stay on the radial.
+- [ ] Wrist menu stays global (Library, recovery, mode switch); node-specific actions stay on the strip.
 
 ## 4. XR controller: cancel → recenter → reset scale/view
 
 **Expected**
 
 1. Start an interaction (e.g. link draft); **Cancel** on the wrist menu clears it.
-2. **Recenter** — **Wrist menu → Recenter** or **node radial → Recenter** (centers the orbit on the primary selection, same as desktop Home/.).
+2. **Recenter** — **Wrist menu → Recenter** or **node actions → Recenter** (centers the orbit on the primary selection, same as desktop Home/.).
 3. **Reset scale** / **Reset view** — World scale or camera framing moves toward defaults without breaking the session.
 
 **Checklist**
 
 - [ ] World grab (grip) does not fire during link/node drag.
 
-## 5. Hand tracking: select → open menu → place node or child → inspect
+## 5. Hand tracking: select → open menu → node actions → inspect → world pinch
 
 **Expected**
 
 1. Session uses hands only (no gamepad controllers); `xrHandTrackingPrimary` UX applies.
-2. **Global menu** — Palm toward you (or left secondary button on controller fallback) opens wrist menu.
+2. **Global menu** — Palm toward you (dwell; or left secondary button when a controller is present) opens wrist menu.
 3. **Selection** — Pinch/ray select works for basic selection.
-4. **Node radial** — Child / Inspect available; **Link** is disabled with a short “controllers” cue.
-5. **Inspect** — Opens **node detail** in XR.
+4. **Node actions** — Child / Inspect available; **Link** is disabled with a short “controllers” cue.
+5. **Inspect** — Opens **node detail** in XR (head-relative panel).
+6. **World mode** — Index–thumb **pinch grab** moves/scales/yaws the graph (same session rules as controller grips).
 
 **Checklist**
 
-- [ ] Status HUD states hand-mode expectations (Child & Inspect; controllers for full Link).
+- [ ] Status HUD states hand-mode expectations (Child & Inspect; pinch world grab; controllers for full Link).
+- [ ] HTML panels stay readable (follow view; left/center/right lanes).
 - [ ] Controller-based sessions still behave as in paths 3–4.
 
 ## 6. Desktop: local snapshot → restore (with save-before)
@@ -122,7 +124,7 @@ These five flows define the core product. Verify after meaningful interaction ch
 
 ## Known limitations
 
-- **Hand tracking** is a lite mode: complex linking and precision graph edits may be hidden or reduced; controllers remain the full authoring path.
-- **Export / layout / bookmarks** may require exiting VR to use the flat HTML toolbar (see Help).
+- **Hand tracking** is a lite mode: complex linking and precision graph edits may be hidden or reduced; controllers remain the full authoring path. Hand pinch grab is for **workspace** manipulation only, not node-precision placement.
+- **Export / layout** require exiting VR to use the flat HTML toolbar; **bookmarks** and **version history** have in-VR panels from the wrist menu (see Help).
 - **Performance** — “Show all labels” and large graphs can stress standalone headsets; use label budget.
 - **Collaboration / cloud sync** — not implemented; see **docs/product-direction.md**.

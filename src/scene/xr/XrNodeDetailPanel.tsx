@@ -2,8 +2,9 @@ import { Html } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import { useRootStore } from '../../store/rootStore'
 import { NodeDetailForm } from '../../ui/panels/NodeDetailForm'
+import { XrHeadAnchoredGroup } from './XrHeadAnchoredGroup'
 
-/** Node inspector in front of the user while immersive (replaces flat DOM inspector). */
+/** Node inspector while immersive (replaces flat DOM inspector). Head-relative left lane — see xrPanelSpawner. */
 export function XrNodeDetailPanel() {
   const session = useXR((s) => s.session)
   const id = useRootStore((s) => s.detailNodeId)
@@ -14,10 +15,10 @@ export function XrNodeDetailPanel() {
   if (!session || !id || !project || !node) return null
 
   return (
-    <group position={[-0.42, 1.38, -0.62]}>
+    <XrHeadAnchoredGroup lane="left">
       <Html transform occlude={false} style={{ pointerEvents: 'auto' }}>
         <NodeDetailForm id={id} node={node} project={project} variant="xr" />
       </Html>
-    </group>
+    </XrHeadAnchoredGroup>
   )
 }

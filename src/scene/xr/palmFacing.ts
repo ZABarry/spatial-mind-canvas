@@ -1,16 +1,20 @@
 import * as THREE from 'three'
 
 /**
- * Palm “open” thresholds — tune on Quest Browser if the menu is hard to trigger or flickers.
- * Raise OPEN / CLOSE together if the panel appears too often; lower if it rarely appears.
+ * Palm “open” thresholds — conservative: harder to open accidentally than pre-rebuild.
+ * Tune on Quest if the menu is stubborn or still flickers.
  */
-/** Combined score above this → transition to visible (hysteresis open). */
-export const PALM_FACE_OPEN_THRESHOLD = 0.24
+/** Combined score above this → arm dwell toward visible. */
+export const PALM_FACE_OPEN_THRESHOLD = 0.32
 /** Below this → transition to hidden (hysteresis close). */
-export const PALM_FACE_CLOSE_THRESHOLD = 0.14
+export const PALM_FACE_CLOSE_THRESHOLD = 0.18
+/** Consecutive frames above OPEN threshold before showing menu (reduces wrist-noise triggers). */
+export const PALM_FACE_OPEN_DWELL_FRAMES = 5
 
 export type PalmFacingHysteresis = {
   visible: boolean
+  /** Frames in a row with score >= PALM_FACE_OPEN_THRESHOLD while not yet visible. */
+  openStreak: number
 }
 
 const tmpQ = new THREE.Quaternion()
@@ -123,9 +127,22 @@ export function updatePalmMenuVisibility(
 ): boolean {
   if (score == null) {
     hysteresis.visible = false
+    hysteresis.openStreak = 0
     return false
   }
-  if (!hysteresis.visible && score >= PALM_FACE_OPEN_THRESHOLD) hysteresis.visible = true
-  else if (hysteresis.visible && score <= PALM_FACE_CLOSE_THRESHOLD) hysteresis.visible = false
+  if (!hysteresis.visible) {
+    if (score >= PALM_FACE_OPEN_THRESHOLD) {
+      hysteresis.openStreak += 1
+      if (hysteresis.openStreak >= PALM_FACE_OPEN_DWELL_FRAMES) {
+        hysteresis.visible = true
+        hysteresis.openStreak = 0
+      }
+    } else {
+      hysteresis.openStreak = 0
+    }
+  } else if (score <= PALM_FACE_CLOSE_THRESHOLD) {
+    hysteresis.visible = false
+    hysteresis.openStreak = 0
+  }
   return hysteresis.visible
 }

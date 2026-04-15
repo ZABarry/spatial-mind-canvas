@@ -2,7 +2,6 @@ import { Billboard, Text } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import type { Group } from 'three'
-import { Vector3 } from 'three'
 import { useXR } from '@react-three/xr'
 import { getInteractionPhase } from '../../input/interactionPhase'
 import { useRootStore } from '../../store/rootStore'
@@ -14,9 +13,7 @@ import {
 import { interactionTokens, isValidLinkNodeTarget } from '../visual/interactionTokens'
 import { COPY_WORLD_VS_TRAVEL_SHORT } from './productCopy'
 import { formatSceneMetricsLine } from '../sceneMetrics'
-
-const _dir = new Vector3()
-const _up = new Vector3()
+import { applyHeadHudAnchor } from './anchors/xrHeadHudAnchor'
 
 /**
  * In-VR status: tool, navigation mode, selection, active gesture, and recovery hints.
@@ -62,9 +59,9 @@ export function XrStatusHud() {
       return `${COPY_WORLD_VS_TRAVEL_SHORT} Left stick: move/strafe · Right stick: turn · Y: wrist menu`
     }
     if (handPrimary) {
-      return 'Hand mode: pinch/select · palm opens menu · Radial: Child & Inspect — controllers: full Link'
+      return 'Hand mode: pinch/select · palm opens menu · pinch grab: move/scale graph · Node actions: Child & Inspect — controllers: full Link'
     }
-    return `${COPY_WORLD_VS_TRAVEL_SHORT} Trigger: select/confirm · Grip: move/scale graph · Y: wrist · Radial: node actions`
+    return `${COPY_WORLD_VS_TRAVEL_SHORT} Trigger: select/confirm · Grip: move/scale graph · Y: wrist · Node actions strip`
   }, [nav, handPrimary])
 
   const linkHudColor = useMemo(() => {
@@ -88,9 +85,9 @@ export function XrStatusHud() {
     }
     if (interactionSession.kind === 'nodeDrag') return 'Dragging node'
     if (interactionSession.kind === 'worldGrab')
-      return 'Moving/scaling world — release grips to finish · wrist Cancel if stuck'
+      return 'Moving/scaling world — release grips / open pinch to finish · wrist Cancel if stuck'
     if (interactionSession.kind === 'menu') {
-      return interactionSession.menu === 'global' ? 'Wrist menu' : 'Node radial'
+      return interactionSession.menu === 'global' ? 'Wrist menu' : 'Node actions'
     }
     return null
   }, [interactionSession])
@@ -247,11 +244,7 @@ export function XrStatusHud() {
 
   useFrame(() => {
     if (!session || !groupRef.current) return
-    camera.getWorldDirection(_dir)
-    _up.set(0, 1, 0).applyQuaternion(camera.quaternion)
-    groupRef.current.position.copy(camera.position)
-    groupRef.current.position.addScaledVector(_dir, 1.35)
-    groupRef.current.position.addScaledVector(_up, -0.22)
+    applyHeadHudAnchor(groupRef.current, camera)
   })
 
   if (!session) return null

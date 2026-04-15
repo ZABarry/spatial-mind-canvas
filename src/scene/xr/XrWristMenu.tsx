@@ -8,6 +8,9 @@ import { useRootStore } from '../../store/rootStore'
 import type { WristButtonKind } from '../visual/interactionTokens'
 import { wristMenuButtonColors } from '../visual/interactionTokens'
 import { tryHandleXrMenuObject, type XrMenuHit } from './xrMenuActions'
+import { buildLeftControllerGlobalMenuMatrix } from './anchors/xrControllerAnchor'
+import { composeWristPoseMatrix } from './anchors/xrPalmAnchor'
+import { dampMatrix4SE3 } from './anchors/xrSmoothMatrix'
 import {
   palmFacingHeadScore,
   updatePalmMenuVisibility,
@@ -125,12 +128,15 @@ function MenuButton({
 export function XrWristMenu() {
   const gl = useThree((s) => s.gl)
   const groupRef = React.useRef<THREE.Group>(null)
-  const palmHyst = React.useRef<PalmFacingHysteresis>({ visible: false })
+  const palmHyst = React.useRef<PalmFacingHysteresis>({ visible: false, openStreak: 0 })
   const controllerMenuOpen = React.useRef(false)
   const lastMenuButton = React.useRef(false)
   const prevWristVisible = React.useRef(false)
   const panelInnerRef = React.useRef<THREE.Group>(null)
   const openT = React.useRef(0)
+  const smoothedMenuMatrix = React.useRef(new THREE.Matrix4())
+  const menuSmoothInit = React.useRef(true)
+  const targetMenuMatrix = React.useRef(new THREE.Matrix4())
 
   const mode = useRootStore((s) => s.interactionMode)
 
@@ -167,8 +173,7 @@ export function XrWristMenu() {
     const leftHand = sources.find((s) => s.handedness === 'left' && s.hand)
 
     let visible = false
-    const base = new THREE.Matrix4()
-    const wristOffset = new THREE.Matrix4().makeTranslation(0, 0.09, -0.07)
+    const base = targetMenuMatrix.current
 
     if (leftHand?.hand) {
       const wristSpace = leftHand.hand.get('wrist')
@@ -185,8 +190,7 @@ export function XrWristMenu() {
             t.orientation.z,
             t.orientation.w,
           )
-          base.compose(p, q, new THREE.Vector3(1, 1, 1))
-          base.multiply(wristOffset)
+          composeWristPoseMatrix(p, q, base)
         }
       }
     } else {
@@ -209,20 +213,7 @@ export function XrWristMenu() {
         if (ctrl && anchorSpace) {
           const pose = frame.getPose(anchorSpace, refSpace)
           if (pose) {
-            const t = pose.transform
-            const p = new THREE.Vector3(t.position.x, t.position.y, t.position.z)
-            const q = new THREE.Quaternion(
-              t.orientation.x,
-              t.orientation.y,
-              t.orientation.z,
-              t.orientation.w,
-            )
-            base.compose(p, q, new THREE.Vector3(1, 1, 1))
-            // Local offset from grip (stable) vs aim ray (drifts with pointing)
-            const ctrlOff = ctrl.gripSpace
-              ? new THREE.Matrix4().makeTranslation(0, 0.02, -0.1)
-              : new THREE.Matrix4().makeTranslation(0.14, 0.04, -0.12)
-            base.multiply(ctrlOff)
+            buildLeftControllerGlobalMenuMatrix(pose, !!ctrl.gripSpace, base)
           }
         }
       }
@@ -243,7 +234,10 @@ export function XrWristMenu() {
         st.dispatch({ type: 'setMenuSession', menu: null })
       }
     }
-    if (!visible) return
+    if (!visible) {
+      menuSmoothInit.current = true
+      return
+    }
 
     openT.current = Math.min(1, openT.current + delta * 8)
     const inner = panelInnerRef.current
@@ -252,8 +246,16 @@ export function XrWristMenu() {
       inner.scale.setScalar(s)
     }
 
+    const sm = smoothedMenuMatrix.current
+    if (menuSmoothInit.current) {
+      sm.copy(base)
+      menuSmoothInit.current = false
+    } else {
+      dampMatrix4SE3(sm, base, leftHand?.hand ? 10 : 14, delta)
+    }
+
     g.matrixAutoUpdate = false
-    g.matrix.copy(base)
+    g.matrix.copy(sm)
     g.updateMatrixWorld(true)
   })
 

@@ -4,7 +4,7 @@ import { useRootStore } from '../../store/rootStore'
 import * as cmds from '../../ui/toolbar/sceneToolbarCommands'
 import { xrLastNodeSelectControllerIndex } from './xrSelectionRefs'
 
-/** Contextual node actions (radial / future hand menus) — not on the global wrist panel. */
+/** Contextual node actions (VR strip / future surfaces) — not on the global wrist panel. */
 export function runNodeInspect() {
   cmds.openInspect()
 }

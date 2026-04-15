@@ -61,7 +61,7 @@ export type AppAction =
   | { type: 'patchDevicePreferences'; patch: Partial<DevicePreferences> }
   /** Desktop: disable orbit rotation while dragging nodes so the camera does not spin. */
   | { type: 'setNodeDragActive'; active: boolean; nodeId?: string; pointerId?: string }
-  /** VR: wrist panel or node radial — blocks world grab; does not replace link/drag/worldGrab. */
+  /** VR: wrist panel or node contextual menu — blocks world grab; does not replace link/drag/worldGrab. */
   | { type: 'setMenuSession'; menu: 'global' | 'node' | null }
   /** Desktop: disable orbit rotation while dragging world origin axis handles. */
   | { type: 'setWorldAxisDragActive'; active: boolean }

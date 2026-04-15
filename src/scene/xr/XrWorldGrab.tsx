@@ -2,8 +2,14 @@ import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useXRInputSourceEvent } from '@react-three/xr'
+import {
+  pinchTipDistanceM,
+  updatePinchGraspActive,
+  type PinchGraspHysteresis,
+} from '../../input/xr/handPinchGrasp'
 import { canBeginWorldGrab } from '../../input/xr/xrSessionGuards'
 import { useRootStore } from '../../store/rootStore'
+import { getGrabAnchorWorld } from './anchors/xrGrabAnchor'
 
 const TRANSLATE_SENS = 2.2
 const ROT_TWIST_SENS = 2.4
@@ -16,9 +22,9 @@ function handednessOrder(src: XRInputSource): number {
 }
 
 /**
- * Squeeze (grip) on controllers to move/scale/rotate the world root in worldManip mode.
- * One hand: translate. Two hands: horizontal separation scales (hands apart = zoom out),
- * and opposite motion along view forward (one hand toward you, one away) yaws the world.
+ * World mode: squeeze **grip** on controllers, or **index–thumb pinch** when hand-tracking–primary,
+ * to move / scale / yaw the graph. One input: translate. Two inputs: pinch separation scales;
+ * opposite motion along view forward yaws. See `handPinchGrasp` — not full precision authoring.
  */
 export function XrWorldGrab() {
   const gl = useThree((s) => s.gl)
@@ -27,6 +33,8 @@ export function XrWorldGrab() {
   const da = useRef(new THREE.Vector3())
   const db = useRef(new THREE.Vector3())
   const forward = useRef(new THREE.Vector3())
+  const pinchBySource = useRef(new Map<XRInputSource, PinchGraspHysteresis>())
+  const tmpAnchor = useRef(new THREE.Vector3())
 
   useXRInputSourceEvent(
     'all',
@@ -37,13 +45,11 @@ export function XrWorldGrab() {
       if (ik !== 'worldGrab' && !canBeginWorldGrab(st)) return
       const frame = e.frame
       const refSpace = gl.xr.getReferenceSpace()
-      const grip = e.inputSource.gripSpace
-      if (!refSpace || !grip) return
-      const pose = frame.getPose(grip, refSpace)
-      if (!pose) return
-      const p = pose.transform.position
+      if (!refSpace) return
+      const p = tmpAnchor.current
+      if (!getGrabAnchorWorld(frame, refSpace, e.inputSource, p)) return
       const wasEmpty = lastPos.current.size === 0
-      lastPos.current.set(e.inputSource, new THREE.Vector3(p.x, p.y, p.z))
+      lastPos.current.set(e.inputSource, p.clone())
       if (wasEmpty) st.dispatch({ type: 'beginWorldGrab' })
       if (lastPos.current.size < 2) lastPairDist.current = null
     },
@@ -63,24 +69,72 @@ export function XrWorldGrab() {
   )
 
   useFrame(() => {
-    const st = useRootStore.getState()
-    const ik = st.interactionSession.kind
-    if (!gl.xr.isPresenting || st.navigationMode !== 'world' || ik !== 'worldGrab') return
+    if (!gl.xr.isPresenting) return
     const frame = gl.xr.getFrame()
     const refSpace = gl.xr.getReferenceSpace()
-    if (!frame || !refSpace) return
+    const xrSession = gl.xr.getSession()
+    if (!frame || !refSpace || !xrSession) return
+
+    let st = useRootStore.getState()
+    const active = new Set(xrSession.inputSources)
+
+    let removedStale = false
+    for (const src of [...lastPos.current.keys()]) {
+      if (!active.has(src)) {
+        lastPos.current.delete(src)
+        pinchBySource.current.delete(src)
+        removedStale = true
+      }
+    }
+    if (removedStale && lastPos.current.size < 2) lastPairDist.current = null
+    if (removedStale && lastPos.current.size === 0) {
+      const s0 = useRootStore.getState()
+      if (s0.interactionSession.kind === 'worldGrab') s0.dispatch({ type: 'endWorldGrab' })
+    }
+
+    /** Hand-primary: pinch toggles grab (controllers use squeeze events above). */
+    if (st.xrHandTrackingPrimary && st.navigationMode === 'world') {
+      for (const src of xrSession.inputSources) {
+        if (!src.hand) continue
+        const dist = pinchTipDistanceM(frame, refSpace, src.hand)
+        let hyst = pinchBySource.current.get(src)
+        if (!hyst) {
+          hyst = { pinched: false }
+          pinchBySource.current.set(src, hyst)
+        }
+        const pinching = updatePinchGraspActive(dist, hyst)
+        const had = lastPos.current.has(src)
+
+        if (pinching && !had) {
+          st = useRootStore.getState()
+          const ik = st.interactionSession.kind
+          if (ik !== 'worldGrab' && !canBeginWorldGrab(st)) continue
+          const p = tmpAnchor.current
+          if (!getGrabAnchorWorld(frame, refSpace, src, p)) continue
+          const wasEmpty = lastPos.current.size === 0
+          lastPos.current.set(src, p.clone())
+          if (wasEmpty) st.dispatch({ type: 'beginWorldGrab' })
+          if (lastPos.current.size < 2) lastPairDist.current = null
+        } else if (!pinching && had) {
+          lastPos.current.delete(src)
+          if (lastPos.current.size < 2) lastPairDist.current = null
+          if (lastPos.current.size === 0) useRootStore.getState().dispatch({ type: 'endWorldGrab' })
+        }
+      }
+    }
+
+    st = useRootStore.getState()
+    const ik = st.interactionSession.kind
+    if (st.navigationMode !== 'world' || ik !== 'worldGrab') return
 
     const sources = [...lastPos.current.keys()]
     if (sources.length === 0) return
 
     const pairedPos: { src: XRInputSource; pos: THREE.Vector3 }[] = []
+    const p = tmpAnchor.current
     for (const src of sources) {
-      const grip = src.gripSpace
-      if (!grip) continue
-      const pose = frame.getPose(grip, refSpace)
-      if (!pose) continue
-      const p = pose.transform.position
-      pairedPos.push({ src, pos: new THREE.Vector3(p.x, p.y, p.z) })
+      if (!getGrabAnchorWorld(frame, refSpace, src, p)) continue
+      pairedPos.push({ src, pos: p.clone() })
     }
 
     if (pairedPos.length >= 2) {
@@ -92,7 +146,6 @@ export function XrWorldGrab() {
       const dist = a.distanceTo(b)
 
       if (lastPairDist.current != null && lastPairDist.current > 1e-5) {
-        // Hands apart → smaller factor → zoom out; together → zoom in
         let ratio = lastPairDist.current / dist
         ratio = Math.max(SCALE_CLAMP.min, Math.min(SCALE_CLAMP.max, ratio))
         if (Math.abs(ratio - 1) > 0.002) {

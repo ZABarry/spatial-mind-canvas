@@ -2,6 +2,7 @@ import { Html } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import { useRootStore } from '../../store/rootStore'
 import { SettingsFormBody } from '../../ui/panels/SettingsFormBody'
+import { XrHeadAnchoredGroup } from './XrHeadAnchoredGroup'
 
 export function XrSettingsPanel() {
   const session = useXR((s) => s.session)
@@ -11,7 +12,7 @@ export function XrSettingsPanel() {
   if (!session || !open || !project) return null
 
   return (
-    <group position={[0.44, 1.38, -0.62]}>
+    <XrHeadAnchoredGroup lane="nearRight">
       <Html transform occlude={false} style={{ pointerEvents: 'auto' }}>
         <div
           className="settings-form-xr"
@@ -22,6 +23,6 @@ export function XrSettingsPanel() {
           <SettingsFormBody variant="xr" />
         </div>
       </Html>
-    </group>
+    </XrHeadAnchoredGroup>
   )
 }

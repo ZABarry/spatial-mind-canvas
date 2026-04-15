@@ -21,7 +21,7 @@ export type InteractionPhase =
   | 'travel'
   | 'modalConfirm'
   | 'searchPalette'
-  /** VR wrist or node radial — blocks world grab; not a graph edit mode. */
+  /** VR wrist or node contextual actions — blocks world grab; not a graph edit mode. */
   | 'xrMenu'
 
 export function getInteractionPhase(s: {

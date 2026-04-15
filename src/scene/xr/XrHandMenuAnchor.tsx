@@ -1,6 +1,6 @@
 /**
- * Placeholder for future hand-anchored menu positioning (wrist / palm targets).
- * Wrist menu placement stays in {@link XrWristMenu} for now.
+ * Legacy no-op mount — palm/controller menu matrices live in `anchors/xrPalmAnchor.ts` and
+ * `anchors/xrControllerAnchor.ts` (wired from {@link XrWristMenu}).
  */
 export function XrHandMenuAnchor() {
   return null

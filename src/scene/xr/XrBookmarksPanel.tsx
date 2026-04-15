@@ -2,6 +2,7 @@ import { Html } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import * as cmds from '../../ui/toolbar/sceneToolbarCommands'
 import { useRootStore } from '../../store/rootStore'
+import { XrHeadAnchoredGroup } from './XrHeadAnchoredGroup'
 
 export function XrBookmarksPanel() {
   const session = useXR((s) => s.session)
@@ -14,7 +15,7 @@ export function XrBookmarksPanel() {
   const close = () => useRootStore.getState().setBookmarksPanelOpen(false)
 
   return (
-    <group position={[0.52, 1.38, -0.62]}>
+    <XrHeadAnchoredGroup lane="right">
       <Html transform occlude={false} style={{ pointerEvents: 'auto' }}>
         <div
           style={{
@@ -75,6 +76,6 @@ export function XrBookmarksPanel() {
           </div>
         </div>
       </Html>
-    </group>
+    </XrHeadAnchoredGroup>
   )
 }

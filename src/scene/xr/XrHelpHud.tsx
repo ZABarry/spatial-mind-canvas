@@ -3,14 +3,15 @@ import { useXR } from '@react-three/xr'
 import { useRootStore } from '../../store/rootStore'
 
 const tips = [
-  'Travel vs world — Travel: left stick moves/strafes, right stick turns (dominant hand in Settings biases aim only). World: no locomotion; trigger selects; grip moves/scales the graph when not in a menu or modal.',
+  'Travel vs world — Travel: left stick moves/strafes, right stick turns (dominant hand in Settings biases aim only). World: no locomotion; trigger selects; grip or hand pinch moves/scales the graph when not in a menu or modal.',
   'Recovery — Reset view: default camera framing. Recenter: orbit pivot to primary selection. Reset scale: graph scale to 1. Cancel: closes panels, help, and in-progress gestures.',
   'Scene — Trigger selects nodes. With a link active, aim at another node or the plane to finish; aim at the source node to cancel. Controllers use the trigger; hand tracking uses the pointer.',
-  'Wrist menu — Left: Y (controllers) or palm toward you (hands). Global: Library, Search, Settings, Undo, Redo, Reset view, Recenter, Reset scale, Cancel, Switch to Travel / Switch to World, Help, Exit VR.',
-  'Node radial — Beside the selection: Child, Link (controllers), Inspect, Delete, Focus, Recenter. Hand-tracking–lite: Link is disabled; Child and Inspect stay available.',
-  'Hand-tracking–lite — Select, wrist menu, Child, Inspect, Cancel. Controllers remain the full authoring path for Link and precision edits.',
+  'Panels — Search, detail, settings, etc. float in front of you in left/center/right lanes and follow your view.',
+  'Wrist menu — Left: Y (controllers) or palm toward you (hands, with dwell). Global: Library, Search, Settings, Undo, Redo, Reset view, Recenter, Reset scale, Cancel, Switch to Travel / Switch to World, Help, Exit VR.',
+  'Node actions — Strip toward you on the selection: Child, Link (controllers), Inspect, Delete, Focus, Recenter. Hand-tracking–lite: Link is disabled; Child and Inspect stay available.',
+  'Hand-tracking–lite — Select, wrist menu, pinch world grab (World mode), node actions, Cancel. Controllers remain the full authoring path for Link and precision edits.',
   'Passthrough — Prefer camera passthrough when entering XR under Device & VR in Settings.',
-  'Grip — In World tool mode only, squeeze grip to move the graph; two hands pinch apart/together to scale; opposite forward motion yaws. Blocked while linking, dragging, or using wrist/radial/modals.',
+  'World grab — World mode: controllers squeeze grip; hands-only: index–thumb pinch. One hand: move graph. Two: scale (hands apart/together) and opposite forward motion yaws. Blocked while linking, dragging, or using wrist/menu/node-actions/modals.',
 ]
 
 export function XrHelpHud() {
