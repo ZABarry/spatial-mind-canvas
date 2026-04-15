@@ -192,6 +192,11 @@ export function XrWristMenu() {
   const modeLabel = mode === 'travel' ? 'Switch to World' : 'Switch to Travel'
 
   const [menuPage, setMenuPage] = React.useState(0)
+  const goMenuPage = React.useCallback((next: number) => {
+    setMenuPage(next)
+    const audio = useRootStore.getState().devicePreferences.audioEnabled
+    playInteractionCue('menuPageFlip', audio)
+  }, [])
   const primaryDefs = React.useMemo(() => buildPrimaryMenuDefs(modeLabel), [modeLabel])
   const secondaryDefs = React.useMemo(() => buildSecondaryMenuDefs(), [])
 
@@ -359,7 +364,7 @@ export function XrWristMenu() {
               col={1}
               rowsTop={rowsTop}
               buttonKind="default"
-              onLocal={() => setMenuPage(1)}
+              onLocal={() => goMenuPage(1)}
             />
             {primaryExit ? (
               <MenuButton
@@ -406,7 +411,7 @@ export function XrWristMenu() {
               rowsTop={rowsTop}
               spanCols={2}
               buttonKind="default"
-              onLocal={() => setMenuPage(0)}
+              onLocal={() => goMenuPage(0)}
             />
           </>
         )}

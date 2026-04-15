@@ -12,6 +12,14 @@ import { shouldIgnoreXrGraphSelect } from '../xr/xrSessionGuards'
 import { xrControllerIndexFromRayOrigin } from '../../utils/xrController'
 import { tryHandleXrMenuObject } from '../../scene/xr/xrMenuActions'
 import { xrLastNodeSelectControllerIndex } from '../../scene/xr/xrSelectionRefs'
+import {
+  applyStickyTargetPreference,
+  intersectObjectsWithRayAssist,
+  type XrStickyTarget,
+} from '../xr/xrControllerRayAssist'
+
+/** Prefer last successful target on the same controller when aim jitters between nearby surfaces. */
+const lastRayStickyByController = new Map<number, XrStickyTarget>()
 
 function linkHitRank(obj: THREE.Object3D): number {
   let o: THREE.Object3D | null = obj
@@ -55,17 +63,20 @@ export function useXrControllerInputBridge() {
         t.orientation.w,
       )
       const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(q).normalize()
-      const raycaster = new THREE.Raycaster(origin, direction)
-      raycaster.near = 0.05
-      raycaster.far = 500
-      const rawHits = raycaster.intersectObjects(scene.children, true)
+      const ctrlIdx = xrControllerIndexFromRayOrigin(gl, origin)
+      const rawHits = intersectObjectsWithRayAssist(scene, origin, direction, 0.05, 500)
       const stForSort = useRootStore.getState()
+      const sticky = lastRayStickyByController.get(ctrlIdx) ?? null
+      const assisted = applyStickyTargetPreference(rawHits, sticky, 0.042)
       const hits =
         stForSort.interactionSession.kind === 'link'
-          ? [...rawHits].sort((a, b) => linkHitRank(a.object) - linkHitRank(b.object))
-          : rawHits
+          ? [...assisted].sort((a, b) => linkHitRank(a.object) - linkHitRank(b.object))
+          : assisted
       for (const h of hits) {
-        if (tryHandleXrMenuObject(h.object)) return
+        if (tryHandleXrMenuObject(h.object)) {
+          lastRayStickyByController.set(ctrlIdx, { object: h.object, distance: h.distance })
+          return
+        }
         let skipGraph = false
         let q: THREE.Object3D | null = h.object
         while (q) {
@@ -87,10 +98,12 @@ export function useXrControllerInputBridge() {
                 st.dispatch({ type: 'cancelConnection' })
               } else {
                 st.dispatch({ type: 'finishConnection', targetNodeId: id })
+                lastRayStickyByController.set(ctrlIdx, { object: h.object, distance: h.distance })
               }
             } else {
               st.dispatch({ type: 'selectNodes', ids: [id], additive: false })
-              xrLastNodeSelectControllerIndex.current = xrControllerIndexFromRayOrigin(gl, origin)
+              xrLastNodeSelectControllerIndex.current = ctrlIdx
+              lastRayStickyByController.set(ctrlIdx, { object: h.object, distance: h.distance })
             }
             return
           }

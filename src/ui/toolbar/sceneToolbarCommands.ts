@@ -1,3 +1,4 @@
+import { playInteractionCue } from '../../audio/interactionCues'
 import { xrStore } from '../../scene/xrStore'
 import { useRootStore } from '../../store/rootStore'
 import type { StructureToolName } from '../../input/actions'
@@ -216,7 +217,11 @@ export function openXrHelp() {
 
 /** VR: snap head-relative panel anchors to the current view (recovery if panels drift or feel lost). */
 export function recallXrPanels() {
-  useRootStore.getState().dispatch({ type: 'bumpXrPanelAnchors' })
+  const st = useRootStore.getState()
+  st.dispatch({ type: 'bumpXrPanelAnchors' })
+  if (st.xrSessionActive) {
+    playInteractionCue('panelRecall', st.devicePreferences.audioEnabled)
+  }
 }
 
 export function recallBookmark(id: string) {

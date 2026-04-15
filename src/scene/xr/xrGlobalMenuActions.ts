@@ -71,7 +71,7 @@ export function runXrGlobalMenuCommand(cmd: XrGlobalMenuCommand) {
     case 'recallPanels': {
       const st = useRootStore.getState()
       st.dispatch({ type: 'bumpXrPanelAnchors' })
-      playInteractionCue('select', st.devicePreferences.audioEnabled)
+      playInteractionCue('panelRecall', st.devicePreferences.audioEnabled)
       break
     }
   }

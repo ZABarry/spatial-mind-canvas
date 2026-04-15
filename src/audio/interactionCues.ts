@@ -11,6 +11,10 @@ export type InteractionCueKind =
   | 'confirmAccept'
   | 'destructiveConfirm'
   | 'menuToggle'
+  /** Wrist menu primary ↔ More page change. */
+  | 'menuPageFlip'
+  /** Recall panels / re-anchor floating HTML surfaces. */
+  | 'panelRecall'
 
 /**
  * Short synthesized cues — soft, non-spatial, gated by caller (`audioEnabled`).
@@ -140,6 +144,28 @@ export function playInteractionCue(kind: InteractionCueKind, audioEnabled: boole
       env(0.028, 0.002, 0.035)
       o.start(now)
       o.stop(now + 0.06)
+      break
+    }
+    case 'menuPageFlip': {
+      const o = ctx.createOscillator()
+      o.type = 'sine'
+      o.frequency.setValueAtTime(620, now)
+      o.frequency.exponentialRampToValueAtTime(740, now + 0.04)
+      o.connect(g)
+      env(0.022, 0.003, 0.055)
+      o.start(now)
+      o.stop(now + 0.1)
+      break
+    }
+    case 'panelRecall': {
+      const o = ctx.createOscillator()
+      o.type = 'sine'
+      o.frequency.setValueAtTime(440, now)
+      o.frequency.exponentialRampToValueAtTime(520, now + 0.05)
+      o.connect(g)
+      env(0.026, 0.006, 0.1)
+      o.start(now)
+      o.stop(now + 0.14)
       break
     }
     default:

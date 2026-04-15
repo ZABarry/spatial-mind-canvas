@@ -1,8 +1,40 @@
 import { createXRStore } from '@react-three/xr'
+import type { Object3D } from 'three'
+import type { Intersection } from 'three'
 
 /** Visible on bright fog / white void; default XR ray is white. */
 const XR_RAY_BLUE = '#1a6bff'
-const XR_RAY_OPACITY = 0.5
+const XR_RAY_OPACITY = 0.52
+
+/** Wrist menu, node action strip, etc. — prefer over graph when distances tie-break. */
+function objectIsXrUiSurface(o: Object3D): boolean {
+  let x: Object3D | null = o
+  while (x) {
+    if (x.userData?.xrMenuHit || x.userData?.xrNodeRadial) return true
+    x = x.parent
+  }
+  return false
+}
+
+/**
+ * Prefer UI hits when two intersections are nearly equidistant (reduces flicker at shallow angles).
+ */
+function xrPointerCustomSort(
+  i1: Intersection,
+  _pointerEventsOrder1: number | undefined,
+  i2: Intersection,
+  _pointerEventsOrder2: number | undefined,
+): number {
+  void _pointerEventsOrder1
+  void _pointerEventsOrder2
+  const dd = Math.abs(i1.distance - i2.distance)
+  if (dd < 0.038) {
+    const m1 = objectIsXrUiSurface(i1.object)
+    const m2 = objectIsXrUiSurface(i2.object)
+    if (m1 !== m2) return m1 ? -1 : 1
+  }
+  return i1.distance - i2.distance
+}
 
 /**
  * IWER desktop emulation only (`emulate` is disabled in production): initial headset position in meters.
@@ -16,7 +48,16 @@ const rayPointer = {
   rayModel: {
     color: XR_RAY_BLUE,
     opacity: XR_RAY_OPACITY,
+    size: 0.0088,
+    maxLength: 14,
   },
+  cursorModel: {
+    color: XR_RAY_BLUE,
+    opacity: 0.78,
+    size: 0.112,
+  },
+  minDistance: 0.05,
+  customSort: xrPointerCustomSort,
 }
 
 export const xrStore = createXRStore({

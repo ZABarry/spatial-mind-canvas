@@ -12,6 +12,7 @@ import {
   worldPointToGraphLocal,
   XR_STANDING_GRAPH_OFFSET,
 } from '../../utils/math'
+import { intersectObjectsWithRayAssist } from '../../input/xr/xrControllerRayAssist'
 import { linkLineAppearance } from '../visual/interactionTokens'
 
 const _ray = new THREE.Raycaster()
@@ -100,7 +101,7 @@ export function LinkPreview() {
     _ray.near = 0.05
     _ray.far = 500
 
-    const hits = _ray.intersectObjects(scene.children, true)
+    const hits = intersectObjectsWithRayAssist(scene, _origin, _dir, 0.05, 500)
     let previewTarget: HitTarget | undefined
     for (const h of hits) {
       let o: THREE.Object3D | null = h.object

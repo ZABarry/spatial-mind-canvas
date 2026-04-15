@@ -54,9 +54,10 @@ In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`);
 ## XR controllers
 
 - **Enter VR** — Toolbar primary button; confirm in headset/browser.
+- **Ray targeting** — The rendered aim ray uses a **slightly wider beam** and cursor than library defaults. Hit tests merge **parallel offset rays** for more forgiving selection and apply light **stickiness** to the last successful target per controller. When two hits are almost the same distance, **wrist menu** and **node action strip** surfaces win over the graph (reduces flicker at shallow angles).
 - **Select** — Ray and **trigger** on nodes (and to complete gestures per HUD).
 - **Travel vs World** (nav) — **Travel** = thumbstick locomotion; **World** = stay put for fine graph work (see terminology).
-- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). **Page 1:** Search, Undo, Recenter, Cancel, switch Travel/World, Help, **Settings**, **More…**, **Exit VR** (full-width row). **Page 2:** Library, History, Bookmarks, Redo, Reset view, Reset scale, **Recall panels** (full-width), **« Back**.
+- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). **Page 1:** Search, Undo, Recenter, Cancel, switch Travel/World, Help, **Settings**, **More…**, **Exit VR** (full-width row). **Page 2:** Library, History, Bookmarks, Redo, Reset view, Reset scale, **Recall panels** (full-width), **« Back**. With **audio** on, switching pages plays a soft **menu page** cue (distinct from open/close).
 - **Node actions** — Primary row **Child**, **Link**, **Inspect**; secondary **Focus**, **Recenter**; **Delete** in a **separated column** (not mixed into the primary row). Billboard toward you; distance-aware scale; subtle plate behind the cluster. Hand mode: **Link** shows a **Controllers** badge — use tracked controllers for reliable Link.
 - **World grab** — **World** mode: controllers squeeze **grip**; hands-only: **index–thumb pinch** on each hand. One hand: translate. Two: pinch/grip separation scales; opposite forward motion yaws (thresholds reduce accidental scale vs yaw coupling). A subtle **ring near the pinch** can appear when a grab is almost armed (hand-primary).
 - **Layout, bookmarks, export** — Primarily on the **flat** toolbar; exit VR or use Library as implemented.
@@ -79,7 +80,7 @@ In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`);
 | **Recenter** | Align primary selection with orbit pivot / framing (see terminology). |
 | **Reset scale** | World scale multiplier toward default. |
 | **Escape** (desktop) | Broad cancel + clear selection and close panels/search as implemented. |
-| **Recall panels** (VR wrist, page 2) | Re-snap floating HTML panels to a comfortable pose in front of you. |
+| **Recall panels** (VR wrist, page 2) | Re-snap floating HTML panels to a comfortable pose in front of you. With **audio** enabled, plays a short **panel recall** cue (same family as other interaction sounds). |
 
 ## Local snapshots (version history)
 
