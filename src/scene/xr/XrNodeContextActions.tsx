@@ -29,18 +29,20 @@ type ActionBtn = {
   onPress: () => void
 }
 
-const CHIP_PRIMARY_W = 0.15
-const CHIP_PRIMARY_H = 0.072
-const CHIP_SECONDARY_W = 0.12
-const CHIP_SECONDARY_H = 0.056
-const CHIP_DELETE_W = 0.11
-const CHIP_DELETE_H = 0.05
-const GAP_P = 0.018
-const GAP_S = 0.014
-const DEPTH = 0.02
-const PRIMARY_ROW_Y = 0.07
-const SECONDARY_ROW_Y = -0.06
-const DELETE_ROW_Y = -0.135
+const CHIP_PRIMARY_W = 0.156
+const CHIP_PRIMARY_H = 0.076
+const CHIP_SECONDARY_W = 0.128
+const CHIP_SECONDARY_H = 0.06
+const CHIP_DELETE_W = 0.1
+const CHIP_DELETE_H = 0.092
+const GAP_P = 0.02
+const GAP_S = 0.016
+const DEPTH = 0.018
+const PRIMARY_ROW_Y = 0.078
+const SECONDARY_ROW_Y = -0.064
+/** Destructive control sits in a separated column (not another “chip in the row”). */
+const DELETE_COLUMN_X = 0.34
+const PLATE_Z = -0.006
 
 /**
  * Contextual node actions for VR — layered strip (primary / secondary / delete) with distance-aware scale.
@@ -118,8 +120,9 @@ export function XrNodeContextActions() {
 
     const dist = g.position.distanceTo(camera.position)
     const distScale = THREE.MathUtils.clamp(dist * 0.2, 0.82, 1.22)
-    appearRef.current = Math.min(1, appearRef.current + delta * 6)
-    const s = Math.max(0.2, appearRef.current) * distScale
+    appearRef.current = Math.min(1, appearRef.current + delta * 5.2)
+    const ease = 1 - (1 - appearRef.current) ** 2.2
+    const s = Math.max(0.25, ease) * distScale
     if (inner) inner.scale.setScalar(s)
   })
 
@@ -193,15 +196,15 @@ export function XrNodeContextActions() {
           {b.label}
         </Text>
         {b.disabled && b.footnote ? (
-          <group position={[chipW * 0.34, chipH * 0.32, DEPTH * 0.55]}>
+          <group position={[chipW * 0.38, chipH * 0.34, DEPTH * 0.55]}>
             <mesh raycast={() => null}>
-              <planeGeometry args={[0.05, 0.02]} />
-              <meshBasicMaterial color="#64748b" transparent opacity={0.88} />
+              <planeGeometry args={[0.072, 0.024]} />
+              <meshBasicMaterial color="#475569" transparent opacity={0.92} />
             </mesh>
             <Text
-              position={[0, 0, 0.001]}
-              fontSize={0.011}
-              color="#f8fafc"
+              position={[0, 0, 0.0015]}
+              fontSize={0.012}
+              color="#f1f5f9"
               anchorX="center"
               anchorY="middle"
               raycast={() => null}
@@ -235,24 +238,43 @@ export function XrNodeContextActions() {
   const pStart = -pw / 2 + CHIP_PRIMARY_W / 2
   const sw = secondaryActions.length * CHIP_SECONDARY_W + (secondaryActions.length - 1) * GAP_S
   const sStart = -sw / 2 + CHIP_SECONDARY_W / 2
+  const plateW = pw + 0.05
+  const plateH = PRIMARY_ROW_Y - SECONDARY_ROW_Y + CHIP_PRIMARY_H * 0.65 + 0.04
+  const plateY = (PRIMARY_ROW_Y + SECONDARY_ROW_Y) * 0.5
 
   return (
     <group ref={anchorRef}>
       <group ref={contentRef}>
         <Billboard>
           <group userData={{ xrNodeRadial: true }}>
+            <mesh position={[0, plateY, PLATE_Z]} raycast={() => null}>
+              <planeGeometry args={[plateW, plateH]} />
+              <meshStandardMaterial
+                color="#e8eef8"
+                emissive="#cbd5e1"
+                emissiveIntensity={0.06}
+                roughness={0.55}
+                metalness={0.02}
+                transparent
+                opacity={0.42}
+              />
+            </mesh>
             {primaryActions.map((b, i) =>
               renderChip(b, i, PRIMARY_ROW_Y, pStart, CHIP_PRIMARY_W, CHIP_PRIMARY_H, GAP_P),
             )}
             {secondaryActions.map((b, i) =>
               renderChip(b, i, SECONDARY_ROW_Y, sStart, CHIP_SECONDARY_W, CHIP_SECONDARY_H, GAP_S),
             )}
+            <mesh position={[DELETE_COLUMN_X * 0.52, plateY, PLATE_Z * 0.5]} raycast={() => null}>
+              <planeGeometry args={[0.004, plateH * 0.78]} />
+              <meshBasicMaterial color="#94a3b8" transparent opacity={0.55} />
+            </mesh>
             {deleteAction
               ? renderChip(
                   deleteAction,
                   0,
-                  DELETE_ROW_Y,
-                  0,
+                  (PRIMARY_ROW_Y + SECONDARY_ROW_Y) / 2,
+                  DELETE_COLUMN_X,
                   CHIP_DELETE_W,
                   CHIP_DELETE_H,
                   GAP_S,

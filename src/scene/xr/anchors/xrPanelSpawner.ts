@@ -11,8 +11,56 @@ export const XR_PANEL_LANE_STRIDE = 0.42
 /** Between center and full right (e.g. Settings vs Bookmarks). */
 export const XR_PANEL_LANE_NEAR_RIGHT = 0.24
 
-/** Exponential damping for panel follow (higher = snappier; lower = more world-stable). */
-export const XR_PANEL_FOLLOW_LAMBDA = 7.2
+/** Exponential damping for panel follow during initial settle (spawn → comfortable pose). */
+export const XR_PANEL_FOLLOW_LAMBDA_SPAWN = 8.4
+/** After settle: damp current pose toward the (slow-moving) grounded target. */
+export const XR_PANEL_FOLLOW_LAMBDA_TRACK = 4.2
+/** Legacy alias — tests and gradual migration; prefer SPAWN + TRACK. */
+export const XR_PANEL_FOLLOW_LAMBDA = XR_PANEL_FOLLOW_LAMBDA_SPAWN
+
+/** Seconds to follow the head slot closely after spawn / recall before grounding. */
+export const XR_PANEL_SETTLE_DURATION_SEC = 1.15
+
+/**
+ * Ground position chases the ideal head-slot position: nearly still when close, catches up when
+ * the user moves (distance-based rate). Exported for unit tests.
+ */
+export function stepPanelGroundPosition(
+  ground: THREE.Vector3,
+  ideal: THREE.Vector3,
+  deltaSec: number,
+  inSettlePhase: boolean,
+): void {
+  if (inSettlePhase) {
+    ground.copy(ideal)
+    return
+  }
+  const dist = ground.distanceTo(ideal)
+  const lambda = THREE.MathUtils.clamp(0.42 + dist * 9.2, 0.42, 7.8)
+  const t = 1 - Math.exp(-lambda * deltaSec)
+  ground.lerp(ideal, t)
+}
+
+export function dampVectorToward(
+  current: THREE.Vector3,
+  target: THREE.Vector3,
+  lambda: number,
+  deltaSec: number,
+): void {
+  const t = 1 - Math.exp(-lambda * deltaSec)
+  current.lerp(target, t)
+}
+
+export function dampQuaternionToward(
+  current: THREE.Quaternion,
+  target: THREE.Quaternion,
+  lambda: number,
+  deltaSec: number,
+): void {
+  const t = 1 - Math.exp(-lambda * deltaSec)
+  current.slerp(target, t)
+  current.normalize()
+}
 
 export type XrPanelLane = 'left' | 'center' | 'nearRight' | 'right'
 

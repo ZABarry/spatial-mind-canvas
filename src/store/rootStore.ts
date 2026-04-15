@@ -528,7 +528,11 @@ export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
         break
       }
       case 'openNodeDetail':
-        set({ detailNodeId: a.nodeId, ...(a.nodeId === null ? { mediaAttach: null } : {}) })
+        set((s) => ({
+          detailNodeId: a.nodeId,
+          ...(a.nodeId === null ? { mediaAttach: null } : {}),
+          ...(a.nodeId != null && s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
+        }))
         break
       case 'updateNodeProps': {
         commit('editNode', (p) => {
@@ -947,6 +951,7 @@ export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
         set((s) => ({
           searchOpen: a.open,
           searchQuery: a.open ? s.searchQuery : '',
+          ...(a.open && s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
         }))
         break
       case 'setWorldAxisDragActive':
@@ -1188,9 +1193,18 @@ export const useRootStore = createWithEqualityFn<RootState>((set, get) => {
         mediaAttach: null,
       })
     },
-    setMapHistoryOpen: (open) => set({ mapHistoryOpen: open, ...(open ? { bookmarksPanelOpen: false } : {}) }),
+    setMapHistoryOpen: (open) =>
+      set((s) => ({
+        mapHistoryOpen: open,
+        ...(open ? { bookmarksPanelOpen: false } : {}),
+        ...(open && s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
+      })),
     setBookmarksPanelOpen: (open: boolean) =>
-      set({ bookmarksPanelOpen: open, ...(open ? { mapHistoryOpen: false } : {}) }),
+      set((s) => ({
+        bookmarksPanelOpen: open,
+        ...(open ? { mapHistoryOpen: false } : {}),
+        ...(open && s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
+      })),
     createMapSnapshot: async (label) => {
       const p = get().project
       if (!p) return

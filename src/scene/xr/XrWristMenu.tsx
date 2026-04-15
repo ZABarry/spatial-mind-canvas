@@ -23,11 +23,13 @@ import {
  */
 const LEFT_CONTROLLER_MENU_BUTTON_INDEX = 4
 
-const PANEL_W = 0.52
-const BTN_H = 0.042
-const GAP = 0.008
+const PANEL_W = 0.54
+const BTN_H = 0.046
+const GAP = 0.009
 const COLS = 2
 const CELL_W = PANEL_W / COLS
+/** Subtle tilt reads as a wrist-facing surface, not a flat HUD slab. */
+const PANEL_SURFACE_TILT_X = 0.07
 
 /** Tray + shadow sit behind raised buttons so layers read clearly in headset. */
 const PANEL_TRAY_Z = -0.005
@@ -40,7 +42,7 @@ const BTN_BORDER_INSET = 0.0018
 
 type MenuDef = { label: string; hit: XrMenuHit }
 
-/** High-frequency workflow + recovery (page 1). */
+/** Page 1 — workflow first; Settings before More; Exit isolated (full width). */
 function buildPrimaryMenuDefs(modeLabel: string): MenuDef[] {
   return [
     { label: 'Search', hit: { kind: 'cmd', cmd: 'search' } },
@@ -49,17 +51,17 @@ function buildPrimaryMenuDefs(modeLabel: string): MenuDef[] {
     { label: 'Cancel', hit: { kind: 'cmd', cmd: 'cancel' } },
     { label: modeLabel, hit: { kind: 'cmd', cmd: 'toggleMode' } },
     { label: 'Help', hit: { kind: 'cmd', cmd: 'help' } },
+    { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
     { label: 'Exit VR', hit: { kind: 'cmd', cmd: 'exitVr' } },
   ]
 }
 
-/** Library, history, layout recovery, settings (page 2). */
+/** Page 2 — library, history, layout tuning, recovery (no duplicate Settings). */
 function buildSecondaryMenuDefs(): MenuDef[] {
   return [
     { label: 'Library', hit: { kind: 'cmd', cmd: 'library' } },
     { label: 'History', hit: { kind: 'cmd', cmd: 'mapHistory' } },
     { label: 'Bookmarks', hit: { kind: 'cmd', cmd: 'bookmarks' } },
-    { label: 'Settings', hit: { kind: 'cmd', cmd: 'settings' } },
     { label: 'Redo', hit: { kind: 'cmd', cmd: 'redo' } },
     { label: 'Reset view', hit: { kind: 'cmd', cmd: 'resetView' } },
     { label: 'Reset scale', hit: { kind: 'cmd', cmd: 'resetScale' } },
@@ -194,9 +196,10 @@ export function XrWristMenu() {
   const secondaryDefs = React.useMemo(() => buildSecondaryMenuDefs(), [])
 
   const primaryGrid = React.useMemo(() => primaryDefs.slice(0, 6), [primaryDefs])
-  const primaryExit = primaryDefs[6]
+  const primarySettings = primaryDefs[6]
+  const primaryExit = primaryDefs[7]
 
-  const totalRows = menuPage === 0 ? 4 : 5
+  const totalRows = menuPage === 0 ? 5 : 5
   const panelH = totalRows * (BTN_H + GAP) + GAP * 2
   const rowsTop = panelH / 2 - GAP
 
@@ -293,10 +296,10 @@ export function XrWristMenu() {
       return
     }
 
-    openT.current = Math.min(1, openT.current + delta * 8)
+    openT.current = Math.min(1, openT.current + delta * 7.2)
     const inner = panelInnerRef.current
     if (inner) {
-      const s = THREE.MathUtils.lerp(0.94, 1, openT.current)
+      const s = THREE.MathUtils.lerp(0.9, 1, 1 - (1 - openT.current) ** 2)
       inner.scale.setScalar(s)
     }
 
@@ -315,7 +318,7 @@ export function XrWristMenu() {
 
   return (
     <group ref={groupRef} renderOrder={10}>
-      <group ref={panelInnerRef}>
+      <group ref={panelInnerRef} rotation={[PANEL_SURFACE_TILT_X, 0, 0]}>
         <mesh position={[0, 0, PANEL_SHADOW_Z]} raycast={() => null}>
           <planeGeometry args={[PANEL_W + PANEL_SHADOW_PAD, panelH + PANEL_SHADOW_PAD]} />
           <meshBasicMaterial color="#64748b" transparent opacity={0.35} side={THREE.DoubleSide} depthWrite={false} />
@@ -338,32 +341,42 @@ export function XrWristMenu() {
                 buttonKind={def.label === 'Cancel' ? 'danger' : 'default'}
               />
             ))}
+            {primarySettings ? (
+              <MenuButton
+                key="settings"
+                label={primarySettings.label}
+                hit={primarySettings.hit}
+                row={3}
+                col={0}
+                rowsTop={rowsTop}
+                buttonKind="default"
+              />
+            ) : null}
+            <MenuButton
+              key="more"
+              label="More…"
+              row={3}
+              col={1}
+              rowsTop={rowsTop}
+              buttonKind="default"
+              onLocal={() => setMenuPage(1)}
+            />
             {primaryExit ? (
-              <>
-                <MenuButton
-                  key="exit-vr"
-                  label={primaryExit.label}
-                  hit={primaryExit.hit}
-                  row={3}
-                  col={0}
-                  rowsTop={rowsTop}
-                  buttonKind="danger"
-                />
-                <MenuButton
-                  key="more"
-                  label="More…"
-                  row={3}
-                  col={1}
-                  rowsTop={rowsTop}
-                  buttonKind="default"
-                  onLocal={() => setMenuPage(1)}
-                />
-              </>
+              <MenuButton
+                key="exit-vr"
+                label={primaryExit.label}
+                hit={primaryExit.hit}
+                row={4}
+                col={0}
+                rowsTop={rowsTop}
+                spanCols={2}
+                buttonKind="danger"
+              />
             ) : null}
           </>
         ) : (
           <>
-            {secondaryDefs.map((def, i) => (
+            {secondaryDefs.slice(0, 6).map((def, i) => (
               <MenuButton
                 key={`s-${def.label}-${i}`}
                 label={def.label}
@@ -371,9 +384,20 @@ export function XrWristMenu() {
                 row={Math.floor(i / COLS)}
                 col={i % COLS}
                 rowsTop={rowsTop}
-                buttonKind="default"
               />
             ))}
+            {secondaryDefs[6] ? (
+              <MenuButton
+                key="recall"
+                label={secondaryDefs[6].label}
+                hit={secondaryDefs[6].hit}
+                row={3}
+                col={0}
+                rowsTop={rowsTop}
+                spanCols={2}
+                buttonKind="default"
+              />
+            ) : null}
             <MenuButton
               key="back"
               label="« Back"

@@ -168,7 +168,10 @@ export function openSearch() {
 }
 
 export function openSettings() {
-  useRootStore.setState({ settingsOpen: true })
+  useRootStore.setState((s) => ({
+    settingsOpen: true,
+    ...(s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
+  }))
 }
 
 export function runStructureTool(tool: StructureToolName) {
@@ -178,7 +181,7 @@ export function runStructureTool(tool: StructureToolName) {
 export function promptSaveBookmark() {
   const st = useRootStore.getState()
   if (st.xrSessionActive) {
-    useRootStore.setState({
+    useRootStore.setState((s) => ({
       textPromptDialog: {
         title: 'Bookmark this view',
         defaultValue: 'Saved view',
@@ -186,7 +189,8 @@ export function promptSaveBookmark() {
           if (name) useRootStore.getState().dispatch({ type: 'addBookmark', label: name })
         },
       },
-    })
+      xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1,
+    }))
     return
   }
   const name = window.prompt('Bookmark this view', 'Saved view')
@@ -204,7 +208,10 @@ export function openInspect() {
 }
 
 export function openXrHelp() {
-  useRootStore.setState({ xrHelpOpen: true })
+  useRootStore.setState((s) => ({
+    xrHelpOpen: true,
+    ...(s.xrSessionActive ? { xrPanelAnchorGeneration: s.xrPanelAnchorGeneration + 1 } : {}),
+  }))
 }
 
 /** VR: snap head-relative panel anchors to the current view (recovery if panels drift or feel lost). */

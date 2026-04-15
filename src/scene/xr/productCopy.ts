@@ -10,7 +10,7 @@ export const COPY_CONTROLLERS_FOR_LINK =
 export const COPY_LINK_CONTROLLERS_BADGE = 'Controllers'
 
 export const COPY_WRIST_VS_RADIAL =
-  'Wrist menu: two pages — primary workflow + More for Library, history, settings, recall panels. Node actions: layered strip for the selected node.'
+  'Wrist menu: two pages — workflow first (Search, Undo, Recenter, Cancel, Travel/World, Help, Settings, Exit) + More for Library, history, recovery. Node actions: primary/secondary cluster with Delete separated.'
 
 export const COPY_WORLD_VS_TRAVEL_SHORT =
   'World: edit the graph in place. Travel: move through space with the thumbsticks.'

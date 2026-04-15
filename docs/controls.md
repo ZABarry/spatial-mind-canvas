@@ -49,22 +49,22 @@ Opened from the toolbar (desktop) or the **wrist menu** in VR. Tabs: **General**
 - **VR** — Locomotion (smooth vs snap turn, move speed, etc.), comfort (vignette), dominant hand, optional passthrough preference, optional XR debug HUD in dev.
 - **Audio** — Enable ambient/interaction audio and levels where exposed.
 
-In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused. Panels spawn in **left / center / near-right / right** lanes and **ease** toward a comfortable head-guided pose (not a rigid per-frame snap). If a panel feels lost, use **wrist menu → More… → Recall panels** to re-anchor surfaces in front of you.
+In VR, the settings panel is a world-space **HTML** surface (`XrSettingsPanel`); **Escape** closes it when focused. Panels spawn in **left / center / near-right / right** lanes: they **track the head slot briefly**, then **settle** as a stable world pose (orientation still eases to face you). Opening a panel in VR **re-seeds** its anchor from the current view. If a panel feels lost, use **wrist menu → More… → Recall panels** to re-anchor all lanes.
 
 ## XR controllers
 
 - **Enter VR** — Toolbar primary button; confirm in headset/browser.
 - **Select** — Ray and **trigger** on nodes (and to complete gestures per HUD).
 - **Travel vs World** (nav) — **Travel** = thumbstick locomotion; **World** = stay put for fine graph work (see terminology).
-- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). **Page 1:** Search, Undo, Recenter, Cancel, switch Travel/World, Help, Exit VR, **More…**. **Page 2:** Library, History, Bookmarks, Settings, Redo, Reset view, Reset scale, **Recall panels**, **« Back**.
-- **Node actions** — Layered strip: primary row **Child**, **Link**, **Inspect**; secondary **Focus**, **Recenter**; **Delete** on its own row. Billboard toward you; distance-aware scale. Hand mode: **Link** shows a controllers badge — use tracked controllers for reliable Link.
-- **World grab** — **World** mode: controllers squeeze **grip**; hands-only: **index–thumb pinch** on each hand. One hand: translate. Two: pinch/grip separation scales; opposite forward motion yaws.
+- **Wrist menu (left)** — Controllers: **secondary face button** (often Y). **Page 1:** Search, Undo, Recenter, Cancel, switch Travel/World, Help, **Settings**, **More…**, **Exit VR** (full-width row). **Page 2:** Library, History, Bookmarks, Redo, Reset view, Reset scale, **Recall panels** (full-width), **« Back**.
+- **Node actions** — Primary row **Child**, **Link**, **Inspect**; secondary **Focus**, **Recenter**; **Delete** in a **separated column** (not mixed into the primary row). Billboard toward you; distance-aware scale; subtle plate behind the cluster. Hand mode: **Link** shows a **Controllers** badge — use tracked controllers for reliable Link.
+- **World grab** — **World** mode: controllers squeeze **grip**; hands-only: **index–thumb pinch** on each hand. One hand: translate. Two: pinch/grip separation scales; opposite forward motion yaws (thresholds reduce accidental scale vs yaw coupling). A subtle **ring near the pinch** can appear when a grab is almost armed (hand-primary).
 - **Layout, bookmarks, export** — Primarily on the **flat** toolbar; exit VR or use Library as implemented.
 
 ## Hand-tracking–lite
 
 - **Menu** — Palm toward you (left hand) to open the wrist menu (when hands-only session is active). Uses a short dwell + stricter palm score so casual wrist motion does not open it.
-- **World grab** — Pinch index–thumb (both hands for scale/yaw) in World mode; same guard rules as controller grips (blocked during menus/modals/link). Optional **Settings → VR → Disable hand pinch for moving/scaling workspace** if you want controllers only for workspace moves.
+- **World grab** — Pinch index–thumb (both hands for scale/yaw) in World mode; same guard rules as controller grips (blocked during menus/modals/link). Optional **Settings → VR → Disable hand pinch for moving/scaling workspace** if you want controllers only for workspace moves (locks hand workspace manipulation, not UI).
 - **Link** — Disabled on **node actions** with a short cue; use **controllers** for full Link authoring.
 - **Child / Inspect** — Available on the strip per current implementation.
 - **Status HUD** — Shows mode expectations for hand-primary sessions.

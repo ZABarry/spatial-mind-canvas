@@ -4,9 +4,13 @@ import type { Group } from 'three'
 import * as THREE from 'three'
 import {
   computeHeadAnchoredPanelPose,
-  dampPanelAnchorPose,
+  dampQuaternionToward,
+  dampVectorToward,
   panelLanePoseOptions,
-  XR_PANEL_FOLLOW_LAMBDA,
+  stepPanelGroundPosition,
+  XR_PANEL_FOLLOW_LAMBDA_SPAWN,
+  XR_PANEL_FOLLOW_LAMBDA_TRACK,
+  XR_PANEL_SETTLE_DURATION_SEC,
   type XrPanelLane,
 } from './anchors/xrPanelSpawner'
 import { useRootStore } from '../../store/rootStore'
@@ -14,11 +18,14 @@ import { useRootStore } from '../../store/rootStore'
 const _tgtPos = new THREE.Vector3()
 const _tgtQuat = new THREE.Quaternion()
 
+/** Face the user smoothly while position is grounded — readable without rigid HUD snap. */
+const XR_PANEL_QUAT_LAMBDA = 7.8
+
 /**
- * Head-guided world-space placement for Html panels (Quest). Spawns from the current head pose,
- * then **softly damps** toward each frame’s head-anchored target so panels feel spatial, not
- * rigidly glued to the camera. Use **Recall panels** from the wrist menu (More page) to snap
- * anchors if a panel feels lost.
+ * Head-guided world-space placement for Html panels (Quest). On spawn / recall, panels track the
+ * head slot briefly, then **ground** in world space: the anchor lags the ideal slot when you move
+ * a little (stable) and catches up when you walk or turn enough. Orientation keeps facing you.
+ * **Recall panels** re-seeds all lanes from the current view.
  */
 export function XrHeadAnchoredGroup({
   lane,
@@ -33,7 +40,9 @@ export function XrHeadAnchoredGroup({
 
   const curPos = React.useRef(new THREE.Vector3())
   const curQuat = React.useRef(new THREE.Quaternion())
+  const groundPos = React.useRef(new THREE.Vector3())
   const lastGen = React.useRef(-1)
+  const settleElapsed = React.useRef(0)
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -44,9 +53,16 @@ export function XrHeadAnchoredGroup({
     if (lastGen.current !== anchorGeneration) {
       curPos.current.copy(_tgtPos)
       curQuat.current.copy(_tgtQuat)
+      groundPos.current.copy(_tgtPos)
+      settleElapsed.current = 0
       lastGen.current = anchorGeneration
     } else {
-      dampPanelAnchorPose(curPos.current, curQuat.current, _tgtPos, _tgtQuat, XR_PANEL_FOLLOW_LAMBDA, delta)
+      settleElapsed.current += delta
+      const inSettle = settleElapsed.current < XR_PANEL_SETTLE_DURATION_SEC
+      stepPanelGroundPosition(groundPos.current, _tgtPos, delta, inSettle)
+      const followLambda = inSettle ? XR_PANEL_FOLLOW_LAMBDA_SPAWN : XR_PANEL_FOLLOW_LAMBDA_TRACK
+      dampVectorToward(curPos.current, groundPos.current, followLambda, delta)
+      dampQuaternionToward(curQuat.current, _tgtQuat, XR_PANEL_QUAT_LAMBDA, delta)
     }
 
     g.position.copy(curPos.current)

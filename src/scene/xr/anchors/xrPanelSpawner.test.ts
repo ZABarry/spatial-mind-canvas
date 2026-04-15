@@ -3,7 +3,9 @@ import * as THREE from 'three'
 import {
   computeHeadAnchoredPanelPose,
   dampPanelAnchorPose,
+  dampVectorToward,
   lateralOffsetForLane,
+  stepPanelGroundPosition,
   XR_PANEL_LANE_STRIDE,
 } from './xrPanelSpawner'
 
@@ -44,5 +46,31 @@ describe('dampPanelAnchorPose', () => {
     dampPanelAnchorPose(curP, curQ, tgtP, tgtQ, 10, 0.1)
     expect(curP.x).toBeGreaterThan(0)
     expect(curP.x).toBeLessThan(1)
+  })
+})
+
+describe('stepPanelGroundPosition', () => {
+  it('snaps to ideal while settling', () => {
+    const g = new THREE.Vector3(0, 0, 0)
+    const ideal = new THREE.Vector3(1, 0, 0)
+    stepPanelGroundPosition(g, ideal, 0.016, true)
+    expect(g.x).toBe(1)
+  })
+
+  it('moves toward ideal when not in settle phase', () => {
+    const g = new THREE.Vector3(0, 0, 0)
+    const ideal = new THREE.Vector3(1, 0, 0)
+    stepPanelGroundPosition(g, ideal, 0.016, false)
+    expect(g.x).toBeGreaterThan(0)
+    expect(g.x).toBeLessThan(1)
+  })
+})
+
+describe('dampVectorToward', () => {
+  it('lerps exponentially toward target', () => {
+    const cur = new THREE.Vector3(0, 0, 0)
+    dampVectorToward(cur, new THREE.Vector3(2, 0, 0), 5, 0.1)
+    expect(cur.x).toBeGreaterThan(0)
+    expect(cur.x).toBeLessThan(2)
   })
 })

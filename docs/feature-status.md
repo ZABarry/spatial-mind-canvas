@@ -11,9 +11,9 @@ Honest snapshot of what ships today vs what is partial, deferred, or out of scop
 | Search (Fuse) | **Shipped** | |
 | Bookmarks (saved view + graph framing) | **Shipped** | Desktop menu + XR panel; naming uses `window.prompt` on desktop, in-headset prompt in VR. |
 | Layout / structure tools | **Shipped** | Desktop toolbar; not duplicated in XR wrist menu (advanced / lower frequency). |
-| WebXR (Quest-class) | **Shipped** | Travel vs world nav; **two-page wrist menu** (primary workflow + More for library/history/settings/**Recall panels**); layered **node actions**; controller grip + optional hand pinch world grab (can disable in Settings); damped head-guided **HTML panels** + lane offsets (`anchors/`). |
+| WebXR (Quest-class) | **Shipped** | Travel vs world nav; **two-page wrist menu** (workflow first incl. **Settings** + **More** for library/history/redo/resets/**Recall panels**); **node actions** with separated **Delete**; controller grip + optional hand pinch world grab (can disable in Settings); **HTML panels** spawn with the view, then **ground** per lane (`anchors/`); pinch **near-threshold** ring cue (`XrPinchWorkspaceCue`). |
 | Hand-tracking–lite | **Partial** | Selection, wrist menu (palm dwell), pinch **world** grab, node actions (Child/Inspect; **Link** disabled). Precision link/editing still controller-first. |
-| VR ↔ desktop parity | **Partial** | High-frequency actions on wrist + radial; layout, full export UX, and some tooling remain desktop-first by intent. |
+| VR ↔ desktop parity | **Partial** | High-frequency actions on wrist + contextual node strip; layout, full export UX, and some tooling remain desktop-first by intent. |
 | Collaboration / accounts / cloud sync | **Out of scope** | See [product-direction.md](product-direction.md). |
 | AI features / enterprise workflows | **Out of scope** | |
 | Ghost preview before layout commit | **Not started** | Undo covers layout; preview called out as future in README. |

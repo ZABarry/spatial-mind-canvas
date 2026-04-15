@@ -53,7 +53,7 @@ These five flows define the core product. Verify after meaningful interaction ch
 **Checklist**
 
 - [ ] Status HUD shows tool/nav and a hint while linking.
-- [ ] Wrist menu: page 1 covers Search/Undo/Recenter/Cancel/mode/Help/Exit; **More…** opens page 2 for Library, History, Bookmarks, Settings, recovery, **Recall panels**. Node-specific actions stay on the strip.
+- [ ] Wrist menu: page 1 covers Search/Undo/Recenter/Cancel/mode/Help/**Settings**/Exit (Exit full width); **More…** opens page 2 for Library, History, Bookmarks, Redo, resets, **Recall panels**. Node-specific actions stay on the strip; **Delete** is offset from the primary cluster.
 
 ## 4. XR controller: cancel → recenter → reset scale/view
 
@@ -81,7 +81,7 @@ These five flows define the core product. Verify after meaningful interaction ch
 **Checklist**
 
 - [ ] Status HUD states hand-mode expectations (Child & Inspect; pinch world grab; controllers for full Link).
-- [ ] HTML panels stay readable (follow view; left/center/right lanes).
+- [ ] HTML panels stay readable (lanes; brief follow then **grounded** pose; **Recall panels** if lost).
 - [ ] Controller-based sessions still behave as in paths 3–4.
 
 ## 6. Desktop: local snapshot → restore (with save-before)
@@ -121,6 +121,17 @@ These five flows define the core product. Verify after meaningful interaction ch
 **Checklist**
 
 - [ ] Selection moves to the last created branch node (or remains consistent).
+
+## XR embodied UX QA (add-on)
+
+Use after XR interaction or layout changes. Not a substitute for paths 3–5.
+
+- [ ] **Panels** — Open Search, Settings, node detail, History, Bookmarks, Help: each should appear in its lane without stacking badly; after you turn in place, panels should feel **stable** (not face-glued); **Recall panels** brings all lanes forward.
+- [ ] **Wrist menu** — Targets feel large enough; page 1 fits workflow actions; **Exit** reads as isolated; **More…** exposes recovery without duplicate Settings.
+- [ ] **Node actions** — Primary row is fast to hit; **Delete** feels deliberate (separate column); disabled **Link** in hand mode is obvious.
+- [ ] **Controllers** — Ray hover/press on wrist and strip remains reliable; missed presses recover without stuck state.
+- [ ] **Hand world grab** — Near-pinch shows **subtle ring** + HUD line; one-hand move vs two-hand scale/yaw does not jitter from small motions; **disable hand workspace pinch** in Settings stops grab as expected.
+- [ ] **HUD** — When idle with no modals, fewer lines and tighter spacing; active gestures still get a clear dominant hint.
 
 ## Known limitations
 

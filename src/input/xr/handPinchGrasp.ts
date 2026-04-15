@@ -31,6 +31,30 @@ export function pinchTipDistanceM(
   return Math.sqrt(ax * ax + ay * ay + az * az)
 }
 
+/**
+ * World-space midpoint between index and thumb tips — for subtle pre-grab affordances.
+ * Returns false if joints are unavailable.
+ */
+export function pinchIndexThumbMidpointWorld(
+  frame: XRFrame,
+  refSpace: XRReferenceSpace,
+  hand: XRHand,
+  out: { x: number; y: number; z: number },
+): boolean {
+  const idx = hand.get('index-finger-tip')
+  const th = hand.get('thumb-tip')
+  if (!idx || !th) return false
+  const getJointPose = frame.getJointPose
+  if (!getJointPose) return false
+  const a = getJointPose.call(frame, idx, refSpace)
+  const b = getJointPose.call(frame, th, refSpace)
+  if (!a || !b) return false
+  out.x = (a.transform.position.x + b.transform.position.x) * 0.5
+  out.y = (a.transform.position.y + b.transform.position.y) * 0.5
+  out.z = (a.transform.position.z + b.transform.position.z) * 0.5
+  return true
+}
+
 export function updatePinchGraspActive(
   distM: number | null,
   h: PinchGraspHysteresis,

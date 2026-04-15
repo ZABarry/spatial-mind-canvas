@@ -206,13 +206,25 @@ export function XrStatusHud() {
     return handPrimary ? 'Nothing selected — pinch a node to begin' : 'Nothing selected — aim and pull trigger'
   }, [primary, interactionSession.kind, nav, handPrimary])
 
+  const quietIdle =
+    interactionSession.kind === 'idle' &&
+    !recoveryHint &&
+    !sessionHint &&
+    !pinchWarmHint &&
+    !confirmDialog &&
+    !textPromptDialog &&
+    onboardingRows.length === 0 &&
+    feedbackMessage == null
+
   const rows = useMemo(() => {
+    const tertiarySize = quietIdle ? 0.024 : 0.026
+    const tertiaryColor = quietIdle ? '#7c8ca3' : '#64748b'
     const r: { text: string; size: number; color: string; maxW?: number }[] = [
-      { text: line1, size: 0.034, color: '#334155' },
-      { text: line2, size: 0.032, color: '#475569' },
-      { text: line3, size: 0.026, color: '#64748b', maxW: 2.55 },
+      { text: line1, size: quietIdle ? 0.032 : 0.034, color: '#334155' },
+      { text: line2, size: quietIdle ? 0.03 : 0.032, color: '#475569' },
+      { text: line3, size: tertiarySize, color: tertiaryColor, maxW: 2.55 },
     ]
-    if (idleNudge && onboardingRows.length === 0) {
+    if (idleNudge && onboardingRows.length === 0 && !quietIdle) {
       r.push({ text: idleNudge, size: 0.022, color: '#94a3b8', maxW: 2.55 })
     }
     for (const o of onboardingRows) {
@@ -261,6 +273,7 @@ export function XrStatusHud() {
     lineDbg,
     linkHudColor,
     interactionSession.kind,
+    quietIdle,
   ])
 
   useFrame(() => {
@@ -271,7 +284,7 @@ export function XrStatusHud() {
   if (!session) return null
 
   let y = 0.08
-  const gap = 0.042
+  const gap = quietIdle ? 0.034 : 0.042
   return (
     <group ref={groupRef}>
       <Billboard>

@@ -189,7 +189,7 @@ export function XrWorldGrab() {
       if (lastPairDist.current != null && lastPairDist.current > 1e-5) {
         let ratio = lastPairDist.current / dist
         ratio = Math.max(SCALE_CLAMP.min, Math.min(SCALE_CLAMP.max, ratio))
-        if (Math.abs(ratio - 1) > 0.002) {
+        if (Math.abs(ratio - 1) > 0.0045) {
           st.dispatch({ type: 'scaleWorldLive', factor: ratio })
         }
       }
@@ -210,7 +210,7 @@ export function XrWorldGrab() {
             forward.current.normalize()
             const twist =
               (da.current.dot(forward.current) - db.current.dot(forward.current)) * ROT_TWIST_SENS
-            if (Math.abs(twist) > 0.003) {
+            if (Math.abs(twist) > 0.0055) {
               st.dispatch({ type: 'rotateWorldLive', axis: [0, 1, 0], radians: twist })
             }
           }

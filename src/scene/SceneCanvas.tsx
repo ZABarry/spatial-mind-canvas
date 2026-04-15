@@ -19,6 +19,7 @@ import { XrSessionBridge } from './xr/XrSessionBridge'
 import { XrConfirmHud } from './xr/XrConfirmHud'
 import { XrControllerInputBridge } from '../input/adapters/useXrControllerInputBridge'
 import { XrWorldGrab } from './xr/XrWorldGrab'
+import { XrPinchWorkspaceCue } from './xr/XrPinchWorkspaceCue'
 import { XrWristMenu } from './xr/XrWristMenu'
 import { XrNodeDetailPanel } from './xr/XrNodeDetailPanel'
 import { XrSearchPanel } from './xr/XrSearchPanel'
@@ -131,6 +132,7 @@ export function SceneCanvas() {
         <XrNodeContextActions />
         <XrStatusHud />
         <XrWorldGrab />
+        <XrPinchWorkspaceCue />
         <XrConfirmHud />
         <XrTextPromptHud />
         <XrHelpHud />
