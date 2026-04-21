@@ -5,6 +5,9 @@ import * as THREE from 'three'
  */
 export const XR_ASSIST_LATERAL_OFFSET_M = 0.014
 
+/** Extra distance allowed before dropping sticky preference — slightly forgiving for jitter. */
+export const XR_STICKY_TARGET_SLACK_M = 0.048
+
 const _raycaster = new THREE.Raycaster()
 
 function orthonormalBasis(direction: THREE.Vector3): { right: THREE.Vector3; up: THREE.Vector3 } {

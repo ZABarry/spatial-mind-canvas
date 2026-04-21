@@ -19,6 +19,7 @@ import {
   runNodeStartLink,
 } from './xrNodeMenuActions'
 import { COPY_CONTROLLERS_FOR_LINK, COPY_LINK_CONTROLLERS_BADGE } from './productCopy'
+import { dampScalarToward } from './xrMotion'
 
 type ActionBtn = {
   label: string
@@ -120,8 +121,8 @@ export function XrNodeContextActions() {
 
     const dist = g.position.distanceTo(camera.position)
     const distScale = THREE.MathUtils.clamp(dist * 0.2, 0.82, 1.22)
-    appearRef.current = Math.min(1, appearRef.current + delta * 5.2)
-    const ease = 1 - (1 - appearRef.current) ** 2.2
+    appearRef.current = dampScalarToward(appearRef.current, 1, 9.2, delta)
+    const ease = 1 - (1 - appearRef.current) ** 2.35
     const s = Math.max(0.25, ease) * distScale
     if (inner) inner.scale.setScalar(s)
   })
@@ -141,7 +142,24 @@ export function XrNodeContextActions() {
     const pal = radialIntentColors(b.intent)
     const col = b.disabled ? pal.base : isP ? pal.press : isH ? pal.hover : pal.base
     const scale = isP ? 0.92 : isH ? 1.05 : 1
-    const em = b.disabled ? 0.04 : isH || isP ? 0.32 : 0.14
+    const em =
+      b.tier === 'secondary'
+        ? b.disabled
+          ? 0.04
+          : isP
+            ? 0.22
+            : isH
+              ? 0.15
+              : 0.07
+        : b.disabled
+          ? 0.04
+          : isP
+            ? 0.34
+            : isH
+              ? 0.34
+              : b.tier === 'primary' && (b.intent === 'child' || b.intent === 'inspect' || b.intent === 'link')
+                ? 0.2
+                : 0.15
 
     const onDown = (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation()
@@ -186,7 +204,15 @@ export function XrNodeContextActions() {
         </mesh>
         <Text
           position={[0, 0, DEPTH * 0.55]}
-          fontSize={b.tier === 'primary' ? 0.028 : 0.022}
+          fontSize={
+            b.tier === 'secondary'
+              ? 0.02
+              : b.tier === 'primary' && (b.intent === 'child' || b.intent === 'inspect' || b.intent === 'link')
+                ? 0.03
+                : b.tier === 'primary'
+                  ? 0.028
+                  : 0.022
+          }
           color={b.disabled ? '#94a3b8' : pal.label}
           anchorX="center"
           anchorY="middle"
@@ -256,7 +282,7 @@ export function XrNodeContextActions() {
                 roughness={0.55}
                 metalness={0.02}
                 transparent
-                opacity={0.42}
+                opacity={0.44}
               />
             </mesh>
             {primaryActions.map((b, i) =>

@@ -210,7 +210,7 @@ export function XrWorldGrab() {
             forward.current.normalize()
             const twist =
               (da.current.dot(forward.current) - db.current.dot(forward.current)) * ROT_TWIST_SENS
-            if (Math.abs(twist) > 0.0055) {
+            if (Math.abs(twist) > 0.0075) {
               st.dispatch({ type: 'rotateWorldLive', axis: [0, 1, 0], radians: twist })
             }
           }

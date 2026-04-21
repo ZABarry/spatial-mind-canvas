@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import {
   applyStickyTargetPreference,
   mergeIntersectionsByClosestObject,
+  XR_STICKY_TARGET_SLACK_M,
 } from './xrControllerRayAssist'
 
 function ix(mesh: THREE.Mesh, distance: number): THREE.Intersection {
@@ -38,7 +39,7 @@ describe('applyStickyTargetPreference', () => {
     const stickyObj = new THREE.Mesh()
     const other = new THREE.Mesh()
     const hits = [ix(other, 1.0), ix(stickyObj, 1.03)]
-    const out = applyStickyTargetPreference(hits, { object: stickyObj, distance: 1.03 }, 0.05)
+    const out = applyStickyTargetPreference(hits, { object: stickyObj, distance: 1.03 }, XR_STICKY_TARGET_SLACK_M)
     expect(out[0]!.object).toBe(stickyObj)
   })
 
@@ -46,7 +47,7 @@ describe('applyStickyTargetPreference', () => {
     const stickyObj = new THREE.Mesh()
     const other = new THREE.Mesh()
     const hits = [ix(other, 1.0), ix(stickyObj, 1.2)]
-    const out = applyStickyTargetPreference(hits, { object: stickyObj, distance: 1.2 }, 0.05)
+    const out = applyStickyTargetPreference(hits, { object: stickyObj, distance: 1.2 }, XR_STICKY_TARGET_SLACK_M)
     expect(out[0]!.object).toBe(other)
   })
 })

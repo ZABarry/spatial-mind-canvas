@@ -16,6 +16,7 @@ import {
   updatePalmMenuVisibility,
   type PalmFacingHysteresis,
 } from './palmFacing'
+import { dampScalarToward } from './xrMotion'
 
 /**
  * Quest / OpenXR left controller: secondary face button (Y).
@@ -29,7 +30,7 @@ const GAP = 0.009
 const COLS = 2
 const CELL_W = PANEL_W / COLS
 /** Subtle tilt reads as a wrist-facing surface, not a flat HUD slab. */
-const PANEL_SURFACE_TILT_X = 0.07
+const PANEL_SURFACE_TILT_X = 0.088
 
 /** Tray + shadow sit behind raised buttons so layers read clearly in headset. */
 const PANEL_TRAY_Z = -0.005
@@ -39,6 +40,8 @@ const BTN_BORDER_Z = 0.0012
 const BTN_FACE_Z = 0.0032
 const BTN_LABEL_Z = 0.0055
 const BTN_BORDER_INSET = 0.0018
+/** Page flip: slides in from the side, then damps to rest (card turn, not web paging). */
+const PAGE_ENTER_X = 0.056
 
 type MenuDef = { label: string; hit: XrMenuHit }
 
@@ -192,8 +195,10 @@ export function XrWristMenu() {
   const modeLabel = mode === 'travel' ? 'Switch to World' : 'Switch to Travel'
 
   const [menuPage, setMenuPage] = React.useState(0)
+  const pageEnterX = React.useRef(0)
   const goMenuPage = React.useCallback((next: number) => {
     setMenuPage(next)
+    pageEnterX.current = next === 1 ? -PAGE_ENTER_X : PAGE_ENTER_X
     const audio = useRootStore.getState().devicePreferences.audioEnabled
     playInteractionCue('menuPageFlip', audio)
   }, [])
@@ -284,6 +289,7 @@ export function XrWristMenu() {
       playInteractionCue('menuToggle', audio)
       if (visible) {
         openT.current = 0
+        pageEnterX.current = 0
         setMenuPage(0)
       }
       prevWristVisible.current = visible
@@ -302,10 +308,12 @@ export function XrWristMenu() {
     }
 
     openT.current = Math.min(1, openT.current + delta * 7.2)
+    pageEnterX.current = dampScalarToward(pageEnterX.current, 0, 13.5, delta)
     const inner = panelInnerRef.current
     if (inner) {
       const s = THREE.MathUtils.lerp(0.9, 1, 1 - (1 - openT.current) ** 2)
       inner.scale.setScalar(s)
+      inner.position.x = pageEnterX.current
     }
 
     const sm = smoothedMenuMatrix.current
@@ -328,10 +336,17 @@ export function XrWristMenu() {
           <planeGeometry args={[PANEL_W + PANEL_SHADOW_PAD, panelH + PANEL_SHADOW_PAD]} />
           <meshBasicMaterial color="#64748b" transparent opacity={0.35} side={THREE.DoubleSide} depthWrite={false} />
         </mesh>
-        <mesh position={[0, 0, PANEL_TRAY_Z]} raycast={() => null}>
-          <planeGeometry args={[PANEL_W + 0.02, panelH + 0.02]} />
-          <meshBasicMaterial color="#b8c5d8" side={THREE.DoubleSide} />
-        </mesh>
+        {/* Segmented tray — center band slightly forward for a shallow curved command surface. */}
+        {[
+          { x: -PANEL_W * 0.22, z: PANEL_TRAY_Z - 0.002, tone: '#aab9cc' },
+          { x: 0, z: PANEL_TRAY_Z + 0.0035, tone: '#c5d0e0' },
+          { x: PANEL_W * 0.22, z: PANEL_TRAY_Z - 0.002, tone: '#aab9cc' },
+        ].map((seg, i) => (
+          <mesh key={i} position={[seg.x, 0, seg.z]} raycast={() => null}>
+            <planeGeometry args={[PANEL_W * 0.34, panelH + 0.02]} />
+            <meshBasicMaterial color={seg.tone} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
 
         {menuPage === 0 ? (
           <>

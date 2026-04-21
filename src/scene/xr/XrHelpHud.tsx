@@ -1,18 +1,7 @@
 import { Html } from '@react-three/drei'
 import { useXR } from '@react-three/xr'
 import { useRootStore } from '../../store/rootStore'
-
-const tips = [
-  'Travel vs world — Travel: left stick moves/strafes, right stick turns (dominant hand in Settings biases aim only). World: no locomotion; trigger selects; grip or hand pinch moves/scales the graph when not in a menu or modal.',
-  'Recovery — Reset view: default camera framing. Recenter: orbit pivot to primary selection. Reset scale: graph scale to 1. Cancel: closes panels, help, and in-progress gestures.',
-  'Scene — Trigger selects nodes. With a link active, aim at another node or the plane to finish; aim at the source node to cancel. Controllers use the trigger; hand tracking uses the pointer.',
-  'Panels — Search, detail, settings, etc. use left/center/right lanes: they match your view when opened, then stay spatial (not face-glued). Use wrist menu → More… → Recall panels if a panel feels lost.',
-  'Wrist menu — Y (controllers) or palm toward you (hands). Page 1: Search, Undo, Recenter, Cancel, Travel/World, Help, Settings, More…, Exit VR (full width). Page 2: Library, History, Bookmarks, Redo, Reset view, Reset scale, Recall panels, Back.',
-  'Node actions — Primary: Child, Link (controllers), Inspect. Secondary: Focus, Recenter. Delete is separated to the side. Hand-tracking–lite: Link shows a Controllers badge; Child and Inspect stay available.',
-  'Hand-tracking–lite — Select, wrist menu, optional pinch workspace grab (World mode; can disable in Settings), node actions, Cancel. Controllers remain the full authoring path for Link and precision edits.',
-  'Passthrough — Prefer camera passthrough when entering XR under Device & VR in Settings.',
-  'World grab — World mode: controllers squeeze grip; hands-only: index–thumb pinch (status line + subtle near-pinch ring). One hand: move graph. Two: scale and gentle yaw (thresholds reduce accidental coupling). Blocked while linking, dragging, or using wrist/menu/node-actions/modals.',
-]
+import { XR_HELP_TIPS } from './productCopy'
 
 export function XrHelpHud() {
   const session = useXR((s) => s.session)
@@ -46,7 +35,7 @@ export function XrHelpHud() {
         >
           <h3 style={{ margin: '0 0 12px', fontSize: 18 }}>VR controls</h3>
           <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
-            {tips.map((t) => (
+            {XR_HELP_TIPS.map((t) => (
               <li key={t} style={{ marginBottom: 8 }}>
                 {t}
               </li>

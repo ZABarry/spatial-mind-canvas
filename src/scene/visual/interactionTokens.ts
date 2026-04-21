@@ -115,7 +115,7 @@ export function linkLineAppearance(
   const t = session.previewTarget
 
   if (t?.kind === 'node' && t.nodeId !== fromNodeId) {
-    return { color: interactionTokens.successSoft, opacity: 0.92 }
+    return { color: interactionTokens.successSoft, opacity: 0.96 }
   }
   if (t?.kind === 'ground') {
     return { color: interactionTokens.linkSoft, opacity: 0.78 }

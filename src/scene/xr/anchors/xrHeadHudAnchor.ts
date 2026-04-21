@@ -4,13 +4,14 @@ import * as THREE from 'three'
  * Camera-local **−Z** offset magnitude (meters): how far **in front** of the headset the HUD sits
  * (Three.js camera looks down −Z).
  */
-export const XR_HEAD_HUD_DISTANCE = 1.35
+/** Slightly farther than early builds — keeps the graph visually primary vs status copy. */
+export const XR_HEAD_HUD_DISTANCE = 1.42
 
 /**
  * Camera-local **+Y** offset (meters): pushes the ribbon toward the **top** of the field of view.
  * Uses the headset’s axes (not world Y) so the HUD stays pinned when you tilt or roll.
  */
-export const XR_HEAD_HUD_LOCAL_Y = 0.34
+export const XR_HEAD_HUD_LOCAL_Y = 0.31
 
 /** @deprecated Renamed to {@link XR_HEAD_HUD_LOCAL_Y} — kept for any external references. */
 export const XR_HEAD_HUD_VERTICAL_BIAS = XR_HEAD_HUD_LOCAL_Y

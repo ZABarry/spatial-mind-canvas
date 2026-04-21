@@ -7,7 +7,7 @@ These five flows define the core product. Verify after meaningful interaction ch
 **Expected**
 
 1. **Desktop** — **Guided start** shows a short checklist (place → select → link or child → rename or inspect → **Recenter** → **Undo**) plus the current **next step** cue. **Dismiss** skips the guide; completing the path shows a **You’re set** ribbon once and persists completion in metadata.
-2. **VR** — The same milestones appear on the **status HUD** when idle (no floating HTML strip). Dismiss/progress syncs with desktop via IndexedDB metadata.
+2. **VR** — The same milestones appear on the **status HUD** when idle (suppressed when panels/modals or active gestures need the channel). Dismiss/progress syncs with desktop via IndexedDB metadata.
 
 **Checklist**
 
@@ -126,12 +126,12 @@ These five flows define the core product. Verify after meaningful interaction ch
 
 Use after XR interaction or layout changes. Not a substitute for paths 3–5.
 
-- [ ] **Panels** — Open Search, Settings, node detail, History, Bookmarks, Help: each should appear in its lane without stacking badly; after you turn in place, panels should feel **stable** (not face-glued); **Recall panels** brings all lanes forward.
-- [ ] **Wrist menu** — Targets feel large enough; page 1 fits workflow actions; **Exit** reads as isolated; **More…** exposes recovery without duplicate Settings.
-- [ ] **Node actions** — Primary row is fast to hit; **Delete** feels deliberate (separate column); disabled **Link** in hand mode is obvious.
-- [ ] **Controllers** — Ray hover/press on wrist and strip remains reliable; missed presses recover without stuck state.
-- [ ] **Hand world grab** — Near-pinch shows **subtle ring** + HUD line; one-hand move vs two-hand scale/yaw does not jitter from small motions; **disable hand workspace pinch** in Settings stops grab as expected.
-- [ ] **HUD** — When idle with no modals, fewer lines and tighter spacing; active gestures still get a clear dominant hint.
+- [ ] **Panels** — Open Search, Settings, node detail, History, Bookmarks, Help: each should appear in its lane; with several open, stacks should **separate** slightly; after small head motion panels stay put; after larger drift they **re-home** smoothly; **Recall panels** re-seeds all lanes.
+- [ ] **Wrist menu** — Targets feel large enough; **page flip** slides rather than popping; segmented tray reads as one surface; **Exit** isolated; **More…** exposes recovery without duplicate Settings.
+- [ ] **Node actions** — Primary row is fast to hit; **Delete** feels deliberate (separate column); disabled **Link** in hand mode is obvious; reveal on selection change feels smooth.
+- [ ] **Controllers** — Ray hover/press on wrist and strip remains reliable; sticky slack reduces flicker without “stuck wrong target.”
+- [ ] **Hand world grab** — Near-pinch ring; **active grab** and **two-hand** rings read differently; one-hand move vs two-hand scale/yaw does not jitter from small motions; **Workspace pinch off** in Settings stops grab as expected.
+- [ ] **HUD** — Modals and gestures **dominate** copy; with panels open, fewer baseline lines; idle stays calm.
 
 ## Known limitations
 

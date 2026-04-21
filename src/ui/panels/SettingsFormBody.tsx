@@ -452,11 +452,11 @@ export function SettingsFormBody({ variant = 'desktop' }: { variant?: Variant })
               }
             />
             <span className="settings-checkbox-label">
-              Disable hand pinch for moving/scaling workspace (hand-tracking sessions only)
+              Workspace pinch off (comfort) — hand mode won’t grab move/scale; use controllers
             </span>
           </label>
           <p className="settings-muted" style={{ margin: '0 0 12px', lineHeight: 1.4 }}>
-            Controllers still use grips for workspace moves. Link and fine edits remain controller-first in hand mode.
+            Use when accidental workspace grabs get in the way. Controllers still use grips for workspace moves. Link and precision edits stay controller-first in hand mode.
           </p>
           <label className="settings-field">
             Move speed{' '}

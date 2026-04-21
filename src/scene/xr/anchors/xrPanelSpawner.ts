@@ -21,6 +21,11 @@ export const XR_PANEL_FOLLOW_LAMBDA = XR_PANEL_FOLLOW_LAMBDA_SPAWN
 /** Seconds to follow the head slot closely after spawn / recall before grounding. */
 export const XR_PANEL_SETTLE_DURATION_SEC = 1.15
 
+/** When the ideal head slot drifts farther than this from grounded world position, chase again (m). */
+export const XR_PANEL_REHOME_ENTER_M = 0.56
+/** Hysteresis: stop chasing when close enough to lock again (m). */
+export const XR_PANEL_REHOME_LOCK_M = 0.38
+
 /**
  * Ground position chases the ideal head-slot position: nearly still when close, catches up when
  * the user moves (distance-based rate). Exported for unit tests.

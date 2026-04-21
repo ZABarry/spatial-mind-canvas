@@ -13,6 +13,7 @@ import {
 import { interactionTokens, isValidLinkNodeTarget } from '../visual/interactionTokens'
 import { formatSceneMetricsLine } from '../sceneMetrics'
 import { applyHeadHudAnchor } from './anchors/xrHeadHudAnchor'
+import { computeXrHudGuidance, hasOpenFloatingPanel } from './xrHudGuidance'
 
 /**
  * In-VR status: tool, navigation mode, selection, active gesture, and recovery hints.
@@ -123,9 +124,19 @@ export function XrStatusHud() {
     xrHelpOpen,
   ])
 
+  const floatingPanelOpen = hasOpenFloatingPanel({
+    searchOpen,
+    detailNodeId,
+    settingsOpen,
+    mapHistoryOpen,
+    bookmarksPanelOpen,
+    xrHelpOpen,
+  })
+
   const onboardingRows = useMemo(() => {
     if (!shouldShowOnboarding(onboardingDismissed, onboardingCoreComplete)) return []
     if (interactionSession.kind !== 'idle') return []
+    if (floatingPanelOpen || confirmDialog || textPromptDialog) return []
     const m = getOnboardingMilestone({
       project,
       primaryNodeId: primary ?? null,
@@ -156,6 +167,9 @@ export function XrStatusHud() {
     detailNodeId,
     interactionSession.kind,
     handPrimary,
+    floatingPanelOpen,
+    confirmDialog,
+    textPromptDialog,
   ])
 
   const persistHint = useMemo(() => {
@@ -166,6 +180,17 @@ export function XrStatusHud() {
     if (saveIndicator === 'error') return 'Save: failed — check storage'
     return null
   }, [feedbackMessage, saveIndicator])
+
+  const hudGuidance = useMemo(
+    () =>
+      computeXrHudGuidance({
+        confirmDialog,
+        textPromptDialog,
+        interactionSession,
+        floatingPanelOpen,
+      }),
+    [confirmDialog, textPromptDialog, interactionSession, floatingPanelOpen],
+  )
 
   const st = useRootStore.getState()
   const phase = getInteractionPhase({
@@ -207,6 +232,7 @@ export function XrStatusHud() {
   }, [primary, interactionSession.kind, nav, handPrimary])
 
   const quietIdle =
+    hudGuidance.density === 'full' &&
     interactionSession.kind === 'idle' &&
     !recoveryHint &&
     !sessionHint &&
@@ -217,23 +243,33 @@ export function XrStatusHud() {
     feedbackMessage == null
 
   const rows = useMemo(() => {
+    const g = hudGuidance
     const tertiarySize = quietIdle ? 0.024 : 0.026
     const tertiaryColor = quietIdle ? '#7c8ca3' : '#64748b'
-    const r: { text: string; size: number; color: string; maxW?: number }[] = [
-      { text: line1, size: quietIdle ? 0.032 : 0.034, color: '#334155' },
-      { text: line2, size: quietIdle ? 0.03 : 0.032, color: '#475569' },
-      { text: line3, size: tertiarySize, color: tertiaryColor, maxW: 2.55 },
-    ]
-    if (idleNudge && onboardingRows.length === 0 && !quietIdle) {
+    const r: { text: string; size: number; color: string; maxW?: number }[] = []
+
+    if (g.baseLines >= 1) {
+      r.push({ text: line1, size: quietIdle ? 0.032 : 0.034, color: '#334155' })
+    }
+    if (g.baseLines >= 2) {
+      r.push({ text: line2, size: quietIdle ? 0.03 : 0.032, color: '#475569' })
+    }
+    if (g.baseLines >= 3 && g.showModeLine) {
+      r.push({ text: line3, size: tertiarySize, color: tertiaryColor, maxW: 2.55 })
+    }
+
+    if (g.showIdleNudge && idleNudge && onboardingRows.length === 0 && !quietIdle) {
       r.push({ text: idleNudge, size: 0.022, color: '#94a3b8', maxW: 2.55 })
     }
-    for (const o of onboardingRows) {
-      r.push(o)
+    if (g.showOnboarding) {
+      for (const o of onboardingRows) {
+        r.push(o)
+      }
     }
-    if (pinchWarmHint) {
+    if (g.showPinchWarm && pinchWarmHint) {
       r.push({ text: pinchWarmHint, size: 0.023, color: '#0d9488', maxW: 2.55 })
     }
-    if (sessionHint) {
+    if (g.showSessionHint && sessionHint) {
       const hintColor =
         interactionSession.kind === 'link'
           ? linkHudColor
@@ -242,10 +278,10 @@ export function XrStatusHud() {
             : '#475569'
       r.push({ text: sessionHint, size: 0.025, color: hintColor, maxW: 2.55 })
     }
-    if (recoveryHint) {
+    if (g.showRecovery && recoveryHint) {
       r.push({ text: recoveryHint, size: 0.024, color: '#b45309', maxW: 2.55 })
     }
-    if (persistHint) {
+    if (g.showPersist && persistHint) {
       const c =
         feedbackMessage?.tone === 'error' || saveIndicator === 'error'
           ? '#b91c1c'
@@ -274,6 +310,7 @@ export function XrStatusHud() {
     linkHudColor,
     interactionSession.kind,
     quietIdle,
+    hudGuidance,
   ])
 
   useFrame(() => {
@@ -284,7 +321,7 @@ export function XrStatusHud() {
   if (!session) return null
 
   let y = 0.08
-  const gap = quietIdle ? 0.034 : 0.042
+  const gap = quietIdle ? 0.034 : hudGuidance.density === 'minimal' ? 0.036 : 0.042
   return (
     <group ref={groupRef}>
       <Billboard>

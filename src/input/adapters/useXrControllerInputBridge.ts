@@ -15,6 +15,7 @@ import { xrLastNodeSelectControllerIndex } from '../../scene/xr/xrSelectionRefs'
 import {
   applyStickyTargetPreference,
   intersectObjectsWithRayAssist,
+  XR_STICKY_TARGET_SLACK_M,
   type XrStickyTarget,
 } from '../xr/xrControllerRayAssist'
 
@@ -67,7 +68,7 @@ export function useXrControllerInputBridge() {
       const rawHits = intersectObjectsWithRayAssist(scene, origin, direction, 0.05, 500)
       const stForSort = useRootStore.getState()
       const sticky = lastRayStickyByController.get(ctrlIdx) ?? null
-      const assisted = applyStickyTargetPreference(rawHits, sticky, 0.042)
+      const assisted = applyStickyTargetPreference(rawHits, sticky, XR_STICKY_TARGET_SLACK_M)
       const hits =
         stForSort.interactionSession.kind === 'link'
           ? [...assisted].sort((a, b) => linkHitRank(a.object) - linkHitRank(b.object))
